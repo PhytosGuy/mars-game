@@ -430,8 +430,11 @@ body.touch #chatbtn{top:16px;left:148px;right:auto}
 .lever span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.1em;color:#9fb0c0}
 #l-skip{position:absolute;right:16px;top:16px;pointer-events:auto}
 @media (max-width:760px){#landui .ltop{top:58px}.lins b{font-size:19px}#landui .ldash{padding:0 12px 12px}#landui .lstrut{display:none}}
+/* windows that change the scene live sit at the side, so you can watch the change */
+#habcol.overlay,#settings.overlay.live{background:linear-gradient(90deg,transparent 40%,rgba(8,6,6,.55));justify-content:flex-end;padding-right:24px}
+@media (max-width:760px){#habcol.overlay,#settings.overlay.live{justify-content:center;align-items:flex-end;padding:0;background:transparent}}
 /* pause menu */
-#pause .tmenu{display:flex;flex-direction:column;gap:10px;align-items:stretch}.pbig{display:flex;align-items:center;gap:12px;font-size:17px;padding:13px 16px;text-align:left}
+#pause .tmenu{display:flex;flex-direction:column;gap:10px;align-items:stretch}.pbig{display:block;font-size:17px;padding:13px 16px;text-align:center}
 .pbig b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:rgba(0,0,0,.25);font-size:13px}
 #verlbl{position:absolute;right:16px;bottom:12px;font-size:12px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.04em}
 /* health first and biggest; crewmates under it */
@@ -571,11 +574,11 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <div id="pause" class="overlay hidden"><div class="win pausewin">
   <div class="winhead"><h2>Paused</h2></div>
   <div class="btns tmenu">
-    <button class="btn primary pbig" id="p-resume"><b>1</b>Resume</button>
-    <button class="btn pbig" id="p-set"><b>2</b>Settings</button>
-    <button class="btn pbig" id="p-friends"><b>3</b>Friends</button>
-    <button class="btn pbig" id="p-save"><b>4</b>Save</button>
-    <button class="btn pbig" id="p-quit"><b>5</b>Save &amp; quit</button>
+    <button class="btn primary pbig" id="p-resume">Resume</button>
+    <button class="btn pbig" id="p-set">Settings</button>
+    <button class="btn pbig" id="p-friends">Friends</button>
+    <button class="btn pbig" id="p-save">Save</button>
+    <button class="btn pbig" id="p-quit">Save &amp; quit</button>
     <button class="btn hidden" id="p-coop"></button>
   </div>
   <div id="p-ctrl" style="margin-top:16px;font-size:13px;line-height:1.85;color:var(--dim)"></div>
@@ -641,7 +644,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.0.1'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const V='4.1.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
 const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','aliens','habitat','dialogue','net','touch','config','account','missionlab','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});

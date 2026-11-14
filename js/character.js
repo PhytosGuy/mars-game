@@ -56,20 +56,22 @@ function makePreview(boxSel,cvSel,overId){
     const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xfff0e0,0x7a4030,1.6));
     const key=new THREE.DirectionalLight(0xfff2e2,2.6);key.position.set(3,5,4);const rim=new THREE.DirectionalLight(0xffb27a,1.6);rim.position.set(-4,3,-4);sc.add(key,rim);
     const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1,0.12,40),new THREE.MeshStandardMaterial({color:'#8a4a30',roughness:0.9}));pad.position.y=-0.06;sc.add(pad);
-    const a=mkAstronaut();sc.add(a);a.traverse(o=>{if(o.isSpotLight)o.intensity=0});P_.a=a;P_.sc=sc;
+    const a=mkAstronaut();sc.add(a);a.traverse(o=>{if(o.isSpotLight)o.intensity=0});P_.a=a;P_.sc=sc;P_.pad=pad;
+    const rv=mkRover();rv.traverse(o=>{if(o.isSpotLight)o.intensity=0});rv.visible=false;sc.add(rv);P_.rv=rv;
     P_.cam=new THREE.PerspectiveCamera(28,1,0.1,50);P_.cam.position.set(0,1.25,5.4);P_.cam.lookAt(0,1.0,0);
     const box=$(boxSel);
     box.addEventListener('pointerdown',e=>{P_.drag={x:e.clientX,yaw:P_.yaw};P_.spin=false;box.setPointerCapture(e.pointerId)});
     box.addEventListener('pointermove',e=>{if(P_.drag)P_.yaw=P_.drag.yaw+(e.clientX-P_.drag.x)*0.012});
     const up=()=>{P_.drag=null};box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);return true};
-  P_.look=()=>{if(!P_.a)return;dressModel(P_.a,LOOK);setOutfit(P_.a,P_.casual)};
+  P_.look=()=>{if(!P_.a)return;dressModel(P_.a,LOOK);setOutfit(P_.a,P_.casual);P_.rv.userData.paint.color.set(LOOK.rover)};
   // zoom in on the face for face and hair choices
   P_.frame=close=>{P_.close=close};
   const loop=()=>{if(!P_.on)return;if($('#'+overId).classList.contains('hidden')){P_.on=false;return}requestAnimationFrame(loop);
     const cv=P_.r.domElement,w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
     if(cv.width!==Math.round(w*P_.r.getPixelRatio())||cv.height!==Math.round(h*P_.r.getPixelRatio())){P_.r.setSize(w,h,false);P_.cam.aspect=w/h;P_.cam.updateProjectionMatrix()}
-    const t=performance.now()/1000;if(P_.spin&&!P_.drag)P_.yaw+=0.006;P_.a.rotation.y=P_.yaw;P_.a.position.y=Math.sin(t*1.6)*0.015;
-    const tz=P_.close?2.1:5.4,ty=P_.close?1.72:1.25,ly=P_.close?1.68:1.0;P_.cam.position.z+=(tz-P_.cam.position.z)*0.12;P_.cam.position.y+=(ty-P_.cam.position.y)*0.12;P_.cam.lookAt(0,P_.cam.position.y-(ty-ly),0);
+    const t=performance.now()/1000;if(P_.spin&&!P_.drag)P_.yaw+=0.006;const isR=P_.mode==='rover';P_.a.visible=!isR;P_.rv.visible=isR;P_.pad.scale.setScalar(isR?3.2:1);
+    P_.a.rotation.y=P_.yaw;P_.a.position.y=Math.sin(t*1.6)*0.015;P_.rv.rotation.y=P_.yaw;
+    const tz=isR?10.5:P_.close?2.1:5.4,ty=isR?3.4:P_.close?1.72:1.25,ly=isR?1.1:P_.close?1.68:1.0;P_.cam.position.z+=(tz-P_.cam.position.z)*0.12;P_.cam.position.y+=(ty-P_.cam.position.y)*0.12;P_.cam.lookAt(0,P_.cam.position.y-(ty-ly),0);
     P_.r.render(P_.sc,P_.cam)};
   P_.start=()=>{if(!P_.init())return;P_.look();P_.spin=true;if(!P_.on){P_.on=true;requestAnimationFrame(loop)}};
   return P_}
@@ -87,7 +89,7 @@ function renderCreator(){
     if(type==='c')return`<div class="crrow"><div class="sub">${l}</div><div class="sw">${vals.map(c=>`<button data-lk="${k}" data-v="${c}" style="background:${c}" class="${LOOK[k]===c?'on':''}" aria-label="${c}"></button>`).join('')}</div></div>`;
     if(type==='t')return`<div class="crrow"><div class="sub">${l}</div><div class="opt"><button data-lt="${k}" data-v="1" class="${LOOK[k]?'on':''}">On</button><button data-lt="${k}" data-v="0" class="${LOOK[k]?'':'on'}">Off</button></div></div>`;
     return`<div class="crrow"><div class="sub">${l}</div><div class="chips">${vals.map(([v,n])=>`<button data-ls="${k}" data-v="${v}" class="${LOOK[k]===v?'on':''}">${n}</button>`).join('')}</div></div>`}).join('');
-  const cas=['face','hair','body','clothes'].includes(CR.tab);if(CR.prev){CR.prev.casual=CR.tab==='suit'||CR.tab==='rover'?false:CR.tab==='clothes'||CR.tab==='hair'?true:CR.prev.casual;CR.prev.frame(CR.tab==='face'||CR.tab==='hair');CR.prev.look()}
+  const cas=['face','hair','body','clothes'].includes(CR.tab);if(CR.prev){CR.prev.casual=CR.tab==='suit'||CR.tab==='rover'?false:CR.tab==='clothes'||CR.tab==='hair'?true:CR.prev.casual;CR.prev.frame(CR.tab==='face'||CR.tab==='hair');CR.prev.mode=CR.tab==='rover'?'rover':'astro';CR.prev.look()}
   document.querySelectorAll('#creator [data-cm]').forEach(b=>b.classList.toggle('on',(b.dataset.cm==='casual')===!!(CR.prev&&CR.prev.casual)));
   $('#cr-pfp').src=pfpURL(LOOK)||'';void cas;
 }

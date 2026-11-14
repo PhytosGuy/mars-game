@@ -30,20 +30,22 @@ const LOOK_DEFAULT={suit:'#efebe4',accent:'#ff7a2e',visor:'#2b2f5a',pack:'#c9c3b
   hairStyle:'short',hair:'#3b2a20',facial:'none',hat:'none',hatCol:'#ff7a2e',glasses:'none',build:'regular',height:'avg',
   top:'tee',shirt:'#4f86f7',shirt2:'#ffffff',bottoms:'pants',pants:'#3a3a40',shoes:'#efebe4'};
 // One rig, two outfits: the spacesuit and your everyday clothes share the same joints, so every animation works for both.
-// The visor is see-through, so your face shows inside the helmet.
+// The visor is dark and mirrored: you can only just make out the face inside.
 function mkAstronaut(){
   const g=new THREE.Group(),S_=(c,r=0.6)=>new THREE.MeshStandardMaterial({color:c,roughness:r});
   const M={suit:S_(WHITE),accent:S_(ORANGE,0.5),pack:S_('#c9c3bb'),boots:S_(GREY,0.8),
-    visor:new THREE.MeshStandardMaterial({color:'#2b2f5a',roughness:0.06,metalness:0.5,emissive:'#4a3a8a',emissiveIntensity:0.15,transparent:true,opacity:0.42,depthWrite:false}),
+    visor:new THREE.MeshStandardMaterial({color:'#2b2f5a',roughness:0.04,metalness:0.75,emissive:'#4a3a8a',emissiveIntensity:0.05,transparent:true,opacity:0.86,depthWrite:false}),
     skin:S_('#c68642',0.7),hair:new THREE.MeshStandardMaterial({color:'#3b2a20',roughness:0.55,map:hairTex()}),hat:S_('#ff7a2e',0.8),shirt:S_('#4f86f7',0.8),shirt2:S_('#ffffff',0.8),pants:S_('#3a3a40',0.85),shoes:S_('#efebe4',0.6),eye:S_('#4a3020',0.3)};
   const metal=mat('#6d6863',{roughness:0.4,metalness:0.5}),dark=mat('#2c2826',{roughness:0.6});
-  const SUIT=[],CAS=[],UP=[],LOW=[],SHIN=[],BOOT=[];
+  const SUIT=[],CAS=[],UP=[],LOW=[],SHIN=[],BOOT=[],SC=[];
+  const cs=(m,x,y=x,z=x)=>{m.userData.cs=new THREE.Vector3(x,y,z);SC.push(m);return m};   // how much slimmer this part is out of the suit
   const add=(m,p=g)=>{p.add(m);return m},su=m=>{SUIT.push(m);return m},ca=m=>{CAS.push(m);return m},up=m=>{UP.push(m);return m},lo=m=>{LOW.push(m);return m};
-  const torso=up(add(mesh(shared('torso',()=>new THREE.CapsuleGeometry(0.3,0.42,8,16)),M.suit,0,1.13,0)));torso.scale.set(1.2,1,0.86);
+  const torso=su(add(mesh(shared('torso',()=>new THREE.CapsuleGeometry(0.3,0.42,8,16)),M.suit,0,1.13,0)));torso.scale.set(1.2,1,0.86);
+  const ctorso=ca(add(mesh(shared('ctorso',bodyLathe),M.shirt,0,0,0)));ctorso.scale.set(1.25,1,0.72);                 // chest, waist and shoulders
   const pelvis=lo(add(mesh(shared('pelvis',()=>new THREE.CapsuleGeometry(0.17,0.26,6,14)),M.suit,0,0.82,0)));pelvis.rotation.z=Math.PI/2;pelvis.scale.set(1,1,0.88);
   su(add(cy(0.2,0.24,0.16,14,M.suit,0,1.48,0)));                                                // neck seal
   ca(add(cy(0.085,0.1,0.2,10,M.skin,0,1.5,0)));                                                 // neck
-  for(const s of[1,-1])up(add(sp(0.135,M.suit,s*0.43,1.38,0,14,10)));                           // shoulder joints
+  const SHO=[];for(const s of[1,-1])SHO.push(cs(up(add(sp(0.135,M.suit,s*0.43,1.38,0,14,10))),0.62));                           // shoulder joints
   su(add(mesh(rbox(0.72,0.11,0.53,0.05),M.boots,0,0.95,0)));su(add(mesh(rbox(0.12,0.09,0.06,0.03),metal,0,0.95,0.27)));
   su(add(mesh(rbox(0.38,0.22,0.1,0.05),'#d9d3cb',0,1.24,0.25)));
   [['#5fe37f',-0.1],['#ffcf4a',0],['#6fb6ff',0.1]].forEach(([c,x])=>su(add(sp(0.028,glow(c,1.8),x,1.27,0.31,8,6))));
@@ -61,7 +63,7 @@ function mkAstronaut(){
     const h=su(hadd(mesh(geo,M.suit,0,0.27,0)));h.scale.set(1,0.95,1)}
   const helmIn=su(hadd(mesh(shared('helmIn',()=>new THREE.SphereGeometry(0.43,18,14)),mat('#2a2830',{side:THREE.BackSide,roughness:0.9}),0,0.27,0)));helmIn.scale.set(1,0.95,1);
   const visor=su(hadd(mesh(shared('visor3',()=>new THREE.SphereGeometry(0.34,28,20)),M.visor,0,0.28,0.27)));visor.scale.set(1.1,0.8,0.7);visor.renderOrder=2;visor.castShadow=false;
-  su(hadd(mesh(shared('vglint',()=>new THREE.SphereGeometry(0.05,8,6)),mat('#ffffff',{emissive:'#ffffff',emissiveIntensity:0.8}),-0.15,0.37,0.5))).scale.set(1.4,0.7,0.4);
+  su(hadd(mesh(shared('vglint',()=>new THREE.SphereGeometry(0.05,8,6)),mat('#ffffff',{emissive:'#ffffff',emissiveIntensity:0.5,transparent:true,opacity:0.55}),-0.16,0.38,0.5))).scale.set(0.8,0.3,0.25);
   su(hadd(sp(0.07,glow('#fff6e0',1.2),0.3,0.49,0.18,8,6)));
   const lamp=new THREE.SpotLight(0xfff6e0,0,45,0.55,0.55,1.2);lamp.position.set(0.3,0.49,0.25);lamp.target.position.set(0,-0.75,9);head.add(lamp,lamp.target);
   su(hadd(mesh(rbox(0.1,0.16,0.12,0.04),metal,0.42,0.29,0)));su(hadd(mesh(rbox(0.1,0.16,0.12,0.04),metal,-0.42,0.29,0)));
@@ -71,67 +73,119 @@ function mkAstronaut(){
   const topG=new THREE.Group();g.add(topG);topG.visible=false;
   // limbs
   const limb=(x,y,r,len,mat_)=>{const p=new THREE.Group();p.position.set(x,y,0);g.add(p);
-    p.add(up(mesh(shared('cap'+r+len,()=>new THREE.CapsuleGeometry(r,len,6,12)),mat_,0,-len/2-r*0.4,0)));return p};
+    p.add(cs(up(mesh(shared('cap'+r+len,()=>new THREE.CapsuleGeometry(r,len,6,12)),mat_,0,-len/2-r*0.4,0)),0.72,1,0.72));return p};
   const armL=limb(0.43,1.38,0.11,0.34,M.suit),armR=limb(-0.43,1.38,0.11,0.34,M.suit);
-  for(const a of[armL,armR]){a.add(su(sp(0.13,M.accent,0,-0.6,0,12,10)));a.add(ca(sp(0.1,M.skin,0,-0.6,0,12,10)));a.add(su(mesh(rbox(0.25,0.08,0.25,0.04),M.accent,0,-0.3,0)));a.add(up(sp(0.115,M.suit,0,0,0,12,10)))}
+  const armCl=[];for(const a of[armL,armR]){a.add(su(sp(0.13,M.accent,0,-0.6,0,12,10)));
+    const hand=new THREE.Group();hand.position.set(0,-0.58,0);a.add(ca(hand));hand.add(sp(0.072,M.skin,0,0,0,12,10));hand.children[0].scale.set(0.85,1.15,0.6);
+    const th=mesh(shared('thumb',()=>new THREE.CapsuleGeometry(0.022,0.05,4,8)),M.skin,a===armL?-0.05:0.05,0.01,0.03);th.rotation.z=a===armL?0.6:-0.6;hand.add(th);
+    a.add(su(mesh(rbox(0.25,0.08,0.25,0.04),M.accent,0,-0.3,0)));a.add(cs(up(sp(0.115,M.suit,0,0,0,12,10)),0.7));
+    const cl=new THREE.Group();a.add(ca(cl));armCl.push(cl)}
   const leg=x=>{const hip=new THREE.Group();hip.position.set(x,0.78,0);g.add(hip);
-    hip.add(lo(sp(0.15,M.suit,0,0,0,14,10)));
-    hip.add(lo(mesh(shared('thigh',()=>new THREE.CapsuleGeometry(0.135,0.2,6,12)),M.suit,0,-0.17,0)));
+    hip.add(cs(lo(sp(0.15,M.suit,0,0,0,14,10)),0.78));
+    hip.add(cs(lo(mesh(shared('thigh',()=>new THREE.CapsuleGeometry(0.135,0.2,6,12)),M.suit,0,-0.17,0)),0.8,1,0.8));
     const knee=new THREE.Group();knee.position.set(0,-0.36,0);hip.add(knee);
-    const kj=lo(sp(0.132,M.suit,0,0,0,14,10));knee.add(kj);SHIN.push(kj);
+    const kj=cs(lo(sp(0.132,M.suit,0,0,0,14,10)),0.72);knee.add(kj);SHIN.push(kj);
     knee.add(su(sp(0.1,M.accent,0,0.02,0.1,10,8)));
-    const shin=lo(mesh(shared('shin',()=>new THREE.CapsuleGeometry(0.125,0.16,6,12)),M.suit,0,-0.13,0));knee.add(shin);SHIN.push(shin);
-    const boot=mesh(rbox(0.3,0.18,0.42,0.08),M.boots,0,-0.3,0.05);BOOT.push(boot);knee.add(boot);knee.add(mesh(rbox(0.31,0.06,0.43,0.03),dark,0,-0.39,0.05));
-    hip.userData.knee=knee;return hip};
-  const legL=leg(0.16),legR=leg(-0.16);
+    const shin=cs(lo(mesh(shared('shin',()=>new THREE.CapsuleGeometry(0.125,0.16,6,12)),M.suit,0,-0.13,0)),0.72,1,0.72);knee.add(shin);SHIN.push(shin);
+    const boot=cs(mesh(rbox(0.3,0.18,0.42,0.08),M.boots,0,-0.3,0.05),0.8,0.72,0.9);BOOT.push(boot);knee.add(boot);knee.add(su(mesh(rbox(0.31,0.06,0.43,0.03),dark,0,-0.39,0.05)));
+    const cl=new THREE.Group();knee.add(ca(cl));legCl.push(cl);hip.userData.knee=knee;return hip};
+  const legCl=[];const legL=leg(0.16),legR=leg(-0.16);
   const tool=new THREE.Group();tool.position.set(0,-0.62,0.08);armR.add(tool);
   const tipMat=new THREE.MeshStandardMaterial({color:'#6fe0c8',emissive:'#6fe0c8',emissiveIntensity:0.4});
   const tip=new THREE.Object3D();tip.position.set(0,-0.5,0);tool.add(tip);
   for(const m of CAS)m.visible=false;
-  g.userData={head,armL,armR,legL,legR,lamp,mats:M,antenna:ant,tip,tipMat,tool,held:null,suitParts:SUIT,casParts:CAS,upper:UP,lower:LOW,shins:SHIN,bootM:BOOT,face,hairG,topG,torso,pelvis,casual:false,wantAnt:false,faceSig:''};
+  g.userData={head,armL,armR,legL,legR,lamp,mats:M,antenna:ant,tip,tipMat,tool,held:null,suitParts:SUIT,casParts:CAS,upper:UP,lower:LOW,shins:SHIN,bootM:BOOT,face,hairG,topG,torso,pelvis,casual:false,wantAnt:false,faceSig:'',scaled:SC,shoulders:SHO,ctorso,armCl,legCl,bw:1};
   buildFace(g,LOOK_DEFAULT);return g;
 }
+// the torso under everyday clothes: (radius, height) from the hem up to the neck
+const BODY_PROF=[[0.001,0.872],[0.198,0.878],[0.208,0.95],[0.196,1.04],[0.205,1.12],[0.232,1.22],[0.248,1.3],[0.25,1.36],[0.226,1.43],[0.155,1.48],[0.09,1.51],[0.001,1.522]];
+function bodyLathe(){return new THREE.LatheGeometry(BODY_PROF.map(([r,y])=>new THREE.Vector2(r,y)),28)}
+const bodyR=y=>{for(let i=1;i<BODY_PROF.length;i++){const[a,ya]=BODY_PROF[i-1],[b,yb]=BODY_PROF[i];if(y<=yb)return lerp(a,b,(y-ya)/Math.max(1e-6,yb-ya))}return 0.09};
 // face, hair, hat, glasses and the style of your top: rebuilt only when those choices change
 function buildFace(a,l){
-  const U=a.userData,M=U.mats,F=U.face,H=U.hairG,T=U.topG;for(const grp of[F,H,T])while(grp.children.length)grp.remove(grp.children[0]);
-  const fa=(m,x,y,z)=>{m.position.set(x,y,z);F.add(m);return m},ha=(m,x,y,z)=>{m.position.set(x,y,z);H.add(m);return m},ta=(m,x,y,z)=>{m.position.set(x,y,z);T.add(m);return m};
+  const U=a.userData,M=U.mats,F=U.face,H=U.hairG,T=U.topG;for(const grp of[F,H,T,...U.armCl,...U.legCl])while(grp.children.length)grp.remove(grp.children[0]);
+  const fa=(m,x,y,z)=>{m.position.set(x,y,z);F.add(m);return m},ha=(m,x,y,z)=>{m.position.set(x,y,z);H.add(m);return m};
   const S=(r,m,ws=12,hs=10)=>new THREE.Mesh(shared('fs'+r+'_'+ws+'_'+hs,()=>new THREE.SphereGeometry(r,ws,hs)),m),B=(w,h,d,m)=>new THREE.Mesh(shared('fb'+w+'_'+h+'_'+d,()=>new THREE.BoxGeometry(w,h,d)),m);
   const shell=(r,t0,t1,m)=>new THREE.Mesh(shared('sh'+r+'_'+t0+'_'+t1,()=>new THREE.SphereGeometry(r,18,12,0,Math.PI*2,t0,t1-t0)),m);
-  const white=mat('#ffffff',{roughness:0.3}),mouthM=mat('#7a2a2a',{roughness:0.6}),frame=mat('#1d1a1a',{roughness:0.4}),Y=0.27;
-  fa(S(0.25,M.skin,18,14),0,Y,0).scale.set(1,1.08,1);
-  for(const s of[-1,1])fa(S(0.05,M.skin,8,6),s*0.245,Y,0).scale.set(0.6,1,1);
-  // eyes and brows
-  const es={round:[1,1],almond:[1.35,0.72],wide:[1.2,1.25],sleepy:[1.1,0.6]}[l.eyes]||[1,1];
-  for(const s of[-1,1]){const w=fa(S(0.05,white,10,8),s*0.09,Y+0.03,0.215);w.scale.set(es[0],es[1],0.55);const p=fa(S(0.03,M.eye,8,6),s*0.09,Y+0.03,0.238);p.scale.set(1,es[1]>0.9?1:0.8,0.6);
-    if(l.eyes==='sleepy'){const lid=fa(new THREE.Mesh(shared('lid',()=>new THREE.SphereGeometry(0.056,10,6,0,Math.PI*2,0,Math.PI/2)),M.skin),s*0.09,Y+0.03,0.215);lid.scale.set(es[0],0.9,0.6)}
-    if(l.brows!=='none'){const b=fa(B(0.09,l.brows==='thick'?0.032:0.018,0.02,M.hair),s*0.09,Y+0.105,0.225);b.rotation.z=l.brows==='arched'?-s*0.28:l.brows==='angry'?s*0.3:0}}
-  // nose
-  if(l.nose==='pointy'){const n=fa(new THREE.Mesh(shared('nosec',()=>new THREE.ConeGeometry(0.03,0.08,8)),M.skin),0,Y-0.02,0.255);n.rotation.x=Math.PI/2}
-  else{const n=fa(S(0.032,M.skin,8,6),0,Y-0.02,0.245);if(l.nose==='wide')n.scale.set(1.6,0.9,1)}
-  // mouth
-  if(l.mouth==='neutral')fa(B(0.09,0.016,0.02,mouthM),0,Y-0.1,0.225);
-  else if(l.mouth==='grin'){const m=fa(new THREE.Mesh(shared('grin',()=>new THREE.SphereGeometry(0.06,12,8,0,Math.PI*2,Math.PI/2,Math.PI/2)),white),0,Y-0.085,0.205);m.scale.set(1.1,0.75,0.6)}
-  else{const m=fa(new THREE.Mesh(shared('smile',()=>new THREE.TorusGeometry(0.05,0.012,6,14,Math.PI)),mouthM),l.mouth==='smirk'?0.02:0,Y-0.075,0.222);m.rotation.z=Math.PI+(l.mouth==='smirk'?0.35:0)}
-  if(l.freckles)for(const s of[-1,1])for(let i=0;i<3;i++)fa(S(0.008,mat('#8a5a3a'),5,4),s*(0.1+i*0.022),Y-0.025+(i%2)*0.015,0.225);
-  if(l.blush)for(const s of[-1,1])fa(S(0.035,mat('#ff7a8a',{transparent:true,opacity:0.45}),8,6),s*0.13,Y-0.05,0.205).scale.set(1,0.6,0.4);
+  const arc=(r,t,ang,m)=>new THREE.Mesh(shared('arc'+r+'_'+t+'_'+ang,()=>new THREE.TorusGeometry(r,t,6,16,ang)),m);
+  const white=mat('#fbfaf7',{roughness:0.25}),lipM=mat('#b4544e',{roughness:0.45}),mouthIn=mat('#4a1717',{roughness:0.8}),frame=mat('#1d1a1a',{roughness:0.4}),lash=mat('#1a1210',{roughness:0.6}),
+    shade=mat('#000000',{transparent:true,opacity:0.16,depthWrite:false}),pupil=mat('#0b0908',{roughness:0.2}),spark=mat('#ffffff',{emissive:'#ffffff',emissiveIntensity:0.9}),Y=0.27;
+  // head, jaw and chin, cheeks, ears
+  fa(S(0.25,M.skin,24,18),0,Y,0).scale.set(1,1.08,1);
+  fa(S(0.2,M.skin,24,18),0,Y-0.075,0.02).scale.set(1.08,0.88,1);
+  for(const s of[-1,1]){
+    fa(S(0.055,M.skin,10,8),s*0.245,Y+0.005,-0.01).scale.set(0.42,1,0.82);fa(S(0.03,shade,8,6),s*0.262,Y+0.005,0.0).scale.set(0.3,0.75,0.6)}
+  // eyes: white, iris, pupil, a sparkle of light, lashes and brows
+  const es={round:[1,1],almond:[1.3,0.72],wide:[1.15,1.2],sleepy:[1.1,0.62]}[l.eyes]||[1,1],ex=0.088,ey=Y+0.03;
+  for(const s of[-1,1]){
+    fa(S(0.047,white,14,10),s*ex,ey,0.208).scale.set(es[0],es[1],0.5);
+    fa(S(0.028,M.eye,12,10),s*ex,ey-0.002,0.226).scale.set(1,Math.min(1,es[1]*1.05),0.42);
+    fa(S(0.014,pupil,8,6),s*ex,ey-0.002,0.234).scale.set(1,Math.min(1,es[1]*1.05),0.4);
+    fa(S(0.0075,spark,6,4),s*ex-0.01,ey+0.012,0.239);
+    const up=fa(arc(0.047,0.0065,Math.PI,lash),s*ex,ey,0.214);up.scale.set(es[0],es[1]*0.98,1);
+    if(l.eyes==='sleepy'){const lid=fa(new THREE.Mesh(shared('lid2',()=>new THREE.SphereGeometry(0.05,12,6,0,Math.PI*2,0,Math.PI/2)),M.skin),s*ex,ey-0.002,0.21);lid.scale.set(es[0],0.9,0.55)}
+    if(l.eyes==='almond'){const c=fa(B(0.016,0.005,0.01,lash),s*(ex+0.06),ey+0.006,0.21);c.rotation.z=s*0.4}
+    if(l.brows!=='none'){const b=fa(new THREE.Mesh(shared('brow'+(l.brows==='thick'?1:0),()=>new THREE.CapsuleGeometry(l.brows==='thick'?0.016:0.01,0.07,4,8)),M.hair),s*ex,Y+0.105,0.222);
+      b.rotation.z=Math.PI/2+(l.brows==='arched'?s*0.3:l.brows==='angry'?-s*0.32:s*0.06)}}
+  // nose: bridge, tip and nostrils
+  const nw=l.nose==='wide'?1.5:1;
+  fa(new THREE.Mesh(shared('nbridge',()=>new THREE.CapsuleGeometry(0.016,0.06,4,8)),M.skin),0,Y+0.005,0.235).rotation.x=-0.3;
+  if(l.nose==='pointy'){const n=fa(new THREE.Mesh(shared('nosec2',()=>new THREE.ConeGeometry(0.026,0.07,10)),M.skin),0,Y-0.03,0.258);n.rotation.x=Math.PI/2}
+  else fa(S(0.027,M.skin,10,8),0,Y-0.032,0.25).scale.set(nw,0.85,0.9);
+  for(const s of[-1,1]){fa(S(0.017,M.skin,8,6),s*0.024*nw,Y-0.04,0.236);fa(S(0.007,mouthIn,6,4),s*0.014*nw,Y-0.05,0.248).scale.set(1,0.6,0.6)}
+  // mouth and lips
+  const my=Y-0.098;
+  if(l.mouth==='neutral'){fa(new THREE.Mesh(shared('lipn',()=>new THREE.CapsuleGeometry(0.009,0.06,4,8)),lipM),0,my+0.006,0.228).rotation.z=Math.PI/2;fa(new THREE.Mesh(shared('lipn2',()=>new THREE.CapsuleGeometry(0.012,0.05,4,8)),lipM),0,my-0.012,0.225).rotation.z=Math.PI/2}
+  else if(l.mouth==='grin'){const o=fa(new THREE.Mesh(shared('grin2',()=>new THREE.CircleGeometry(0.05,16,Math.PI,Math.PI)),mouthIn),0,my+0.012,0.229);o.scale.set(1.1,0.75,1);
+    fa(B(0.085,0.016,0.006,white),0,my+0.004,0.231);const ll=fa(arc(0.052,0.009,Math.PI,lipM),0,my+0.012,0.228);ll.rotation.z=Math.PI;ll.scale.set(1.1,0.78,1);fa(B(0.11,0.008,0.008,lipM),0,my+0.013,0.229)}
+  else{const sm=l.mouth==='smirk';const up=fa(arc(0.046,0.007,Math.PI,lipM),sm?0.012:0,my+0.03,0.226);up.rotation.z=Math.PI+(sm?0.3:0);
+    const lo=fa(arc(0.036,0.011,Math.PI*0.8,lipM),sm?0.014:0,my+0.03,0.224);lo.rotation.z=Math.PI+Math.PI*0.1+(sm?0.3:0)}
+  if(l.freckles)for(const s of[-1,1])for(let i=0;i<5;i++)fa(S(0.006,mat('#8a5a3a'),5,4),s*(0.085+i*0.017),Y-0.03+(i%2)*0.013,0.218);
+  if(l.blush)for(const s of[-1,1])fa(S(0.035,mat('#ff7a8a',{transparent:true,opacity:0.4,depthWrite:false}),8,6),s*0.12,Y-0.05,0.2).scale.set(1,0.6,0.4);
   // glasses
-  if(l.glasses==='round'||l.glasses==='square'){for(const s of[-1,1]){const r=l.glasses==='round'?fa(new THREE.Mesh(shared('gl',()=>new THREE.TorusGeometry(0.055,0.01,6,16)),frame),s*0.09,Y+0.03,0.25):fa(new THREE.Mesh(shared('gls',()=>new THREE.TorusGeometry(0.06,0.01,4,4)),frame),s*0.09,Y+0.03,0.25);if(l.glasses==='square')r.rotation.z=Math.PI/4}fa(B(0.06,0.01,0.01,frame),0,Y+0.04,0.255)}
-  else if(l.glasses==='shades')fa(B(0.3,0.07,0.03,mat('#111318',{roughness:0.1,metalness:0.6})),0,Y+0.035,0.245);
+  if(l.glasses==='round'||l.glasses==='square'){for(const s of[-1,1]){const r=l.glasses==='round'?fa(new THREE.Mesh(shared('gl',()=>new THREE.TorusGeometry(0.055,0.009,6,20)),frame),s*ex,ey,0.25):fa(new THREE.Mesh(shared('gls',()=>new THREE.TorusGeometry(0.06,0.009,4,4)),frame),s*ex,ey,0.25);if(l.glasses==='square')r.rotation.z=Math.PI/4;
+      fa(new THREE.Mesh(shared('glarm',()=>new THREE.BoxGeometry(0.008,0.008,0.22)),frame),s*0.15,ey+0.01,0.14)}fa(B(0.05,0.008,0.008,frame),0,ey+0.012,0.256)}
+  else if(l.glasses==='shades'){fa(B(0.3,0.065,0.025,mat('#111318',{roughness:0.08,metalness:0.7})),0,ey+0.004,0.245);for(const s of[-1,1])fa(new THREE.Mesh(shared('glarm',()=>new THREE.BoxGeometry(0.008,0.008,0.22)),frame),s*0.15,ey+0.01,0.14)}
   // facial hair
-  if(l.facial==='beard'){const b=fa(shell(0.262,1.75,2.75,M.hair),0,Y,0.01);b.scale.set(1,1.1,1.02)}
-  else if(l.facial==='goatee')fa(B(0.07,0.07,0.04,M.hair),0,Y-0.17,0.205);
-  else if(l.facial==='stubble'){const b=fa(shell(0.256,1.8,2.7,mat(l.hair,{transparent:true,opacity:0.35})),0,Y,0);b.scale.set(1,1.08,1)}
-  if(l.facial==='mustache'||l.facial==='beard')fa(B(0.12,0.03,0.03,M.hair),0,Y-0.055,0.235);
+  if(l.facial==='beard'){const b=fa(shell(0.258,2.08,2.9,M.hair),0,Y,0.012);b.scale.set(1.04,1.12,1.04);for(const sd of[-1,1]){const sb=fa(S(0.05,M.hair,8,6),sd*0.215,Y-0.06,0.08);sb.scale.set(0.5,1.5,0.8)}fa(S(0.06,M.hair,10,8),0,Y-0.2,0.16).scale.set(1.3,0.8,0.8)}
+  else if(l.facial==='goatee'){fa(S(0.04,M.hair,10,8),0,Y-0.19,0.19).scale.set(1.1,1.3,0.7)}
+  else if(l.facial==='stubble'){const b=fa(shell(0.256,1.8,2.7,mat(l.hair,{transparent:true,opacity:0.3,depthWrite:false})),0,Y,0);b.scale.set(1,1.08,1)}
+  if(l.facial==='mustache'||l.facial==='beard'){for(const s of[-1,1]){const m=fa(new THREE.Mesh(shared('must',()=>new THREE.CapsuleGeometry(0.014,0.045,4,8)),M.hair),s*0.03,my+0.045,0.235);m.rotation.z=Math.PI/2+s*0.35}}
   // hair (and hat), only seen without the helmet
   if(l.hairStyle!=='bald')H.add(new THREE.Mesh(hairGeometry(l.hairStyle,Y,l.hat!=='none'),M.hair));
   if(l.hat==='beanie'){const h=ha(shell(0.285,0,1.25,M.hat),0,Y,0);h.scale.set(1,1.12,1);ha(new THREE.Mesh(shared('rim',()=>new THREE.TorusGeometry(0.27,0.03,6,20)),M.hat),0,Y+0.09,0).rotation.x=Math.PI/2}
   else if(l.hat==='cap'){ha(shell(0.282,0,1.2,M.hat),0,Y,0).scale.set(1,1.1,1);ha(B(0.3,0.025,0.2,M.hat),0,Y+0.12,0.3).rotation.x=0.15}
   else if(l.hat==='headset'){ha(new THREE.Mesh(shared('hband',()=>new THREE.TorusGeometry(0.27,0.02,6,18,Math.PI)),frame),0,Y+0.02,0);for(const s of[-1,1])ha(S(0.06,frame,8,6),s*0.26,Y,0)}
-  // the style of your top (shown with your casual clothes)
-  if(l.top==='hoodie'){ta(new THREE.Mesh(shared('hood',()=>new THREE.TorusGeometry(0.17,0.07,8,16)),M.shirt),0,1.5,-0.1).rotation.x=Math.PI/2+0.5;ta(B(0.3,0.12,0.04,M.shirt2),0,1.0,0.27)}
-  else if(l.top==='jacket'){ta(B(0.12,0.62,0.04,M.shirt2),0,1.16,0.27);ta(B(0.4,0.05,0.04,M.shirt),0,1.43,0.24)}
-  else if(l.top==='flight'){ta(new THREE.Mesh(shared('patch',()=>new THREE.CylinderGeometry(0.06,0.06,0.02,16)),glow('#2e5bd8',0.3)),0.16,1.26,0.27).rotation.x=Math.PI/2;ta(B(0.12,0.04,0.02,M.shirt2),-0.15,1.28,0.27);ta(B(0.02,0.5,0.02,M.shirt2),0,1.1,0.275)}
-  else ta(B(0.14,0.1,0.02,M.shirt2),0,1.22,0.27);
+  // everyday clothes: collar, hem, seams, pockets and details for each style (body is shaped by bodyLathe)
+  {const T_=U.topG,ta=(m,x,y,z)=>{m.position.set(x,y,z);T_.add(m);return m},B=(w,h,d,m)=>new THREE.Mesh(shared('fb'+w+'_'+h+'_'+d,()=>new THREE.BoxGeometry(w,h,d)),m);
+    const fz=y=>bodyR(y)*0.72+0.006,ring=(rad,tube,m,y,sx=1.25,sz=0.72)=>{const t=new THREE.Mesh(shared('ring'+rad+'_'+tube,()=>new THREE.TorusGeometry(rad,tube,6,28)),m);t.rotation.x=Math.PI/2;t.scale.set(sx,sz,1);return ta(t,0,y,0)};
+    const dk=mat('#1d1a1a',{roughness:0.6}),metalB=mat('#c9c3bb',{roughness:0.3,metalness:0.8}),M2=M.shirt2,top=l.top;
+    ring(0.2,0.013,M.shirt,0.885);                                                     // shirt hem
+    if(top==='tee'){ring(0.092,0.016,M2,1.49,1.1,0.85);const pr=new THREE.Mesh(shared('print',()=>new THREE.CircleGeometry(0.055,20)),M2);ta(pr,0.0,1.28,fz(1.28));
+      const pr2=new THREE.Mesh(shared('print2',()=>new THREE.RingGeometry(0.06,0.07,24)),M.shirt);ta(pr2,0,1.28,fz(1.28)+0.002);ta(B(0.18,0.012,0.004,M.shirt),0,1.28,fz(1.28)+0.003).rotation.z=0.35}
+    else if(top==='hoodie'){const hood=new THREE.Mesh(shared('hood2',()=>new THREE.TorusGeometry(0.16,0.065,10,20)),M.shirt);hood.rotation.x=Math.PI/2+0.55;ta(hood,0,1.47,-0.08);
+      ta(B(0.3,0.13,0.024,M.shirt),0,1.0,fz(1.0)).scale.set(1,1,1);ta(B(0.3,0.012,0.026,M2),0,1.066,fz(1.0)+0.002);
+      for(const s of[-1,1]){ta(new THREE.Mesh(shared('cord',()=>new THREE.CylinderGeometry(0.006,0.006,0.13,5)),M2),s*0.045,1.38,fz(1.38)+0.01);ta(new THREE.Mesh(shared('aglet',()=>new THREE.SphereGeometry(0.011,6,5)),M2),s*0.045,1.31,fz(1.31)+0.012)}
+      ring(0.2,0.02,M2,0.89)}
+    else if(top==='jacket'){ta(B(0.13,0.5,0.01,M2),0,1.17,fz(1.17)+0.002);for(const s of[-1,1]){const lp=ta(B(0.06,0.2,0.012,M.shirt),s*0.075,1.36,fz(1.36)+0.008);lp.rotation.z=s*0.35;ta(B(0.012,0.48,0.012,dk),s*0.068,1.13,fz(1.13)+0.008);
+        ta(B(0.08,0.012,0.012,dk),s*0.15,1.0,fz(1.0)+0.004).rotation.y=s*0.6}ring(0.095,0.022,M.shirt,1.48,1.15,0.9)}
+    else if(top==='flight'){ta(B(0.012,0.56,0.01,M2),0,1.16,fz(1.16)+0.002);ring(0.095,0.02,M.shirt,1.48,1.15,0.9);
+      const patch=new THREE.Mesh(shared('patch2',()=>new THREE.CircleGeometry(0.045,20)),mat('#2e5bd8'));ta(patch,0.11,1.3,fz(1.3)+0.006);ta(new THREE.Mesh(shared('patchR',()=>new THREE.RingGeometry(0.045,0.052,24)),M2),0.11,1.3,fz(1.3)+0.007);
+      ta(B(0.11,0.035,0.006,M2),-0.11,1.31,fz(1.31)+0.004);ta(B(0.13,0.016,0.012,M.pants),0,0.97,fz(0.97)+0.006)}
+    // trousers or shorts: waistband, belt and buckle, fly seam, pockets
+    ring(0.188,0.022,M.pants,0.9,1.0,0.82);ring(0.19,0.012,dk,0.9,1.02,0.84);ta(B(0.05,0.035,0.012,metalB),0,0.9,0.158);
+    ta(B(0.008,0.1,0.008,dk),0.02,0.82,0.135);for(const s of[-1,1])ta(B(0.07,0.008,0.008,dk),s*0.11,0.86,0.12).rotation.z=-s*0.6;
+    // sleeves: short sleeves show the forearm; long sleeves get cuffs
+    const shortSl=top==='tee';
+    for(const cl of U.armCl){if(shortSl){const fore=new THREE.Mesh(shared('fore',()=>new THREE.CapsuleGeometry(0.083,0.2,6,12)),M.skin);fore.position.set(0,-0.38,0);cl.add(fore);
+        const hem=new THREE.Mesh(shared('slhem',()=>new THREE.TorusGeometry(0.086,0.013,6,18)),M.shirt);hem.rotation.x=Math.PI/2;hem.position.set(0,-0.25,0);cl.add(hem)}
+      else{const cuff=new THREE.Mesh(shared('cuff',()=>new THREE.TorusGeometry(0.08,0.017,6,18)),top==='hoodie'?M2:M.shirt);cuff.rotation.x=Math.PI/2;cuff.position.set(0,-0.47,0);cl.add(cuff)}}
+    // shoes: soles, laces, toe caps; trouser hems or shorts' hems
+    for(const cl of U.legCl){const sole=new THREE.Mesh(shared('sole',()=>new THREE.BoxGeometry(0.25,0.035,0.4)),mat('#f4f1ea',{roughness:0.7}));sole.position.set(0,-0.37,0.05);cl.add(sole);
+      for(let i=0;i<3;i++){const lc=new THREE.Mesh(shared('lace',()=>new THREE.BoxGeometry(0.09,0.01,0.012)),M2);lc.position.set(0,-0.232+i*0.004,0.1+i*0.04);lc.rotation.x=-0.4;cl.add(lc)}
+      const toe=new THREE.Mesh(shared('toe',()=>new THREE.SphereGeometry(0.1,10,8,0,Math.PI*2,0,Math.PI/2)),mat('#f4f1ea',{roughness:0.7}));toe.scale.set(1.15,0.5,0.9);toe.position.set(0,-0.35,0.17);cl.add(toe);
+      const hm=new THREE.Mesh(shared('pantHem',()=>new THREE.TorusGeometry(0.095,0.015,6,18)),M.pants);hm.rotation.x=Math.PI/2;
+      if(U.shorts||l.bottoms==='shorts'){hm.position.set(0,0.06,0);hm.scale.set(1.12,1.12,1)}else hm.position.set(0,-0.2,0);cl.add(hm)}}
 }
 /* ---------- hair: real-looking hair built from tapered locks and curls ----------
    Every style is a scalp cap with a natural hairline plus locks that follow a combing direction
@@ -196,17 +250,21 @@ function hairGeometry(style,Y,hatOn){
     const geo=typeof mergeGeometries==='function'?mergeGeometries(parts,false):null;   // one mesh for the whole hairstyle
     return geo||parts[0]})}
 
-const FACE_KEYS=['eyes','brows','nose','mouth','freckles','blush','glasses','facial','hairStyle','hat','top'];
+const FACE_KEYS=['eyes','brows','nose','mouth','freckles','blush','glasses','facial','hairStyle','hat','top','bottoms'];
 function setOutfit(a,cas){const U=a.userData,M=U.mats;U.casual=!!cas;for(const m of U.suitParts)m.visible=!cas;for(const m of U.casParts)m.visible=!!cas;
   for(const m of U.upper)m.material=cas?M.shirt:M.suit;for(const m of U.lower)m.material=cas?M.pants:M.suit;
   if(cas&&U.shorts)for(const m of U.shins)m.material=M.skin;for(const m of U.bootM)m.material=cas?M.shoes:M.boots;
-  U.hairG.visible=!!cas;U.topG.visible=!!cas;U.antenna.visible=!cas&&U.wantAnt}
+  U.hairG.visible=!!cas;U.topG.visible=!!cas;U.antenna.visible=!cas&&U.wantAnt;
+  // out of the suit: a slimmer, body-shaped figure with arms and legs closer in
+  for(const m of U.scaled){const bs=m.userData.bs||(m.userData.bs=m.scale.clone());m.scale.copy(bs);if(cas)m.scale.multiply(m.userData.cs)}
+  const ax=cas?0.355:0.43,lx=cas?0.125:0.16;U.armL.position.x=ax;U.armR.position.x=-ax;U.legL.position.x=lx;U.legR.position.x=-lx;for(const sh of U.shoulders)sh.position.x=Math.sign(sh.position.x)*ax;
+  const bw=U.bw||1;U.pelvis.scale.set(cas?0.8:1,(cas?0.86:1)*bw,0.88*(cas?0.82:1));U.ctorso.scale.set(1.25*bw,1,0.72*(0.92+0.08*bw))}
 // apply a look (colours, face, body shape and outfit) to any astronaut model
 function dressModel(a,l){const U=a.userData,M=U.mats;
   M.suit.color.set(l.suit);M.accent.color.set(l.accent);M.visor.color.set(l.visor);M.visor.emissive.set(l.visor);M.pack.color.set(l.pack);M.boots.color.set(l.boots);
   M.skin.color.set(l.skin);M.hair.color.set(l.hair);M.hat.color.set(l.hatCol);M.shirt.color.set(l.shirt);M.shirt2.color.set(l.shirt2);M.pants.color.set(l.pants);M.shoes.color.set(l.shoes);M.eye.color.set(l.eyeCol);
   const sig=FACE_KEYS.map(k=>l[k]).join('|');if(U.faceSig!==sig){buildFace(a,l);U.faceSig=sig}
-  const bw={slim:0.9,regular:1,broad:1.12}[l.build]||1;U.torso.scale.set(1.2*bw,1,0.86*(0.95+bw*0.05));U.pelvis.scale.set(1,bw,0.88);
+  const bw={slim:0.9,regular:1,broad:1.12}[l.build]||1;U.bw=bw;U.torso.scale.set(1.2*bw,1,0.86*(0.95+bw*0.05));
   a.scale.setScalar({short:0.94,avg:1,tall:1.06}[l.height]||1);
   U.shorts=l.bottoms==='shorts';U.wantAnt=!!l.antenna;setOutfit(a,U.casual)}
 function mkRover(){

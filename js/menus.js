@@ -63,7 +63,7 @@ function renderSettings(){
     `<div class="srow"><span>Tutorial</span><button class="btn sm" id="tour-replay">Replay the tour</button></div>`+
     `<p class="sub" style="line-height:1.5">World options (difficulty, day cycle, weather, creatures) are chosen when you create an expedition.</p>`;
 }
-function openSettings(from){setFrom=from;renderSettings();$('#settings').classList.remove('hidden')}
+function openSettings(from){setFrom=from;renderSettings();$('#settings').classList.toggle('live',game.state==='play');$('#settings').classList.remove('hidden')}
 function closeSettings(){$('#settings').classList.add('hidden');saveOpts()}
 $('#b-set').onclick=()=>{initAudio();openSettings('title')};
 $('#b-mlab').onclick=()=>{initAudio();openMissionLab()};
@@ -104,4 +104,4 @@ const winWatch=(recs=>{
 // Escape closes the open window first (on the home screen too)
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;
   const w=['settings','coop','account','friends','journalov','creator','habcol','mlab'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
-$('#setbody').addEventListener('input',e=>{const fv=e.target.closest('[data-fov]');if(fv){OPT.fov=+fv.value;fv.nextElementSibling.textContent=OPT.fov+'°';saveOpts();return}const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});
+$('#setbody').addEventListener('input',e=>{const fv=e.target.closest('[data-fov]');if(fv){OPT.fov=+fv.value;fv.nextElementSibling.textContent=OPT.fov+'°';camera.fov=OPT.fov;camera.updateProjectionMatrix();saveOpts();return}const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});

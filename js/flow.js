@@ -233,7 +233,6 @@ function renderSites(){
 $('#p-resume').onclick=()=>togglePause(false);
 $('#p-save').onclick=()=>{saveGame()};
 $('#p-friends').onclick=()=>{if(typeof openFriends==='function')openFriends()};
-addEventListener('keydown',e=>{if(!game.paused||game.state!=='play'||$('#pause').classList.contains('hidden')||game.typing)return;const b={'1':'#p-resume','2':'#p-set','3':'#p-friends','4':'#p-save','5':'#p-quit'}[e.key];if(b){e.preventDefault();$(b).click()}});
 $('#p-coop').onclick=()=>{if(net.role==='guest'){leaveNet(false);showTitle();return}if(net.role==='host'){leaveNet(false);togglePause(true);return}hostGame();togglePause(false)};
 $('#b-coop').onclick=()=>{initAudio();$('#coop-name').value=net.name;$('#coop-code').value='';coopMsg('');$('#coop').classList.remove('hidden');$('#coop-code').focus()};
 $('#coop-x').onclick=()=>{closeCoop();if(net.peer&&!net.role)leaveNet(true)};
