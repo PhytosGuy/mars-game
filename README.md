@@ -12,10 +12,10 @@ python -m http.server 8123
 Then go to http://localhost:8123. Add `?dev` to the URL to bypass the browser cache while editing.
 
 ## Deploy for free (Vercel)
-The folder is already linked to the Vercel project `mars-game` (see `.vercel/`).
+Live at https://mars-game-nu.vercel.app. The Vercel project `mars-game` is connected to this GitHub repo (PhytosGuy/mars-game).
 
-- **CLI:** run `npx vercel --prod` in this folder.
-- **Auto-deploy:** push the folder to GitHub, then import the repo on vercel.com (Framework preset **Other**, no build command, output directory `.`). Every push then redeploys.
+- **Auto-deploy:** every push to `main` redeploys the live site automatically. Pushes to other branches get their own preview link.
+- **CLI (optional):** `npx vercel --prod` in this folder deploys straight from your computer.
 
 Netlify or GitHub Pages also work: it's a plain static folder.
 
