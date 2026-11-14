@@ -62,7 +62,7 @@ Tab: open the menu on Inventory, Tab again for the next page (Shift+Tab goes bac
 - **Saves:** autosaved to browser storage, with a backup slot and automatic conversion of old saves.
 - **Accounts and friends:** the person icon (top right of the home screen) opens your profile: change your name and look, or sign up and sign in with email. The friends icon (bottom left) lets signed-in players search for friends by username, accept requests and see who's online. Expeditions → **Join a friend** lists friends who are playing, and joins them in one click.
 - **Minimap:** top left, turning with you, with your stats underneath.
-- **Habitat interior:** press F at the habitat door to go inside. There's a bunk (sleep through the night) and a desk with a journal that opens full screen when you walk up to it. You can write anything in it; it's saved with the world and is also on the Journal page of the Tab menu.
+- **Habitat interior:** press F at the habitat door to go inside a round, futuristic dome with glowing ribs, panoramic windows and a holo-table showing Mars. There's a sleep pod (sleep through the night) and a desk with a journal that opens full screen when you walk up to it. You can write anything in it; it's saved with the world and is also on the Journal page of the Tab menu.
 - **Safe base:** hostile creatures, dust devils and meteor impacts stay away from your habitats.
 - **Onboarding:** a guided tour of the screen and controls the first time you land. Skip (bottom right) ends it, and Settings → Replay the tour shows it again.
 - **Touch controls:** a rounded block-style joystick and buttons, sized and spaced for phones.
