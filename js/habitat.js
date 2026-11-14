@@ -111,13 +111,55 @@ function interiorPressF(){
   if(Math.hypot(lx-INT.bed.x,lz-INT.bed.z)<2.2){const t=tod();if((t>19.5||t<5.5)&&!net.role)rest();else toast(net.role?'Sleeping through the night isn’t available in co-op':'It’s daytime: come back after 19:30 to sleep');return true}
   return true}
 /* ---------- the journal: write anything; it's saved with this expedition ---------- */
+// Pages are stored in one string, split by form-feed characters, so older journals still load as page 1.
+const JSEP='\f',JMAX_PAGES=200;
 function journalText(){return typeof S.journal==='string'?S.journal:''}
+function jPages(){const p=journalText().split(JSEP);return p.length?p:['']}
+function jSave(p){const q=p.slice();while(q.length>1&&!q[q.length-1])q.pop();S.journal=q.join(JSEP).slice(0,20000)}
+const JB={cur:null};
+// an open book: two facing pages (one on narrow screens), arrows to turn pages, text flows onto the next page
+function mountBook(root,o={}){
+  root.innerHTML=`<div class="book${o.compact?' compact':''}">
+    <div class="bk-cover"><div class="bk-page left"><div class="bk-head"></div><textarea class="bk-ta" spellcheck="true" placeholder="Write anything: plans, discoveries, notes for your crew…"></textarea><div class="bk-num"></div></div>
+      <div class="bk-spine"></div>
+      <div class="bk-page right"><div class="bk-head"></div><textarea class="bk-ta" spellcheck="true"></textarea><div class="bk-num"></div></div>
+      <textarea class="bk-ta bk-measure" tabindex="-1" aria-hidden="true"></textarea></div>
+    <div class="bk-bar"><button class="bk-arrow" data-b="prev" title="Previous page">◀</button><button class="btn sm" data-b="date">Add today’s date</button>${o.onClose?'<button class="btn sm primary" data-b="close">Done</button>':''}<button class="bk-arrow" data-b="next" title="Next page">▶</button></div></div>`;
+  const B={root,spread:0,pages:jPages(),focus:0},tas=[...root.querySelectorAll('.bk-page .bk-ta')],nums=[...root.querySelectorAll('.bk-num')],heads=[...root.querySelectorAll('.bk-head')],meas=root.querySelector('.bk-measure');
+  const per=()=>root.querySelector('.bk-page.right').offsetParent===null?1:2;
+  // split text into what fits on one page and the rest
+  const fitSplit=t=>{meas.style.width=tas[0].clientWidth+'px';meas.style.height=tas[0].clientHeight+'px';meas.value=t;if(meas.scrollHeight<=meas.clientHeight+1)return[t,''];
+    let lo=0,hi=t.length;while(lo<hi){const mid=(lo+hi+1)>>1;meas.value=t.slice(0,mid);if(meas.scrollHeight<=meas.clientHeight+1)lo=mid;else hi=mid-1}
+    let cut=lo;const sp=t.lastIndexOf(' ',lo),nl=t.lastIndexOf('\n',lo),b=Math.max(sp,nl);if(b>lo*0.6)cut=b+1;return[t.slice(0,cut),t.slice(cut)]};
+  const reflow=k=>{let i=k,guard=0;while(i<B.pages.length&&guard++<JMAX_PAGES){const[a,rest]=fitSplit(B.pages[i]||'');if(!rest)break;B.pages[i]=a;if(i+1>=JMAX_PAGES)break;B.pages[i+1]=rest+(B.pages[i+1]?(rest.endsWith('\n')?'':' ')+B.pages[i+1]:'');i++}};
+  const show=()=>{const n=per(),last=Math.max(B.pages.length-1,0);B.spread=clamp(B.spread,0,Math.floor(Math.min(JMAX_PAGES-1,last+1)/n));const total=Math.max(B.pages.length,B.spread*n+n);
+    tas.forEach((ta,i)=>{const k=B.spread*n+i;ta.dataset.k=k;ta.value=B.pages[k]||'';nums[i].textContent=`Page ${k+1} of ${total}`;heads[i].textContent=k===0?(o.title||'Journal'):''});
+    root.querySelector('[data-b=prev]').disabled=B.spread===0};
+  tas.forEach((ta,i)=>{
+    ta.addEventListener('focus',()=>{B.focus=i;game.typing=true});ta.addEventListener('blur',()=>{if(!o.onClose)game.typing=false});
+    ta.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){if(o.onClose)o.onClose();else ta.blur();return}
+      // Backspace at the very start of a page jumps to the end of the previous one
+      if(e.key==='Backspace'&&ta.selectionStart===0&&ta.selectionEnd===0&&+ta.dataset.k>0){e.preventDefault();go(+ta.dataset.k-1,true)}});
+    ta.addEventListener('input',()=>{const k=+ta.dataset.k,atEnd=ta.selectionStart>=ta.value.length;while(B.pages.length<=k)B.pages.push('');B.pages[k]=ta.value;
+      const before=B.pages[k];reflow(k);jSave(B.pages);
+      if(B.pages[k]!==before){const caret=Math.min(ta.selectionStart,B.pages[k].length);show();if(atEnd)go(k+1,true);else{const t=tas.find(x=>+x.dataset.k===k);t.focus();t.selectionStart=t.selectionEnd=caret}}});
+  });
+  // show page k and put the caret in it (at the end, or the start)
+  function go(k,end){const n=per();k=clamp(k,0,JMAX_PAGES-1);while(B.pages.length<=k)B.pages.push('');B.spread=Math.floor(k/n);show();const t=tas.find(x=>+x.dataset.k===k)||tas[0];t.focus();const p=end?t.value.length:0;t.selectionStart=t.selectionEnd=p}
+  root.querySelector('.bk-bar').addEventListener('mousedown',e=>{const b=e.target.closest('[data-b]');if(!b)return;e.preventDefault();const n=per();
+    if(b.dataset.b==='prev'){B.spread=Math.max(0,B.spread-1);show();sfx(0.05,700,2,0.05)}
+    else if(b.dataset.b==='next'){if((B.spread+1)*n<JMAX_PAGES){B.spread++;while(B.pages.length<B.spread*n+1)B.pages.push('');show();sfx(0.05,760,2,0.05)}}
+    else if(b.dataset.b==='date'){const ta=tas[B.focus]||tas[0],k=+ta.dataset.k;const v=B.pages[k]||'';B.pages[k]=v+(v&&!v.endsWith('\n')?'\n\n':'')+`Sol ${solNum()}, ${fmtTime()}: `;reflow(k);jSave(B.pages);
+      let j=k;while(j+1<B.pages.length&&B.pages[j+1])j++;go(j,true)}
+    else if(b.dataset.b==='close'&&o.onClose)o.onClose()});
+  addEventListener('resize',()=>{if(root.isConnected)show()});
+  // open on the last page that has writing
+  let lastW=0;B.pages.forEach((p,i)=>{if(p.trim())lastW=i});B.spread=Math.floor(lastW/per());show();
+  if(o.focus)setTimeout(()=>go(lastW,true),60);
+  return B}
 function openJournal(){
-  if(!S)return;const ov=$('#journalov');ov.classList.remove('hidden');const ta=$('#jtext');ta.value=journalText();
-  $('#jtitle').textContent=(S.worldName||'Expedition')+' · journal';$('#jmeta').textContent=`Sol ${solNum()}, ${fmtTime()}`;game.typing=true;setTimeout(()=>ta.focus(),50);
+  if(!S)return;$('#journalov').classList.remove('hidden');game.typing=true;
+  JB.cur=mountBook($('#jbookroot'),{title:(S.worldName||'Expedition')+' · Sol '+solNum(),onClose:closeJournal,focus:true});
 }
-function closeJournal(){const ov=$('#journalov');if(ov.classList.contains('hidden'))return;S.journal=$('#jtext').value.slice(0,20000);ov.classList.add('hidden');game.typing=false;for(const k in keys)keys[k]=false;$('#jtext').blur()}
-$('#jtext').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')closeJournal()});
-$('#jtext').addEventListener('input',e=>{if(S)S.journal=e.target.value.slice(0,20000)});
-$('#jdate').addEventListener('click',()=>{const ta=$('#jtext');const stamp=(ta.value&&!ta.value.endsWith('\n')?'\n\n':'')+`Sol ${solNum()}, ${fmtTime()}: `;ta.value+=stamp;S.journal=ta.value;ta.focus();ta.selectionStart=ta.selectionEnd=ta.value.length});
-$('#jclose').addEventListener('click',closeJournal);
+function closeJournal(){const ov=$('#journalov');if(ov.classList.contains('hidden'))return;if(JB.cur)jSave(JB.cur.pages);ov.classList.add('hidden');game.typing=false;for(const k in keys)keys[k]=false;if(document.activeElement)document.activeElement.blur();JB.cur=null}
+$('#journalov').addEventListener('mousedown',e=>{if(e.target.id==='journalov')closeJournal()});

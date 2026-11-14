@@ -313,7 +313,10 @@ $('#wardrobe').addEventListener('click',e=>{
 });
 applyLook();
 /* ---------- minimap (top-left): heading-up, terrain around you plus everything nearby ---------- */
-const MM={R:170,N:64,cx:1e9,cz:1e9,off:null,t:0,show:110};
+const MM={R:210,N:72,cx:1e9,cz:1e9,off:null,t:0,show:110};          // R covers the corners of the square map as it turns
+// inside the square map, and pulling a point onto its edge
+const mmIn=(px,py,h,m)=>Math.abs(px-h)<=h-m&&Math.abs(py-h)<=h-m;
+const mmEdge=(px,py,h,m)=>{const dx=px-h,dy=py-h,k=Math.max(Math.abs(dx),Math.abs(dy))/(h-m);return k>1?[h+dx/k,h+dy/k]:[px,py]};
 function mmTerrain(cx,cz){
   const N=MM.N,step=MM.R*2/N,hs=new Float32Array(N*N),cols=new Float32Array(N*N*3);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=cx-MM.R+(i+0.5)*step,z=cz-MM.R+(j+0.5)*step,k=j*N+i;sample(x,z,TS3);hs[k]=TS3.h;terrainColor(x,z,TS3,0.15,_col);cols[k*3]=_col.r;cols[k*3+1]=_col.g;cols[k*3+2]=_col.b}
@@ -334,9 +337,9 @@ function drawMinimap(dt){
   if(Math.hypot(f.x-MM.cx,f.z-MM.cz)>45)mmTerrain(f.x,f.z);
   c.fillStyle='#2a150d';c.fillRect(0,0,W,W);
   c.setTransform(cy*s,-sy*s,-sy*s,-cy*s,h,h);c.imageSmoothingEnabled=true;c.drawImage(MM.off,MM.cx-MM.R-f.x,MM.cz-MM.R-f.z,MM.R*2,MM.R*2);c.setTransform(1,0,0,1,0,0);
-  const dot=(x,z,r,col,stroke)=>{const[px,py]=toS(x,z);if(Math.hypot(px-h,py-h)>h-2)return;c.fillStyle=col;c.beginPath();c.arc(px,py,r,0,TAU);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=1.5;c.stroke()}};
+  const dot=(x,z,r,col,stroke)=>{const[px,py]=toS(x,z);if(!mmIn(px,py,h,2))return;c.fillStyle=col;c.beginPath();c.arc(px,py,r,0,TAU);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=1.5;c.stroke()}};
   c.strokeStyle='rgba(255,255,255,.12)';c.lineWidth=1;c.beginPath();c.arc(h,h,h*0.5,0,TAU);c.stroke();
-  for(const b of blds){const[px,py]=toS(b.x,b.z);if(Math.hypot(px-h,py-h)>h)continue;const r=Math.max(3,BUILD[b.type].r*s*0.8);c.fillStyle=b.type==='habitat'?'#ffffff':b.fault?'#ff6b5e':'rgba(255,255,255,.75)';c.fillRect(px-r/2,py-r/2,r,r)}
+  for(const b of blds){const[px,py]=toS(b.x,b.z);if(!mmIn(px,py,h,0))continue;const r=Math.max(3,BUILD[b.type].r*s*0.8);c.fillStyle=b.type==='habitat'?'#ffffff':b.fault?'#ff6b5e':'rgba(255,255,255,.75)';c.fillRect(px-r/2,py-r/2,r,r)}
   if(typeof meteors!=='undefined')for(const m of meteors){const[px,py]=toS(m.x,m.z);c.strokeStyle='#ff4a3d';c.lineWidth=2;c.beginPath();c.arc(px,py,7+Math.sin(now*12)*2,0,TAU);c.stroke()}
   if(typeof devils!=='undefined')for(const d of devils)if(d.alive&&(d.op||0)>0.2)dot(d.x,d.z,devilReach(d)*s*0.5,'rgba(196,138,94,.45)');
   for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))dot(p.x,p.z,3.2,POI[p.type].color,'#000');
@@ -344,8 +347,8 @@ function drawMinimap(dt){
   if(typeof pings!=='undefined')for(const p of pings)dot(p.x,p.z,4,'#ffd25e');
   if(P.mode==='foot')dot(R.pos.x,R.pos.z,4,'#ff8a3d','#000');
   for(const rp of net.players.values()){const q=rp.t&&rp.t.p;if(q)dot(q[4]?q[5]:q[0],q[4]?q[7]:q[2],3.6,'#7fd3ff','#000')}
-  const g=game.guide;if(g&&g.x!==undefined&&OPT.guide!==false){let[px,py]=toS(g.x,g.z);const d=Math.hypot(px-h,py-h);if(d>h-8){px=h+(px-h)/d*(h-8);py=h+(py-h)/d*(h-8)}c.strokeStyle='#ff8a3d';c.lineWidth=2.5;c.beginPath();c.arc(px,py,6,0,TAU);c.stroke()}
+  const g=game.guide;if(g&&g.x!==undefined&&OPT.guide!==false){const[px,py]=mmEdge(...toS(g.x,g.z),h,8);c.strokeStyle='#ff8a3d';c.lineWidth=2.5;c.beginPath();c.arc(px,py,6,0,TAU);c.stroke()}
   // north marker on the rim, and you in the middle facing your way
-  {const[nx,ny]=toS(f.x,f.z-1000),d=Math.hypot(nx-h,ny-h),px=h+(nx-h)/d*(h-11),py=h+(ny-h)/d*(h-11);c.fillStyle='rgba(0,0,0,.55)';c.beginPath();c.arc(px,py,8,0,TAU);c.fill();c.fillStyle='#ff8a3d';c.font='800 11px Nunito Sans';c.textAlign='center';c.textBaseline='middle';c.fillText('N',px,py+0.5)}
+  {const[nx,ny]=toS(f.x,f.z-1000),[px,py]=mmEdge(nx,ny,h,11);c.fillStyle='rgba(0,0,0,.55)';c.beginPath();c.arc(px,py,8,0,TAU);c.fill();c.fillStyle='#ff8a3d';c.font='800 11px Nunito Sans';c.textAlign='center';c.textBaseline='middle';c.fillText('N',px,py+0.5)}
   c.save();c.translate(h,h);c.rotate(wrapA((P.mode==='rover'?R.yaw:P.yaw)-cam.yaw));c.fillStyle='#fff';c.strokeStyle='#000';c.lineWidth=1.5;c.beginPath();c.moveTo(0,-9);c.lineTo(6,7);c.lineTo(0,3);c.lineTo(-6,7);c.closePath();c.fill();c.stroke();c.restore();
 }

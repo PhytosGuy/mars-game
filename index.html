@@ -340,11 +340,24 @@ canvas#game{touch-action:none}
 .vbar.col{margin-top:2px}.vbar.col span{width:auto;white-space:nowrap}.vbar.col em{font-style:normal;font-size:11px;color:var(--text);margin-left:6px;font-weight:700}
 #status{display:none!important}
 #journalov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(10,7,5,.72);padding:16px}
-.jbook{width:min(820px,100%);height:min(88vh,900px);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:#f6eedd;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.jhead{display:flex;align-items:center;gap:8px;padding:14px 18px;background:#7a3b24;color:#fff4e6}.jhead b{display:block;font-size:18px}.jhead span{font-size:12px;opacity:.8}
-.jhead .btn{background:rgba(255,255,255,.18);color:#fff}.jhead .btn.primary{background:#ff8a3d;color:#1d0f06}
-#jtext,#mjtext{flex:1;width:100%;border:0;outline:none;resize:none;padding:22px 26px;font:17px/32px var(--fb);color:#3a2a20;background:#f6eedd repeating-linear-gradient(transparent 0 31px,rgba(122,59,36,.18) 31px 32px);background-attachment:local}
-.jpage{display:flex;flex-direction:column;gap:8px}#mjtext{min-height:52vh;border-radius:12px}
+#jbookroot{width:min(980px,100%)}
+/* the journal: an open leather-bound book */
+.book{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+.bk-cover{position:relative;display:flex;width:100%;height:min(76vh,620px);padding:16px 18px 22px;border-radius:12px;background:linear-gradient(160deg,#7d4428,#5a2c18 60%,#4a2312);box-shadow:inset 0 0 0 3px #3a1a0c,inset 0 0 0 6px rgba(255,190,120,.18),0 26px 60px rgba(0,0,0,.55)}
+.book.compact .bk-cover{height:min(56vh,480px)}
+.bk-page{flex:1;position:relative;display:flex;flex-direction:column;padding:30px 30px 34px;min-width:0}
+.bk-page.left{border-radius:8px 2px 2px 8px;background:linear-gradient(90deg,#efe0b8 0,#f7ecd0 70%,#e6d3a2 94%,#cdb27c 100%);box-shadow:-3px 4px 0 #e4d1a0,-6px 8px 0 #cdb27c}
+.bk-page.right{border-radius:2px 8px 8px 2px;background:linear-gradient(270deg,#efe0b8 0,#f7ecd0 70%,#e6d3a2 94%,#cdb27c 100%);box-shadow:3px 4px 0 #e4d1a0,6px 8px 0 #cdb27c}
+.bk-spine{width:4px;margin:0 -2px;z-index:1;background:linear-gradient(90deg,rgba(90,50,20,.45),rgba(60,30,10,.7),rgba(90,50,20,.45))}
+.bk-spine::after{content:'';position:absolute;left:50%;top:-4px;width:14px;height:64px;margin-left:-7px;background:#b3261e;clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.bk-head{min-height:22px;font:700 13px/22px var(--fb);letter-spacing:.06em;text-transform:uppercase;color:#8a5a34;text-align:center}
+.bk-ta{flex:1;width:100%;min-height:0;border:0;outline:none;resize:none;overflow:hidden;padding:0;font:17px/30px Georgia,'Times New Roman',serif;color:#3a2614;background:transparent repeating-linear-gradient(transparent 0 29px,rgba(122,80,40,.16) 29px 30px);caret-color:#b3261e}
+.bk-ta::placeholder{color:rgba(90,60,30,.4)}
+.bk-measure{position:absolute;left:-9999px;top:0;visibility:hidden;flex:none}
+.bk-num{position:absolute;bottom:10px;left:0;right:0;text-align:center;font:600 12px/1 Georgia,serif;color:#9a7550}
+.bk-bar{display:flex;align-items:center;gap:10px}
+.bk-arrow{width:44px;height:38px;border-radius:10px;border:0;border-bottom:4px solid #3a1a0c;background:#7d4428;color:#f7ecd0;font-size:16px;cursor:pointer}.bk-arrow:hover{background:#94532f}.bk-arrow:disabled{opacity:.35;cursor:default}
+@media (max-width:720px){.bk-page.right,.bk-spine{display:none}.bk-page.left{border-radius:8px;box-shadow:3px 4px 0 #e4d1a0,6px 8px 0 #cdb27c}.bk-page{padding:26px 20px 32px}.bk-cover{padding:12px 12px 18px}}
 #envfx{position:fixed;inset:0;pointer-events:none}#envfx i{position:absolute;inset:0;opacity:0;transition:opacity .5s}
 #envfx .dust{background:radial-gradient(ellipse at center,rgba(150,98,58,.22),rgba(92,56,30,.9))}
 #envfx .grit{background-image:repeating-linear-gradient(104deg,rgba(255,205,160,.16) 0 2px,transparent 2px 11px),repeating-linear-gradient(98deg,rgba(255,220,180,.1) 0 1px,transparent 1px 7px);animation:grit .3s linear infinite}
@@ -354,7 +367,10 @@ canvas#game{touch-action:none}
 .pbar b{width:56px}
 .homechip{position:absolute;top:18px;right:18px;display:flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-radius:22px;border:1px solid var(--line);background:rgba(20,16,15,.62);color:var(--text);font:700 14px var(--fb);cursor:pointer}
 .homechip:hover{border-color:var(--accent)}.homechip.round{top:auto;right:auto;left:18px;bottom:18px;padding:10px;border-radius:50%}
-.acwin{width:min(520px,94vw);max-height:90vh}.inrow{display:flex;gap:8px;align-items:center}.inrow input,#account .field input,#fr-q{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-size:15px}
+.acwin{width:min(520px,94vw);max-height:90vh}
+#acc-prev{position:relative;height:220px;margin:0 0 14px;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 85%,#b8623a 0,#6a3020 45%,#24120c 100%);cursor:grab;touch-action:none}#acc-prev:active{cursor:grabbing}
+#acc-cv{width:100%;height:100%;display:block}#acc-prev span{position:absolute;right:10px;bottom:8px;font-size:11px;font-weight:700;color:rgba(255,255,255,.55);pointer-events:none}
+@media (max-height:560px){#acc-prev{height:150px}}.inrow{display:flex;gap:8px;align-items:center}.inrow input,#account .field input,#fr-q{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-size:15px}
 .inrow input:focus,#account .field input:focus,#fr-q:focus{outline:none;border-color:var(--accent)}.amsg{padding:8px 12px;border-radius:10px;background:rgba(255,138,61,.14);margin-bottom:10px;font-size:13px}
 .arow{margin-bottom:8px}.flist{display:flex;flex-direction:column;gap:6px;margin:8px 0}.frow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04)}
 .frow .dot{width:9px;height:9px;border-radius:50%;background:#6b625c}.frow .dot.on{background:#8fe39a;box-shadow:0 0 6px #8fe39a}.frow .dot.idle{background:#ffd25e}
@@ -364,7 +380,7 @@ canvas#game{touch-action:none}
 #tourcard h3{margin:4px 0 6px;font-size:18px;color:var(--text)}#tourcard p{margin:0 0 12px;font-size:14px;line-height:1.55;color:#e8e2dc}#tourcard b{color:var(--accent)}.tstep{font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.06em}.tbtns{display:flex;gap:8px}
 #tourskip{position:fixed;right:18px;bottom:18px}
 #lockaim{position:absolute;left:50%;top:47.5%;width:14px;height:14px;margin:-7px 0 0 -7px;border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.5)}#lockaim::after{content:'';position:absolute;left:50%;top:50%;width:2px;height:2px;margin:-1px;background:#fff}
-#minimap{position:absolute;left:16px;top:14px;width:150px;height:150px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.4);background:#2a150d;box-shadow:0 4px 18px rgba(0,0,0,.45)}#minimap canvas{width:100%;height:100%;display:block}
+#minimap{position:absolute;left:16px;top:14px;width:150px;height:150px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.4);background:#2a150d;box-shadow:0 4px 18px rgba(0,0,0,.45)}#minimap canvas{width:100%;height:100%;display:block}
 #mmlabel{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;font-weight:700;color:#f6f2ee}
 #vitals2{top:174px!important}#buffs{top:262px!important}#netinfo{top:300px!important}
 body.touch #minimap{width:118px;height:118px}body.touch #vitals2{top:140px!important}body.touch #buffs{top:226px!important}
@@ -493,8 +509,8 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   </div>
   <div id="pane-col" class="hidden"><div class="sec"><span id="col-title"></span> <span class="sub" id="col-sub"></span></div><div id="col-body"></div></div>
 </div></div>
-<div id="journalov" class="hidden"><div class="jbook"><div class="jhead"><div><b id="jtitle">Journal</b><span id="jmeta"></span></div><span style="flex:1"></span><button class="btn sm" id="jdate">Add today&#8217;s date</button><button class="btn sm primary" id="jclose">Close</button></div><textarea id="jtext" spellcheck="true" placeholder="Write anything here: plans, discoveries, notes to your crew. It saves with this expedition."></textarea></div></div>
-<div id="account" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Account</h2><button class="x" id="acc-x">✕</button></div><div id="acctbody"></div></div></div>
+<div id="journalov" class="hidden"><div id="jbookroot"></div></div>
+<div id="account" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Account</h2><button class="x" id="acc-x">✕</button></div><div id="acc-prev"><canvas id="acc-cv"></canvas><span>Drag to turn</span></div><div id="acctbody"></div></div></div>
 <div id="friends" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Friends</h2><button class="x" id="fr-x">✕</button></div><div id="frbody"></div></div></div>
 <div id="tour" class="hidden"><div id="tourhole"></div><div id="tourcard"></div><button class="btn" id="tourskip">Skip tour</button></div>
 <div id="tip" class="hidden"></div><div id="cursorstack" class="hidden"></div>
@@ -516,7 +532,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass});
-const V='3.9.3'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
+const V='3.10.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
 const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','menus','render','helpers','items','inventory-ui','mining','actions','comms','disasters','city','caves','world','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});

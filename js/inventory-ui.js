@@ -102,9 +102,7 @@ function renderStats(){
 }
 function renderMenuPage(){
   const t=invUI.mtab;$('#col-title').textContent=(MTABS.find(x=>x[0]===t)||['',''])[1];
-  if(t==='journal'){$('#col-body').innerHTML='<div class="jpage"><textarea id="mjtext" spellcheck="true" placeholder="Write anything: plans, discoveries, notes for your crew…"></textarea><button class="btn sm" id="mjdate">Add today&#8217;s date</button></div>';
-    const ta=$('#mjtext');ta.value=journalText();ta.addEventListener('input',()=>{S.journal=ta.value.slice(0,20000)});ta.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')ta.blur()});ta.addEventListener('focus',()=>game.typing=true);ta.addEventListener('blur',()=>{game.typing=false});
-    $('#mjdate').addEventListener('mousedown',e=>{e.preventDefault();ta.value+=(ta.value&&!ta.value.endsWith('\n')?'\n\n':'')+`Sol ${solNum()}, ${fmtTime()}: `;S.journal=ta.value;ta.focus()});$('#col-sub').textContent='· saved with this expedition';return}
+  if(t==='journal'){mountBook($('#col-body'),{compact:true,title:(S.worldName||'Expedition')+' · journal'});$('#col-sub').textContent='· saved with this expedition';return}
   if(t==='missions')renderMissions();else if(t==='stats')renderStats();
   else{colTab=t==='colony'?'overview':t;renderColony()}
 }

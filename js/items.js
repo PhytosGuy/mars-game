@@ -234,10 +234,9 @@ function spawnPickup(it,n,meta,x,y,z,forcedId){
   return pk;
 }
 function removePickup(id){const pk=pickups.get(id);if(!pk)return;pickGroup.remove(pk.m);pickups.delete(id);if(net.role==='host')netSend({t:'pk-',id})}
+// dropped items use the same little 3D models as the inventory icons
 function itemMesh(id){
-  const d=ITEMS[id],g=new THREE.Group();
-  const geo=d.icon==='crystal'||d.icon==='shard'?shared('ico',()=>new THREE.IcosahedronGeometry(1,0)):d.tool?rbox(0.5,0.18,0.18):d.icon==='plate'||d.icon==='pane'||d.icon==='brick'?rbox(0.5,0.12,0.36):shared('dode',()=>new THREE.DodecahedronGeometry(1,0));
-  const m=new THREE.Mesh(geo,mat(d.c,{emissive:d.c,emissiveIntensity:0.25,flatShading:true}));m.scale.setScalar(geo.type==='IcosahedronGeometry'||geo.type==='DodecahedronGeometry'?0.22:1);m.castShadow=true;g.add(m);return g;
+  const g=new THREE.Group(),m=iconModel(ITEMS[id]||{icon:'rock',c:'#888',c2:'#444'});fitModel(m,0.55);m.traverse(o=>{if(o.isMesh)o.castShadow=true});g.add(m);return g;
 }
 function updatePickups(dt){
   for(const pk of pickups.values()){
@@ -251,10 +250,77 @@ function updatePickups(dt){
   }
 }
 
-/* ---------- item icons (drawn once, cached) ---------- */
+/* ---------- 3D item models: one per icon type, used for inventory icons and dropped items ---------- */
+const IM={};   // cached materials
+function im(c,o){const k=c+(o?JSON.stringify(o):'');return IM[k]||(IM[k]=new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.55,metalness:0.08,flatShading:true},o)))}
+const imGlow=(c,i=1.2)=>im(c,{emissive:c,emissiveIntensity:i});
+const imGlass=(c,op=0.45)=>im(c,{transparent:true,opacity:op,roughness:0.1,metalness:0.2,depthWrite:false});
+function iconModel(d){
+  const g=new THREE.Group(),c=d.c,c2=d.c2,r=mulberry((d.name||'x').length*131+(d.icon||'').length*7);
+  const add=(geo,m,x=0,y=0,z=0,rx=0,ry=0,rz=0,s)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.rotation.set(rx,ry,rz);if(s)o.scale.set(...s);g.add(o);return o};
+  const box=(w,h,dp,m,x,y,z,rx,ry,rz)=>add(rbox(w,h,dp),m,x,y,z,rx,ry,rz);
+  const cyl=(rt,rb,h,m,x,y,z,rx,ry,rz,seg=16)=>add(new THREE.CylinderGeometry(rt,rb,h,seg),m,x,y,z,rx,ry,rz);
+  const dode=(rad,m,x,y,z,s)=>add(new THREE.DodecahedronGeometry(rad,0),m,x,y,z,r()*3,r()*3,r()*3,s);
+  const metal='#6d6863',dark='#2c2826';
+  switch(d.icon){
+    case'pile':add(new THREE.SphereGeometry(0.75,10,6,0,Math.PI*2,0,Math.PI/2),im(c),0,0,0,0,0,0,[1,0.55,1]);for(let i=0;i<9;i++){const a=r()*6.28,rr=r()*0.5;dode(0.12+r()*0.12,im(i%3?c:c2),Math.cos(a)*rr,0.25+r()*0.18,Math.sin(a)*rr)}break;
+    case'rock':dode(0.7,im(c),0,0,0,[1,0.78,0.92]);dode(0.28,im(c,{color:c}),0.42,-0.3,0.3);break;
+    case'ore':dode(0.7,im(c),0,0,0,[1,0.82,0.95]);for(let i=0;i<6;i++){const v=new THREE.Vector3(r()-0.5,r()*0.9-0.2,r()*0.5+0.4).normalize().multiplyScalar(0.62);add(new THREE.OctahedronGeometry(0.15,0),imGlow(c2,0.35),v.x,v.y*0.82,v.z,r()*3,r()*3,0)}break;
+    case'crystal':dode(0.35,im('#6b5a52'),0,-0.45,0,[1.4,0.5,1.2]);for(const[x,h,tz,tx]of[[0,1.1,0,0],[-0.3,0.75,0.25,0.35],[0.32,0.85,-0.2,-0.3]]){const m_=im(c,{emissive:c2,emissiveIntensity:0.35,roughness:0.15,transparent:true,opacity:0.92});
+      const p=new THREE.Group();p.position.set(x,-0.4,0);p.rotation.set(tx*0.6,0,-x*0.9);g.add(p);const a=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.19,h,6),m_);a.position.y=h/2;p.add(a);const t=new THREE.Mesh(new THREE.ConeGeometry(0.17,0.3,6),m_);t.position.y=h+0.15;p.add(t)}break;
+    case'nugget':dode(0.55,im(c,{metalness:0.65,roughness:0.3}),0,0,0,[1.1,0.75,0.9]);dode(0.22,im(c2,{metalness:0.6,roughness:0.25}),0.25,0.25,0.3);break;
+    case'shard':add(new THREE.OctahedronGeometry(0.6,0),im(c,{roughness:0.25,metalness:0.3}),0,0,0,0.2,0.4,0.25,[0.55,1.4,0.35]);add(new THREE.OctahedronGeometry(0.3,0),imGlow(c2,0.5),0.3,-0.35,0.15,0.3,0,-0.5,[0.5,1.1,0.35]);break;
+    case'brick':box(1.2,0.5,0.6,im(c),0,0,0);box(1.22,0.06,0.62,im(c2),0,0.05,0);break;
+    case'plate':box(1.15,0.12,0.85,im(c2,{metalness:0.5,roughness:0.35}),0,-0.08,0,0,0.12,0);box(1.15,0.12,0.85,im(c,{metalness:0.55,roughness:0.3}),0.05,0.06,0.02);for(const sx of[-0.45,0.45])for(const sz of[-0.32,0.32])cyl(0.05,0.05,0.04,im(c2,{metalness:0.6}),0.05+sx,0.14,0.02+sz,0,0,0,8);break;
+    case'pane':box(1.0,1.0,0.06,imGlass(c,0.55),0,0,0);for(const[w,h,x,y]of[[1.08,0.08,0,0.5],[1.08,0.08,0,-0.5],[0.08,1.08,0.5,0],[0.08,1.08,-0.5,0]])box(w,h,0.1,im('#c9d2e6',{metalness:0.6}),x,y,0);box(0.3,0.04,0.02,im('#ffffff',{emissive:'#ffffff',emissiveIntensity:0.6}),-0.2,0.25,0.05,0,0,0.6);break;
+    case'chip':box(1.1,0.1,0.8,im(c),0,0,0);box(0.38,0.1,0.38,im('#1d1411'),0,0.08,0);for(let i=0;i<5;i++){box(0.07,0.04,0.16,im(c2,{metalness:0.7}),-0.36+i*0.18,0.02,0.46);box(0.07,0.04,0.16,im(c2,{metalness:0.7}),-0.36+i*0.18,0.02,-0.46)}
+      for(let i=0;i<3;i++)box(0.03,0.02,0.3,im(c2),0.32,0.06,-0.2+i*0.18);break;
+    case'canister':cyl(0.32,0.32,1.0,im(c),0,0,0);cyl(0.33,0.33,0.1,im(c2),0,0.2,0);cyl(0.14,0.18,0.22,im(c2),0,0.6,0);cyl(0.2,0.2,0.06,im(metal,{metalness:0.6}),0,0.72,0);break;
+    case'cell':box(0.62,0.9,0.45,im(c2),0,0,0);box(0.64,0.22,0.47,im(c),0,0.3,0);cyl(0.1,0.1,0.14,im('#c9c3bb',{metalness:0.6}),0,0.52,0);box(0.1,0.32,0.04,imGlow(c,1.1),0,-0.12,0.24,0,0,0.35);break;
+    case'kit':box(1.0,0.72,0.42,im(c),0,0,0);box(0.18,0.46,0.06,im(c2),0,0,0.22);box(0.46,0.18,0.06,im(c2),0,0,0.22);add(new THREE.TorusGeometry(0.18,0.05,6,16,Math.PI),im(dark),0,0.36,0);break;
+    case'flare':cyl(0.14,0.14,0.9,im(c),0,-0.1,0,0,0,0.2);add(new THREE.ConeGeometry(0.14,0.25,12),imGlow(c2,1.4),-0.07,0.47,0,0,0,0.2);add(new THREE.SphereGeometry(0.12,10,8),imGlow('#fff2c2',2),-0.1,0.62,0);break;
+    case'lamp':cyl(0.38,0.42,0.18,im(c2),0,-0.4,0);cyl(0.1,0.12,0.35,im(c2),0,-0.15,0);add(new THREE.SphereGeometry(0.34,16,12),imGlow(c,1.5),0,0.25,0);cyl(0.2,0.26,0.12,im(c2),0,0.58,0);break;
+    case'drill':box(0.85,0.36,0.36,im(c),0,0.1,0);box(0.24,0.55,0.28,im(c2),-0.2,-0.3,0,0,0,0.25);cyl(0.2,0.2,0.12,im(c2),0.46,0.1,0,0,0,Math.PI/2);add(new THREE.ConeGeometry(0.13,0.6,10),im('#d6cfc5',{metalness:0.7,roughness:0.25}),0.82,0.1,0,0,0,-Math.PI/2);box(0.3,0.06,0.38,im(c2),0,0.3,0);break;
+    case'cutter':box(0.85,0.34,0.32,im(c2),0,0.08,0);box(0.24,0.5,0.26,im(c2),-0.22,-0.3,0,0,0,0.25);cyl(0.12,0.16,0.4,im(metal,{metalness:0.6}),0.6,0.08,0,0,0,Math.PI/2);cyl(0.06,0.06,0.3,imGlow(c,2),0.9,0.08,0,0,0,Math.PI/2);box(0.4,0.06,0.34,imGlow(c,1),0,0.08,0);break;
+    case'blaster':box(0.9,0.3,0.26,im(c2),0,0.1,0);cyl(0.09,0.09,0.5,im(metal,{metalness:0.6}),0.65,0.12,0,0,0,Math.PI/2);add(new THREE.TorusGeometry(0.1,0.035,8,16),imGlow(c,1.8),0.88,0.12,0,0,Math.PI/2,0);box(0.24,0.5,0.22,im(c2),-0.22,-0.25,0,0,0,0.3);box(0.55,0.06,0.28,imGlow(c,1.2),0,0.18,0);break;
+    case'prod':cyl(0.07,0.07,1.4,im(c2),0,0,0,0,0,0.75);for(const s of[-1,1])cyl(0.03,0.03,0.3,imGlow(c,1.8),0.52+s*0.06,0.42+s*0.02,s*0.06,0,0,0.75);add(new THREE.SphereGeometry(0.09,8,6),imGlow('#ffffff',2),0.62,0.52,0);box(0.18,0.3,0.18,im(dark),-0.38,-0.3,0,0,0,0.75);break;
+    case'decoder':box(0.8,1.0,0.2,im(c),0,0,0);box(0.6,0.45,0.04,imGlow(c2,0.9),0,0.15,0.11);cyl(0.03,0.03,0.4,im(metal),0.28,0.68,0);add(new THREE.SphereGeometry(0.06,8,6),imGlow(c2,1.6),0.28,0.9,0);for(let i=0;i<3;i++)cyl(0.05,0.05,0.04,im(c2),-0.2+i*0.2,-0.3,0.11,Math.PI/2,0,0,10);break;
+    case'jets':for(const x of[-0.24,0.24]){cyl(0.2,0.2,0.85,im(c2),x,0.05,0);add(new THREE.ConeGeometry(0.17,0.3,12),imGlow(c,1.4),x,-0.5,0,Math.PI,0,0)}box(0.7,0.2,0.3,im(c),0,0.25,-0.05);break;
+    case'tablet':box(0.9,1.1,0.16,im(c),0,0,0,0.1,0.15,0);for(let i=0;i<4;i++)box(0.12+r()*0.3,0.05,0.03,imGlow(c2,1.1),-0.15+r()*0.2,0.35-i*0.22,0.1,0.1,0.15,0);break;
+    case'moss':for(let i=0;i<8;i++){const a=r()*6.28,rr=r()*0.45;add(new THREE.SphereGeometry(0.2+r()*0.14,10,8),im(i%2?c:'#5fae5f'),Math.cos(a)*rr,r()*0.25,Math.sin(a)*rr)}for(let i=0;i<6;i++){const a=r()*6.28,rr=r()*0.5;add(new THREE.SphereGeometry(0.05,6,5),imGlow(c2,0.8),Math.cos(a)*rr,0.32+r()*0.15,Math.sin(a)*rr)}break;
+    case'vial':cyl(0.26,0.26,0.85,imGlass('#ffffff',0.3),0,0,0);cyl(0.23,0.23,0.5,im(c,{emissive:c,emissiveIntensity:0.35,roughness:0.2}),0,-0.15,0);cyl(0.14,0.14,0.18,im('#8a6a4a'),0,0.5,0);for(let i=0;i<3;i++)add(new THREE.SphereGeometry(0.04,6,5),imGlow(c2,1),(r()-0.5)*0.25,-0.1+r()*0.15,0.2);break;
+    case'jar':cyl(0.4,0.38,0.7,im(c),0,0,0);cyl(0.42,0.42,0.16,im('#3a3532'),0,0.42,0);cyl(0.41,0.41,0.22,im(c2),0,0,0);break;
+    case'datapad':box(0.75,1.0,0.1,im(c),0,0,0,0,0.1,0);box(0.62,0.72,0.03,imGlow(c2,0.8),0,0.06,0.055,0,0.1,0);break;
+    default:box(0.8,0.8,0.8,im(c),0,0,0);
+  }
+  return g}
+// centre a model and scale it so its largest side is `size`
+function fitModel(m,size){const b=new THREE.Box3().setFromObject(m),s=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3()),k=size/Math.max(s.x,s.y,s.z,1e-3);
+  const w=new THREE.Group();while(m.children.length)w.add(m.children[0]);w.position.copy(c).multiplyScalar(-1);m.add(w);m.scale.setScalar(k);return m}
+// inventory icons: each item is rendered once in 3D, given a dark cartoon outline, and cached as an image
+const ICON3D={r:null,sc:null,cam:null,cv:null,ok:true};
+function icon3D(id){
+  if(!ICON3D.ok)return null;
+  try{
+    if(!ICON3D.r){const cv=document.createElement('canvas');cv.width=cv.height=128;
+      ICON3D.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});ICON3D.r.setSize(128,128,false);ICON3D.r.outputColorSpace=THREE.SRGBColorSpace;ICON3D.r.toneMapping=THREE.ACESFilmicToneMapping;ICON3D.r.toneMappingExposure=1.2;ICON3D.r.setClearColor(0x000000,0);
+      const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xfff4e8,0x5a3a2a,1.5));const k=new THREE.DirectionalLight(0xffffff,2.6);k.position.set(-2,4,3);const rim=new THREE.DirectionalLight(0xffc89a,1.2);rim.position.set(3,1,-3);sc.add(k,rim);
+      const cam=new THREE.PerspectiveCamera(26,1,0.1,20);cam.position.set(2.1,1.7,3.1);cam.lookAt(0,0,0);ICON3D.sc=sc;ICON3D.cam=cam;ICON3D.cv=cv}
+    const m=iconModel(ITEMS[id]);fitModel(m,1.25);ICON3D.sc.add(m);ICON3D.r.render(ICON3D.sc,ICON3D.cam);ICON3D.sc.remove(m);
+    // outline: draw a dark silhouette a little bigger behind the render
+    const out=document.createElement('canvas');out.width=out.height=128;const x=out.getContext('2d');
+    const sil=document.createElement('canvas');sil.width=sil.height=128;const sx=sil.getContext('2d');sx.drawImage(ICON3D.cv,0,0);sx.globalCompositeOperation='source-in';sx.fillStyle='rgba(22,12,8,.9)';sx.fillRect(0,0,128,128);
+    for(const[dx,dy]of[[-3,0],[3,0],[0,-3],[0,3],[-2,-2],[2,-2],[-2,2],[2,2]])x.drawImage(sil,dx,dy);
+    x.drawImage(ICON3D.cv,0,0);return out.toDataURL();
+  }catch(e){ICON3D.ok=false;return null}
+}
 const ICONS={};
 function iconURL(id){
   if(ICONS[id])return ICONS[id];
+  const u=ITEMS[id]?icon3D(id):null;if(u)return ICONS[id]=u;
+  return ICONS[id]=iconURL2D(id);
+}
+function iconURL2D(id){
   const d=ITEMS[id]||{icon:'rock',c:'#888',c2:'#444'},cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d'),c=d.c,c2=d.c2,r=mulberry(id.length*97+id.charCodeAt(0));
   x.lineJoin='round';x.lineWidth=3;x.strokeStyle='rgba(20,10,6,.85)';
   const poly=(pts,fill)=>{x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.closePath();x.fillStyle=fill;x.fill();x.stroke()};
@@ -289,5 +355,5 @@ function iconURL(id){
     case'datapad':poly([[14,8],[50,8],[50,56],[14,56]],c);poly([[18,12],[46,12],[46,46],[18,46]],c2);break;
     default:poly([[12,12],[52,12],[52,52],[12,52]],c);
   }
-  return ICONS[id]=cv.toDataURL();
+  return cv.toDataURL();
 }

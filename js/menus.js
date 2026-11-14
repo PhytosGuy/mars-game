@@ -96,5 +96,5 @@ const winWatch=(recs=>{
 {const mo=new MutationObserver(winWatch);for(const id of WINS)mo.observe($('#'+id),{attributes:true,attributeFilter:['class'],attributeOldValue:true})}
 // Escape closes the open window first (on the home screen too)
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;
-  const w=['settings','coop','account','friends'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
+  const w=['settings','coop','account','friends','journalov'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
 $('#setbody').addEventListener('input',e=>{const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});

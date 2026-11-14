@@ -61,12 +61,37 @@ function renderAccount(msg){
   }
   box.innerHTML=m+h;
 }
-async function openAccount(){$('#account').classList.remove('hidden');renderAccount(sbConfigured()&&!ACC.sb?'Connecting…':'');await sbInit();renderAccount()}
+/* ---------- live preview of your astronaut while you pick colours ---------- */
+const PREV={r:null,sc:null,cam:null,a:null,yaw:0.5,spin:true,drag:null,on:false};
+const NO_ROVER={userData:{paint:{color:{set(){}}}}};
+function prevLook(){if(PREV.a)applyLookTo(PREV.a,NO_ROVER,LOOK)}
+function prevInit(){
+  if(PREV.r)return true;const cv=$('#acc-cv');if(!cv)return false;
+  try{PREV.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){$('#acc-prev').style.display='none';return false}
+  PREV.r.outputColorSpace=THREE.SRGBColorSpace;PREV.r.toneMapping=THREE.ACESFilmicToneMapping;PREV.r.toneMappingExposure=1.15;PREV.r.setPixelRatio(Math.min(2,devicePixelRatio||1));
+  const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xfff0e0,0x7a4030,1.6));
+  const key=new THREE.DirectionalLight(0xfff2e2,2.6);key.position.set(3,5,4);const rim=new THREE.DirectionalLight(0xffb27a,1.6);rim.position.set(-4,3,-4);sc.add(key,rim);
+  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1,0.12,40),new THREE.MeshStandardMaterial({color:'#8a4a30',roughness:0.9}));pad.position.y=-0.06;sc.add(pad);
+  const a=mkAstronaut();sc.add(a);a.traverse(o=>{if(o.isSpotLight)o.intensity=0});PREV.a=a;PREV.sc=sc;
+  PREV.cam=new THREE.PerspectiveCamera(28,1,0.1,50);PREV.cam.position.set(0,1.25,5.4);PREV.cam.lookAt(0,1.0,0);
+  const box=$('#acc-prev');
+  box.addEventListener('pointerdown',e=>{PREV.drag={x:e.clientX,yaw:PREV.yaw};PREV.spin=false;box.setPointerCapture(e.pointerId)});
+  box.addEventListener('pointermove',e=>{if(PREV.drag)PREV.yaw=PREV.drag.yaw+(e.clientX-PREV.drag.x)*0.012});
+  const up=()=>{PREV.drag=null};box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
+  return true}
+function prevLoop(){
+  if(!PREV.on)return;if($('#account').classList.contains('hidden')){PREV.on=false;return}requestAnimationFrame(prevLoop);
+  const cv=PREV.r.domElement,w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  if(cv.width!==Math.round(w*PREV.r.getPixelRatio())||cv.height!==Math.round(h*PREV.r.getPixelRatio())){PREV.r.setSize(w,h,false);PREV.cam.aspect=w/h;PREV.cam.updateProjectionMatrix()}
+  const t=performance.now()/1000;if(PREV.spin&&!PREV.drag)PREV.yaw+=0.006;PREV.a.rotation.y=PREV.yaw;PREV.a.position.y=Math.sin(t*1.6)*0.015;
+  PREV.r.render(PREV.sc,PREV.cam)}
+function prevStart(){if(!prevInit())return;prevLook();PREV.spin=true;if(!PREV.on){PREV.on=true;requestAnimationFrame(prevLoop)}}
+async function openAccount(){$('#account').classList.remove('hidden');prevStart();renderAccount(sbConfigured()&&!ACC.sb?'Connecting…':'');await sbInit();renderAccount()}
 $('#acc-x').onclick=()=>$('#account').classList.add('hidden');
 $('#account').addEventListener('keydown',e=>e.stopPropagation());
 $('#account').addEventListener('click',async e=>{
   const t=e.target,lk=t.closest('[data-lk]'),ah=t.closest('[data-ah]');
-  if(lk){LOOK[lk.dataset.lk]=lk.dataset.v;applyLook();try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(err){}renderAccount();if(ACC.sb&&ACC.user)ACC.sb.from('profiles').update({look:LOOK}).eq('id',ACC.user.id).then(()=>{});return}
+  if(lk){LOOK[lk.dataset.lk]=lk.dataset.v;applyLook();prevLook();try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(err){}renderAccount();if(ACC.sb&&ACC.user)ACC.sb.from('profiles').update({look:LOOK}).eq('id',ACC.user.id).then(()=>{});return}
   if(ah){OPT.autoHost=ah.dataset.ah==='1';saveOpts();renderAccount();return}
   if(t.id==='acc-localsave'){const n=cleanUser($('#acc-local').value);if(n.length<2){renderAccount('Pick a name with at least 2 letters');return}net.name=n;try{localStorage.setItem('mlc-name',n)}catch(err){}renderAcctBtn();renderAccount('Saved');return}
   if(ACC.busy)return;
