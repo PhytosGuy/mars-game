@@ -35,7 +35,7 @@ function mkAstronaut(){
   const g=new THREE.Group(),S_=(c,r=0.6)=>new THREE.MeshStandardMaterial({color:c,roughness:r});
   const M={suit:S_(WHITE),accent:S_(ORANGE,0.5),pack:S_('#c9c3bb'),boots:S_(GREY,0.8),
     visor:new THREE.MeshStandardMaterial({color:'#2b2f5a',roughness:0.06,metalness:0.5,emissive:'#4a3a8a',emissiveIntensity:0.15,transparent:true,opacity:0.42,depthWrite:false}),
-    skin:S_('#c68642',0.7),hair:S_('#3b2a20',0.85),hat:S_('#ff7a2e',0.8),shirt:S_('#4f86f7',0.8),shirt2:S_('#ffffff',0.8),pants:S_('#3a3a40',0.85),shoes:S_('#efebe4',0.6),eye:S_('#4a3020',0.3)};
+    skin:S_('#c68642',0.7),hair:new THREE.MeshStandardMaterial({color:'#3b2a20',roughness:0.55,map:hairTex()}),hat:S_('#ff7a2e',0.8),shirt:S_('#4f86f7',0.8),shirt2:S_('#ffffff',0.8),pants:S_('#3a3a40',0.85),shoes:S_('#efebe4',0.6),eye:S_('#4a3020',0.3)};
   const metal=mat('#6d6863',{roughness:0.4,metalness:0.5}),dark=mat('#2c2826',{roughness:0.6});
   const SUIT=[],CAS=[],UP=[],LOW=[],SHIN=[],BOOT=[];
   const add=(m,p=g)=>{p.add(m);return m},su=m=>{SUIT.push(m);return m},ca=m=>{CAS.push(m);return m},up=m=>{UP.push(m);return m},lo=m=>{LOW.push(m);return m};
@@ -123,19 +123,7 @@ function buildFace(a,l){
   else if(l.facial==='stubble'){const b=fa(shell(0.256,1.8,2.7,mat(l.hair,{transparent:true,opacity:0.35})),0,Y,0);b.scale.set(1,1.08,1)}
   if(l.facial==='mustache'||l.facial==='beard')fa(B(0.12,0.03,0.03,M.hair),0,Y-0.055,0.235);
   // hair (and hat), only seen without the helmet
-  const top=(r,t1)=>ha(shell(r,0,t1,M.hair),0,Y,0);
-  switch(l.hairStyle){
-    case'buzz':top(0.258,1.15).scale.set(1,1.08,1);break;
-    case'short':top(0.27,1.3).scale.set(1,1.08,1.02);ha(B(0.3,0.06,0.08,M.hair),0,Y+0.17,0.17).rotation.x=-0.5;break;
-    case'side':top(0.27,1.3).scale.set(1,1.08,1.02);{const s=ha(new THREE.Mesh(shared('swoop',()=>new THREE.CapsuleGeometry(0.07,0.22,4,8)),M.hair),0.05,Y+0.2,0.13);s.rotation.set(0.6,0,1.35)}break;
-    case'curly':top(0.265,1.2);for(let i=0;i<16;i++){const a2=i/16*Math.PI*2,rr=0.17+(i%3)*0.03;ha(S(0.065,M.hair,8,6),Math.cos(a2)*rr,Y+0.2+(i%2)*0.04,Math.sin(a2)*rr-0.02)}break;
-    case'afro':ha(S(0.36,M.hair,16,12),0,Y+0.08,-0.04).scale.set(1,0.95,1);break;
-    case'long':top(0.27,1.35).scale.set(1,1.08,1.02);{const b=ha(B(0.46,0.42,0.12,M.hair),0,Y-0.12,-0.17);b.rotation.x=0.12}break;
-    case'ponytail':top(0.268,1.32).scale.set(1,1.08,1.02);ha(new THREE.Mesh(shared('pony',()=>new THREE.CapsuleGeometry(0.07,0.3,4,8)),M.hair),0,Y-0.05,-0.3).rotation.x=0.4;ha(S(0.05,M.accent,8,6),0,Y+0.1,-0.27);break;
-    case'bun':top(0.268,1.3).scale.set(1,1.08,1.02);ha(S(0.11,M.hair,12,10),0,Y+0.28,-0.1);break;
-    case'mohawk':for(let i=0;i<6;i++)ha(B(0.05,0.12,0.06,M.hair),0,Y+0.25-Math.abs(i-2.5)*0.025,0.17-i*0.07).rotation.x=-0.3+i*0.15;break;
-    case'braids':top(0.268,1.32).scale.set(1,1.08,1.02);for(const s of[-1,1])ha(new THREE.Mesh(shared('braid',()=>new THREE.CapsuleGeometry(0.045,0.36,4,8)),M.hair),s*0.2,Y-0.2,-0.08);break;
-  }
+  if(l.hairStyle!=='bald')H.add(new THREE.Mesh(hairGeometry(l.hairStyle,Y,l.hat!=='none'),M.hair));
   if(l.hat==='beanie'){const h=ha(shell(0.285,0,1.25,M.hat),0,Y,0);h.scale.set(1,1.12,1);ha(new THREE.Mesh(shared('rim',()=>new THREE.TorusGeometry(0.27,0.03,6,20)),M.hat),0,Y+0.09,0).rotation.x=Math.PI/2}
   else if(l.hat==='cap'){ha(shell(0.282,0,1.2,M.hat),0,Y,0).scale.set(1,1.1,1);ha(B(0.3,0.025,0.2,M.hat),0,Y+0.12,0.3).rotation.x=0.15}
   else if(l.hat==='headset'){ha(new THREE.Mesh(shared('hband',()=>new THREE.TorusGeometry(0.27,0.02,6,18,Math.PI)),frame),0,Y+0.02,0);for(const s of[-1,1])ha(S(0.06,frame,8,6),s*0.26,Y,0)}
@@ -145,6 +133,69 @@ function buildFace(a,l){
   else if(l.top==='flight'){ta(new THREE.Mesh(shared('patch',()=>new THREE.CylinderGeometry(0.06,0.06,0.02,16)),glow('#2e5bd8',0.3)),0.16,1.26,0.27).rotation.x=Math.PI/2;ta(B(0.12,0.04,0.02,M.shirt2),-0.15,1.28,0.27);ta(B(0.02,0.5,0.02,M.shirt2),0,1.1,0.275)}
   else ta(B(0.14,0.1,0.02,M.shirt2),0,1.22,0.27);
 }
+/* ---------- hair: real-looking hair built from tapered locks and curls ----------
+   Every style is a scalp cap with a natural hairline plus locks that follow a combing direction
+   over the head, all merged into one mesh. A strand texture gives the fine lines of hair. */
+let HAIR_TEX=null;
+function hairTex(){if(HAIR_TEX)return HAIR_TEX;const c=document.createElement('canvas');c.width=64;c.height=256;const x=c.getContext('2d');
+  x.fillStyle='#d8d8d8';x.fillRect(0,0,64,256);const r=mulberry(91);
+  for(let i=0;i<260;i++){const v=150+Math.floor(r()*105),w=0.6+r()*1.6;x.strokeStyle=`rgba(${v},${v},${v},${0.35+r()*0.5})`;x.lineWidth=w;const x0=r()*64;x.beginPath();x.moveTo(x0,0);x.bezierCurveTo(x0+(r()-0.5)*8,85,x0+(r()-0.5)*8,170,x0+(r()-0.5)*6,256);x.stroke()}
+  HAIR_TEX=new THREE.CanvasTexture(c);HAIR_TEX.wrapS=HAIR_TEX.wrapT=THREE.RepeatWrapping;HAIR_TEX.colorSpace=THREE.SRGBColorSpace;return HAIR_TEX}
+const HR={x:0.262,y:0.283,z:0.262};                                       // scalp ellipsoid (just over the skin)
+const hairMax=phi=>lerp(1.02,2.4,Math.pow((1-Math.cos(phi))/2,0.85));                     // hairline: forehead at the front, nape at the back
+function scalp(th,ph,Y,out=0){const d=new THREE.Vector3(Math.sin(th)*Math.sin(ph),Math.cos(th),Math.sin(th)*Math.cos(ph));
+  const p=new THREE.Vector3(d.x*(HR.x+out),Y+d.y*(HR.y+out),d.z*(HR.z+out)),n=new THREE.Vector3(d.x/HR.x,d.y/HR.y,d.z/HR.z).normalize();return{p,n}}
+// one lock: a tapered clump growing along +y, bending toward -z (into the head) so it hugs the scalp
+function lockGeo(len,rad,bend,curl,seg=8,flat=1.9){
+  const pts=[];for(let i=0;i<=6;i++){const t=i/6;pts.push(new THREE.Vector3(curl?Math.sin(t*Math.PI*2)*curl*len:0,len*t,-bend*t*t*len))}
+  const curve=new THREE.CatmullRomCurve3(pts),g=new THREE.TubeGeometry(curve,seg,rad,6,false),pos=g.attributes.position,c=new THREE.Vector3();
+  for(let i=0;i<=seg;i++){curve.getPointAt(i/seg,c);const k=Math.max(0.1,1-Math.pow(i/seg,1.3)*0.9);for(let j=0;j<=6;j++){const v=i*7+j;pos.setXYZ(v,c.x+(pos.getX(v)-c.x)*k*flat,c.y+(pos.getY(v)-c.y)*k,c.z+(pos.getZ(v)-c.z)*k*0.45)}}
+  g.computeVertexNormals();return g}
+const _hb=new THREE.Matrix4(),_hx=new THREE.Vector3(),_hy=new THREE.Vector3();
+// put a geometry on the scalp at p, pointing along `flow` (projected onto the scalp), lying against normal n
+function placeOn(geo,p,n,flow,sink=0.012){_hy.copy(flow).addScaledVector(n,-flow.dot(n));if(_hy.lengthSq()<1e-5){_hy.set(0,0,-1);_hy.addScaledVector(n,-_hy.dot(n))}_hy.normalize();_hx.crossVectors(_hy,n).normalize();
+  _hb.makeBasis(_hx,_hy,n);_hb.setPosition(p.x-n.x*sink,p.y-n.y*sink,p.z-n.z*sink);const g=geo.clone();g.applyMatrix4(_hb);return g}
+function hairCap(Y,r0=0.258){const g=new THREE.SphereGeometry(1,44,30),pos=g.attributes.position;
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i),th=Math.acos(clamp(y,-1,1)),ph=Math.atan2(x,z);const hm=hairMax(ph),k=th<=hm?r0:th<=hm+0.3?lerp(r0,0.243,(th-hm)/0.3):0.243;
+    pos.setXYZ(i,x*k,Y+y*k*1.08,z*k)}g.computeVertexNormals();return g}
+function hairGeometry(style,Y,hatOn){
+  return shared('hair2_'+style+(hatOn?'_hat':''),()=>{
+    const parts=[],r=mulberry(style.length*977+(hatOn?7:0)),V=(x,y,z)=>new THREE.Vector3(x,y,z);
+    const scalpLocks=(n,len,rad,bend,flowFn,minTh=0.12,lenJ=0.35)=>{for(let i=0;i<n;i++){
+      const ph=r()*TAU,th=minTh+r()*(hairMax(ph)-minTh-0.05);if(hatOn&&th<1.15)continue;const{p,n:nn}=scalp(th,ph,Y);
+      parts.push(placeOn(lockGeo(len*(1-lenJ/2+r()*lenJ),rad*(0.8+r()*0.4),bend,0),p,nn,flowFn(p,nn,th,ph)))}};
+    const back=()=>V(0,-0.3,-1),toward=t=>p=>t.clone().sub(p);
+    // a neat row of locks along the hairline (fringe, or hair pulled back from the face)
+    const hairline=(n,len,rad,bend,flowFn)=>{for(let i=0;i<n;i++){const ph=-1.25+2.5*i/(n-1)+(r()-0.5)*0.05,th=hairMax(ph)-0.1-r()*0.05;if(hatOn&&th<1.15)continue;const{p,n:nn}=scalp(th,ph,Y);
+      parts.push(placeOn(lockGeo(len*(0.85+r()*0.3),rad,bend,0,8,1.6),p,nn,flowFn(p,nn,th,ph)))}};
+    if(style!=='afro')parts.push(hairCap(Y,style==='buzz'||style==='mohawk'?0.254:0.259));
+    switch(style){
+      case'buzz':break;
+      case'short':scalpLocks(120,0.14,0.026,1.5,(p,n,th)=>th<0.5&&p.z>0?V(0,0.5,1):back());hairline(22,0.08,0.026,0.6,()=>V(0,-1,0.6));break;
+      case'side':scalpLocks(130,0.19,0.027,1.4,(p,n,th,ph)=>V(1,-0.12,-0.15+(p.z>0.12?0.6:0)));hairline(22,0.15,0.026,0.9,()=>V(1,-0.45,0.2));break;
+      case'long':scalpLocks(110,0.2,0.027,1.4,back);hairline(24,0.11,0.026,0.5,(p)=>V(p.x*2,-1,0.5));
+        for(let i=0;i<64;i++){const ph=Math.PI*0.3+(i/64)*Math.PI*1.4+(r()-0.5)*0.08,th=1.2+r()*0.45,{p,n}=scalp(th,ph,Y,-0.002);
+          const g=lockGeo(0.36+r()*0.16,0.034,-0.06,0,10,2.2);parts.push(placeOn(g,p,n,V(0,-1,0)))}break;
+      case'ponytail':{const tie=V(0,Y+0.06,-0.27);scalpLocks(110,0.17,0.026,1.45,toward(tie));hairline(24,0.16,0.026,1.4,toward(tie));
+        for(let i=0;i<22;i++){const g=lockGeo(0.3+r()*0.12,0.03,-0.25-r()*0.2,0.04*(r()-0.5));const m=new THREE.Matrix4().makeRotationX(Math.PI*0.86+(r()-0.5)*0.35).multiply(new THREE.Matrix4().makeRotationZ((r()-0.5)*0.35)).multiply(new THREE.Matrix4().makeRotationY(r()*Math.PI));m.setPosition(tie.x+(r()-0.5)*0.03,tie.y,tie.z-0.02);g.applyMatrix4(m);parts.push(g)}break}
+      case'bun':{const at=V(0,Y+0.25,-0.12);scalpLocks(110,0.17,0.026,1.45,toward(at));hairline(24,0.16,0.026,1.4,toward(at));
+        for(let i=0;i<4;i++){const t=new THREE.TorusGeometry(0.065-i*0.008,0.034,8,18);t.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.PI/2+(r()-0.5)*0.7,r()*3,(r()-0.5)*0.7)));t.translate(at.x,at.y+0.02+i*0.018,at.z);parts.push(t)}break}
+      case'curly':for(let i=0;i<190;i++){const ph=r()*TAU,th=0.05+r()*(hairMax(ph)-0.1);if(hatOn&&th<1.15)continue;const{p,n}=scalp(th,ph,Y,0.018);
+          const t=new THREE.TorusGeometry(0.026+r()*0.012,0.012,5,10);t.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(r()*3,r()*3,r()*3)));t.translate(p.x,p.y,p.z);parts.push(t)}break;
+      case'afro':{const g=new THREE.SphereGeometry(1,56,40),pos=g.attributes.position,nz=makeNoise(41);
+        for(let k=0;k<pos.count;k++){const x=pos.getX(k),y=pos.getY(k),z=pos.getZ(k),b=1+0.07*nz(x*7+z*3,y*7-z*2)+0.04*nz(x*15,y*15+z*9);let sx=0.36,sy=0.33,sz=0.35;
+          if(z>0.45&&y<0.42){const f=clamp((z-0.45)/0.3,0,1)*clamp((0.42-y)/0.3,0,1);sz*=1-0.42*f;sy*=1-0.1*f}                 // leave room for the face
+          if(hatOn&&y>0.2)sy*=0.75;pos.setXYZ(k,x*sx*b,Y+0.07+y*sy*b,z*sz*b-0.03)}
+        g.computeVertexNormals();parts.push(g,hairCap(Y,0.262));break}
+      case'mohawk':for(let i=0;i<10;i++){const th=-0.75+i*0.19,{p,n}=scalp(Math.abs(th),th<0?0:Math.PI,Y);const h=0.1+0.1*Math.sin((i+1)/11*Math.PI);
+          const c=new THREE.ConeGeometry(0.04,h,6);c.translate(0,h/2,0);const dir=n.clone().add(V(0,0,-0.45)).normalize();c.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,1,0),dir));c.translate(p.x-n.x*0.01,p.y-n.y*0.01,p.z-n.z*0.01);parts.push(c)}break;
+      case'braids':{for(const s of[-1,1]){const root=V(s*0.19,Y-0.04,-0.12);scalpLocks(24,0.15,0.034,1.3,toward(root));scalpLocks(30,0.15,0.026,1.45,toward(root));
+          for(let i=0;i<9;i++){const e=new THREE.SphereGeometry(0.042-i*0.0015,8,6);e.scale(1,1.35,0.85);e.applyMatrix4(new THREE.Matrix4().makeRotationZ((i%2?0.5:-0.5)));e.translate(root.x+s*0.01*i,root.y-0.05*i,root.z-0.02*i);parts.push(e)}
+          const tuft=lockGeo(0.07,0.03,0,0);tuft.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI));tuft.translate(root.x+s*0.09,root.y-0.46,root.z-0.18);parts.push(tuft)}break}
+    }
+    const geo=typeof mergeGeometries==='function'?mergeGeometries(parts,false):null;   // one mesh for the whole hairstyle
+    return geo||parts[0]})}
+
 const FACE_KEYS=['eyes','brows','nose','mouth','freckles','blush','glasses','facial','hairStyle','hat','top'];
 function setOutfit(a,cas){const U=a.userData,M=U.mats;U.casual=!!cas;for(const m of U.suitParts)m.visible=!cas;for(const m of U.casParts)m.visible=!!cas;
   for(const m of U.upper)m.material=cas?M.shirt:M.suit;for(const m of U.lower)m.material=cas?M.pants:M.suit;
