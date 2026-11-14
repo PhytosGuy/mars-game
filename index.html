@@ -516,7 +516,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass});
-const V='3.9.1'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
+const V='3.9.2'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
 const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','menus','render','helpers','items','inventory-ui','mining','actions','comms','disasters','city','caves','world','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});

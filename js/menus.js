@@ -72,4 +72,29 @@ $('#setbody').addEventListener('click',e=>{
   else if(k==='paint'||k==='guide')OPT[k]=v==='true';
   else if(k==='touch'){OPT.touch=v;if(v==='off')document.body.classList.remove('touch');else if(v==='on'||matchMedia('(pointer:coarse)').matches)enableTouch()}
   saveOpts();renderSettings()});
+/* ---------- one window at a time ----------
+   Opening any window closes whichever one was open. A window opened from the pause menu
+   hides the pause menu, and closing it brings the pause menu back. */
+const WINS=['pause','settings','coop','account','friends','mapov','wardrobe','invov','journalov'];
+const winOpen=id=>!$('#'+id).classList.contains('hidden');
+function closeWin(id){
+  if(!winOpen(id))return;
+  if(id==='invov'&&invUI.open)openInventory(false);
+  else if(id==='wardrobe'&&game.wardrobe)closeWardrobe();
+  else if(id==='journalov')closeJournal();
+  else if(id==='settings')closeSettings();
+  else if(id==='coop'){closeCoop();if(net.peer&&!net.role)leaveNet(true)}
+  else $('#'+id).classList.add('hidden');
+}
+function topWin(){return WINS.slice().reverse().find(id=>id!=='pause'&&winOpen(id))||null}
+const winWatch=(recs=>{
+  for(const r of recs){const id=r.target.id,was=(r.oldValue||'').split(/\s+/).includes('hidden'),now_=!r.target.classList.contains('hidden');
+    if(was&&now_)for(const o of WINS)if(o!==id)closeWin(o);}
+  // nothing else open while the game is paused: show the pause menu again
+  if(game.state==='play'&&game.paused&&!S.over&&!topWin()&&!winOpen('pause'))$('#pause').classList.remove('hidden');
+});
+{const mo=new MutationObserver(winWatch);for(const id of WINS)mo.observe($('#'+id),{attributes:true,attributeFilter:['class'],attributeOldValue:true})}
+// Escape closes the open window first (on the home screen too)
+addEventListener('keydown',e=>{if(e.key!=='Escape')return;
+  const w=['settings','coop','account','friends'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
 $('#setbody').addEventListener('input',e=>{const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});
