@@ -1,0 +1,235 @@
+'use strict';
+
+/* =========================================================
+   GAME FLOW
+   ========================================================= */
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function fade(on,text=''){const f=$('#fade');if(on&&text){const ft=typeof randomFact==='function'?randomFact():'';f.innerHTML=`<div>${esc(text)}</div>`+(ft?`<div class="ffact"><b>NASA fact</b>${esc(ft)}</div>`:'')}f.classList.toggle('on',on)}
+async function fadeFlash(){fade(true);await wait(700);fade(false)}
+const LANDER_X=-28,LANDER_Z=24;
+function spawnStaticLander(){staticLander=mkLander();const x=LANDER_X,z=LANDER_Z;staticLander.position.set(x,groundHeight(x,z),z);staticLander.rotation.y=0.6;scene.add(staticLander)}
+function spawnBase(){
+  addBuilding('habitat',0,0,0,1);
+  addBuilding('solar',16,-8,0,1);addBuilding('solar',16,-1,0,1);addBuilding('solar',16,6,0,1);
+  addBuilding('battery',-11,-7,0.4,1);
+}
+function placeActors(){
+  P.mode='foot';P.o2=100;P.pos.set(-14,0,10);P.pos.y=groundHeight(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.yaw=Math.atan2(14,-10);
+  R.pos.set(-6,0,17);R.pos.y=groundHeight(R.pos.x,R.pos.z);R.yaw=0.5;R.speed=0;R.battery=100;R.visY=R.pos.y;R.lastG=R.pos.y;R.cruise=false;
+  cam.yaw=P.yaw;cam.pitch=0.32;cam.zoom=1;
+}
+function enterPlay(){
+  game.state='play';game.paused=false;astro.visible=P.mode==='foot';rover.visible=true;
+  $('#hud').classList.toggle('hidden',game.hudHidden);applyUIState();applyLook();game.camSnap=true;game.guide=null;game.spot=null;
+  game.quietPOI=true;updatePOIs(focusPos());game.quietPOI=false;
+  if(P.mode==='foot'){astro.position.copy(P.pos)}
+  if(P.hp==null||P.hp<=0)P.hp=maxHP();P.stam=100;game.dead=false;syncLamps();onHotbarChange();refreshInvUI();updateDeposits();
+  updateHUD();
+}
+let selSite='jezero',selMode='survival';
+async function startNew(site,mode,cfg={}){
+  initAudio();fade(true,'Entering Mars orbit…');await wait(900);
+  $('#title').classList.add('hidden');$('#sites').classList.add('hidden');$('#over').classList.add('hidden');
+  clearAll();initSite(site);S=newState(site,mode);curWorld=newWorldId();
+  S.worldName=String(cfg.name||'').trim().slice(0,28)||(SITES[site].name+' expedition');Object.assign(S.settings,cfg.settings||{});
+  S.nextStorm=S.time+wxGap(S.nextStorm-S.time);S.nextSPE=S.time+wxGap(S.nextSPE-S.time);
+  spawnBase();placeActors();P.hp=100;P.bat=100;P.stam=100;P.hot=0;
+  updateChunks(0,0,999);
+  spawnStaticLander();game.introGY=staticLander.position.y;
+  game.state='intro';game.introT=0;game.puffed=false;astro.visible=false;rover.visible=true;
+  rover.position.set(R.pos.x,R.pos.y,R.pos.z);rover.rotation.set(0,R.yaw,0);
+  $('#cards').innerHTML='';$('#toasts').innerHTML='';
+  fade(false);
+}
+function introUpdate(dt){
+  game.introT+=dt;S.time+=dt*HPS*0.3;updateEnv(dt,staticLander.position);
+  const T=7.5,e=Math.min(1,game.introT/T),gy=game.introGY;
+  staticLander.position.y=gy+240*Math.pow(1-e,3);
+  const fl=staticLander.userData.flame;fl.visible=e<1;fl.scale.set(1,0.7+Math.random()*0.5,1);
+  if(e>=1&&!game.puffed){game.puffed=true;puff(LANDER_X,gy,LANDER_Z,14);beep(160,0.5,'sine',0.1)}
+  const a=0.9+game.introT*0.06;
+  camera.position.set(LANDER_X+Math.cos(a)*42,gy+10+Math.max(0,staticLander.position.y-gy)*0.35,LANDER_Z+Math.sin(a)*42);
+  camera.lookAt(LANDER_X,staticLander.position.y+2,LANDER_Z);
+  updateWeatherFX(dt,camera.position);updateLanders(dt);
+  if(game.introT>T+2){staticLander.position.y=gy;fl.visible=false;enterPlay();saveGame(true);   // the new expedition appears in the list right away
+cam.target.set(LANDER_X,gy+2,LANDER_Z);game.camSnap=false;
+    if(S.mode==='survival')card('Survival','Mission tracked: '+CHAPTERS[0].title,CHAPTERS[0].intro+' Walk with WASD and look around with right-drag or the arrow keys. Your Hand Drill is in slot 1 and your Pulse Blaster in slot 2. Press Tab for your inventory, missions and colony: pick any mission there to track it.','#7fe6dc');
+    else card('Sandbox','Free build','Everything is unlocked and materials are unlimited. Press B to build, E to drive, Tab for your inventory, missions and colony, and M for the map.','#7fe6dc');}
+}
+/* ---------- missions: any order, one tracked at a time (Tab → Missions) ---------- */
+const missionDone=i=>!!(S.flags&&S.flags['mdone'+i]);
+function missionProgress(i){const ch=CHAPTERS[i];return[ch.objs.filter(o=>S.objDone.has(i+':'+o.id)).length,ch.objs.length]}
+function trackMission(i){S.mission=CHAPTERS[i]&&!missionDone(i)?i:null;game.guideT=0;toast(S.mission!=null?'Tracking mission: '+CHAPTERS[i].title:'Mission tracking off',S.mission!=null?'good':'');SFX.radio()}
+function checkObjectives(){
+  if(S.over)return;
+  if(count('pad')&&count('habitat')>=2&&!S.flags.crewSent){S.flags.crewSent=true;S.crewLanderAt=S.time+2.5;toast('A crew lander has left orbit. ETA about 2.5 hours','good')}
+  for(let i=0;i<CHAPTERS.length;i++){if(missionDone(i))continue;const ch=CHAPTERS[i];let all=true;
+    for(const o of ch.objs){const k=i+':'+o.id;if(S.objDone.has(k))continue;
+      if(o.check()){S.objDone.add(k);toast('✓ '+o.text,'good');if(S.mission===i)SFX.radio()}else all=false}
+    if(!all)continue;
+    S.flags['mdone'+i]=true;S.chapter=CHAPTERS.filter((_,j)=>missionDone(j)).length;
+    const sb=S.mode==='sandbox';if(!sb){const rw=ch.reward.mat;storeItems({plate:Math.round(rw/5),glass:Math.round(rw/8),circuit:Math.round(rw/10),brick:Math.round(rw/6)});S.res.rp+=ch.reward.rp}
+    const nx=CHAPTERS.findIndex((_,j)=>!missionDone(j));if(S.mission===i)S.mission=nx>=0?nx:null;
+    card('Mission complete: '+ch.title,sb?'Sandbox: no rewards needed':`Reward: supplies in colony storage · +${ch.reward.rp} RP`,
+      nx>=0?`Now tracking: ${CHAPTERS[nx].title}. ${CHAPTERS[nx].intro} (Change it any time: Tab → Missions.)`:'Every mission is complete. The colony stands on its own; the planet is yours to explore.','#7fe6dc');
+    beep(660,0.12);beep(880,0.12,'sine',0.07,0.12);beep(1320,0.25,'sine',0.07,0.24);saveGame(true);
+  }
+}
+function gameOver(){
+  S.over=true;game.paused=true;
+  const why=S.res.o2<=0?'The oxygen reserves ran dry.':S.res.water<=0?'The colony ran out of water.':'The food supply ran out.';
+  $('#over-title').textContent='Colony lost';
+  $('#over-text').innerHTML=`${why} The crew had to evacuate to orbit on sol ${solNum()}.<br><br>You completed ${S.chapter} of ${CHAPTERS.length} missions, built ${blds.length} modules, analysed ${S.analyzed.length} samples and drove ${(S.stats.roverDist/1000).toFixed(1)} km.<br><br><span class="sub" style="text-transform:none;letter-spacing:0">Tip: build an Oxygen Unit early, find ice for the Ice Drill, and keep an eye on the per-sol rates at the bottom of the screen.</span>`;
+  $('#over').classList.remove('hidden');if(curWorld)deleteWorld(curWorld);
+}
+function togglePause(force){
+  game.paused=force===undefined?!game.paused:force;$('#pause').classList.toggle('hidden',!game.paused);
+  $('#p-sound').textContent='Sound: '+(AU.sound?'on':'off');$('#p-gfx').textContent='Graphics: '+(GFX.q==='high'?'Cinematic':'Fast');if(typeof updateNetUI==='function')updateNetUI();$('#p-music').textContent='Music: '+(AU.music?'on':'off');
+}
+function showTitle(){
+  if(net.role)leaveNet(true);
+  game.state='title';game.paused=false;S=null;
+  for(const id of['hud','buildbar','mapov','pause','over','sites','worlds','settings','invov','dlg','chatbox','quick'])$('#'+id).classList.add('hidden');invUI.open=false;game.dialogue=null;game.dead=false;
+  build.active=false;selectBuild(null);
+  $('#title').classList.remove('hidden');curWorld=null;
+  clearAll();astro.visible=false;rover.visible=false;initSite(selSite);tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,60);
+}
+const tcam={d:0};
+function titleCam(dt){
+  tcam.d+=dt*9;const z=-tcam.d,x=Math.sin(tcam.d*0.0016)*140;
+  const ahead=40,x2=Math.sin((tcam.d+ahead)*0.0016)*140,z2=z-ahead;
+  let gh=-1e9;for(let i=0;i<4;i++)gh=Math.max(gh,groundHeight(lerp(x,x2,i/3),lerp(z,z2,i/3)));
+  game.tY=game.tY===undefined||dt===0?gh+20:lerp(game.tY,gh+20,damp(1.5,dt));
+  camera.position.set(x,game.tY,z);camera.lookAt(x2,game.tY-6,z2);
+}
+function titleUpdate(dt){
+  titleTime+=dt*0.01;titleCam(dt);updateEnv(dt,camera.position);updateChunks(camera.position.x,camera.position.z,3);updateWeatherFX(dt,camera.position);
+}
+function playUpdate(dt){
+  const h=dt*HPS*dayMul();S.time+=h;
+  const f0=focusPos();updateEnv(dt,f0);
+  const blocked=game.wardrobe||game.dialogue||game.typing||invUI.open||game.dead;
+  const inp=blocked?{fwd:0,steer:0,camTurn:0,jump:false,sprint:false,brake:true}:readInput();
+  updateRover(dt,inp);
+  if(P.mode==='foot'){if(P.ragdoll)updateRagdoll(dt,inp);else updateWalker(dt,inp)}else P.pos.copy(R.pos);
+  updateToolUse(dt);updateEmote(dt);
+  updateCamera(dt);
+  updateMeteors(dt);
+  const f=focusPos();
+  updateChunks(f.x,f.z,2);updateCaves(dt);
+  updateWeatherFX(dt,f);caveEnv();
+  if((game.poiT-=dt)<=0){game.poiT=0.5;updatePOIs(f);updateDeposits()}
+  animatePOIs(dt);updateNPCs(dt);updateSfx();netTick(dt);
+  worldTick(dt);aliensTick(dt);dialogueTick(dt);factTick(dt);
+  updateInteraction(dt);
+  devilPushThings(dt);updatePickups(dt);updateBolts(dt);updateFlares(dt);updateLightPool();updateSparks(dt);updateFlyers(dt);updatePings(dt);updateDrones(dt);
+  S.roverKW=0;
+  if(R.battery<R.maxBat&&!S.roverChargeBlocked){
+    const chg=blds.find(b=>b.type==='charger'&&b.progress>=1&&Math.hypot(b.x-R.pos.x,b.z-R.pos.z)<4.5),nh=nearHab(R.pos,12);
+    if(chg||nh){R.battery=Math.min(R.maxBat,R.battery+dt*(chg?7:2.5));S.roverKW=chg?3:1.2}
+  }
+  if(net.role!=='guest')simTick(h);
+  disasterTick(dt,h);
+  if(game.state!=='play')return;
+  updateBuildingsFX(dt);updateLanders(dt);
+  if(build.active)updateBuild();
+  if(net.role!=='guest'&&(game.objT-=dt)<=0){game.objT=0.5;checkObjectives()}
+  if((game.hudT-=dt)<=0){game.hudT=0.12;updateHUD()}
+  if((game.guideT=(game.guideT||0)-dt)<=0){game.guideT=0.3;game.guide=computeGuide();if(build.active)renderBuildBar()}
+  updateGuide(dt);
+  if((game.cmpT-=dt)<=0){game.cmpT=0.04;updateCompass()}
+  if(!$('#mapov').classList.contains('hidden')&&(game.mapT=(game.mapT||0)-dt)<=0){game.mapT=1;drawMap()}
+  if((game.saveT-=dt)<=0){game.saveT=30;saveGame(true)}
+}
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+const mouse={x:0,y:0,nx:0,ny:0,drag:false,lx:0,ly:0,moved:0,btn:0};
+addEventListener('keydown',e=>{
+  if(game.typing)return;
+  if(e.code==='Tab'||e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault();
+  keys[e.code]=true;if(e.repeat)return;initAudio();onKey(e.code);
+});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyV')closeQuick()});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
+const HOTKEYS={Digit1:0,Digit2:1,Digit3:2,Digit4:3,Digit5:4,Digit6:5,Digit7:6,Digit8:7,Digit9:8};
+function onKey(c){
+  if(game.state==='intro'){if(c==='Space'||c==='Enter'||c==='Escape')game.introT=Math.max(game.introT,9.4);return}
+  if(game.state!=='play'||S.over)return;
+  if(c==='Escape'){
+    if(game.dialogue){closeDialogue();return}if(invUI.open){openInventory(false);return}if(build.active){toggleBuild(false);return}
+    if(game.wardrobe||!$('#mapov').classList.contains('hidden')){closePanels();return}togglePause();return}
+  if(game.paused||game.dead)return;
+  if(game.dialogue)return;
+  switch(c){
+    case'KeyE':toggleRover();break;
+    case'KeyB':toggleBuild();break;
+    case'KeyI':openInventory();break;
+    case'Tab':cycleMenu(keys.ShiftLeft||keys.ShiftRight?-1:1);break;
+    case'KeyM':togglePanel('mapov');break;
+    case'KeyH':game.hudHidden=!game.hudHidden;$('#hud').classList.toggle('hidden',game.hudHidden);break;
+    case'KeyC':if(P.mode==='rover'){R.cruise=!R.cruise;R.cruiseV=Math.max(6,R.speed);toast(R.cruise?`Cruise control on (${Math.round(R.cruiseV*3.6)} km/h). Steer and enjoy the view`:'Cruise control off')}break;
+    case'KeyR':if(build.type)build.rot+=Math.PI/8;break;
+    case'KeyX':if(!build.active)toggleBuild(true);setBuildMode(build.mode==='recycle'?'build':'recycle');break;
+    case'KeyF':pressF();break;
+    case'KeyQ':if(S.inv[P.hot]&&P.mode==='foot'&&!invUI.open)act({a:'drop',src:{c:'inv',i:P.hot},n:1,fw:[Math.sin(P.yaw),Math.cos(P.yaw)]});refreshInvUI();break;
+    case'KeyG':sendPing();break;
+    case'KeyV':openQuick();break;
+    case'Enter':openChat();break;
+    case'KeyJ':setCollapsed('journal',!isCollapsed('journal'));break;
+    case'KeyK':setCollapsed('status',!isCollapsed('status'));break;
+    case'KeyN':AU.music=!AU.music;toast('Music '+(AU.music?'on':'off'));break;
+    case'Equal':if(!build.active)cam.zoom=clamp(cam.zoom*0.9,0.45,3);else if(build.mode==='build')selectBuild(BUILD_ORDER[KEYMAP[c]]);break;
+    case'Minus':if(!build.active)cam.zoom=clamp(cam.zoom*1.1,0.45,3);else if(build.mode==='build')selectBuild(BUILD_ORDER[KEYMAP[c]]);break;
+    default:
+      if(build.active&&build.mode==='build'&&c in KEYMAP){const t=BUILD_ORDER[KEYMAP[c]];selectBuild(build.type===t?null:t)}
+      else if(!build.active&&c in HOTKEYS)selectHot(HOTKEYS[c]);
+  }
+}
+canvas.addEventListener('mousedown',e=>{initAudio();mouse.drag=true;mouse.btn=e.button;mouse.lx=e.clientX;mouse.ly=e.clientY;mouse.moved=0;canvas.focus();
+  if(e.button===0&&game.state==='play')onWorldClick()});
+addEventListener('mousemove',e=>{
+  mouse.x=e.clientX;mouse.y=e.clientY;mouse.nx=e.clientX/innerWidth*2-1;mouse.ny=-(e.clientY/innerHeight)*2+1;
+  if(mouse.drag&&game.state==='play'){const dx=e.clientX-mouse.lx,dy=e.clientY-mouse.ly;mouse.lx=e.clientX;mouse.ly=e.clientY;mouse.moved+=Math.abs(dx)+Math.abs(dy);
+    const rotate=mouse.btn===2||mouse.btn===1||(mouse.btn===0&&(P.mode==='rover'||build.active)&&mouse.moved>=6);
+    if(rotate){cam.yaw-=dx*0.005*OPT.sens;cam.pitch=clamp(cam.pitch+dy*0.004*OPT.sens,-0.3,1.35);cam.lastDrag=now}}
+});
+addEventListener('mouseup',()=>{if(mouse.drag&&mouse.btn===0&&mouse.moved<6&&build.active&&game.state==='play'&&!game.paused){if(build.mode==='recycle')recycle(build.hover);else placeBuild()}mouse.drag=false});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('wheel',e=>{
+  if(game.state==='play'&&P.mode==='foot'&&!build.active&&!e.altKey)selectHot(P.hot+Math.sign(e.deltaY));
+  else cam.zoom=clamp(cam.zoom*(1+Math.sign(e.deltaY)*0.1),0.45,3)},{passive:true});
+$('#buildbar').addEventListener('click',e=>{const m=e.target.closest('[data-m]');if(m){setBuildMode(m.dataset.m);return}const c=e.target.closest('[data-b]');if(c){const t=c.dataset.b;selectBuild(build.type===t?null:t)}});
+
+/* ---------- menus ---------- */
+const CONTROLS=`<b>WASD</b> walk / drive · <b>Shift</b> sprint · <b>Space</b> jump (hold in mid-air with a Thruster Pack)<br>
+<b>Walk into cliffs, modules, wrecks or boulders</b> to climb (uses stamina) · <b>Right-drag</b> or <b>arrow keys</b> look around · <b>Alt+scroll</b> or <b>+/−</b> zoom<br>
+<b>1–9</b>, <b>scroll</b> or <b>click</b> the hotbar · <b>Hold left mouse</b> use the item (drill, blaster, prod) · <b>Q</b> drop one<br>
+<b>I</b> inventory & crafting · <b>F</b> interact, talk, feed animals, scan, open · <b>E</b> rover (get out any time; at speed you tumble) · <b>C</b> cruise<br><b>In the air</b> (rover): <b>W/S</b> flip, <b>A/D</b> spin, <b>Shift+A/D</b> barrel roll<br><b>Tumbling</b> (thrown or bailed out): <b>WASD</b> steer and turn, <b>W/S</b> flip, hold <b>Space</b> to brace and land on your feet<br>
+<b>Tab</b> menu: inventory, missions, colony, research, stats (Tab again for the next page) · <b>I</b> inventory · <b>M</b> map<br><b>B</b> build · <b>X</b> recycle · <b>R</b> rotate<br>
+<b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>Esc</b> pause`;
+$('#ctrl-list').innerHTML=CONTROLS;$('#p-ctrl').innerHTML=CONTROLS;
+$('#b-ctrl').onclick=()=>$('#ctrl-list').classList.toggle('hidden');
+// (home screen, expeditions list, world creation and settings live in menus.js)
+function renderSites(){
+  const dots=n=>'●'.repeat(n)+'○'.repeat(3-n);
+  $('#sgrid').innerHTML=Object.entries(SITES).map(([k,s])=>`<div class="site ${k===selSite?'sel':''}" data-site="${k}"><h3>${s.name}</h3><div class="ins">${s.inspired}</div>
+    <div class="pc"><b>+</b> ${s.pros}<br><i>−</i> ${s.cons}</div>
+    <div class="meter">Easy building <span>${dots(s.meters.build)}</span></div><div class="meter">Water access <span>${dots(s.meters.water)}</span></div><div class="meter">Science value <span>${dots(s.meters.science)}</span></div></div>`).join('');
+  $$('#sgrid .site').forEach(el=>el.onclick=()=>{if(selSite===el.dataset.site)return;selSite=el.dataset.site;renderSites();initSite(selSite);tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,40)});
+}
+$('#p-resume').onclick=()=>togglePause(false);
+$('#p-save').onclick=()=>{togglePause(false);saveGame()};
+$('#p-sound').onclick=()=>{AU.sound=!AU.sound;togglePause(true)};
+$('#p-music').onclick=()=>{AU.music=!AU.music;togglePause(true)};
+$('#p-gfx').onclick=()=>{GFX.q=GFX.q==='high'?'fast':'high';applyGfx();togglePause(true)};
+$('#p-coop').onclick=()=>{if(net.role==='guest'){leaveNet(false);showTitle();return}if(net.role==='host'){leaveNet(false);togglePause(true);return}hostGame();togglePause(false)};
+$('#b-coop').onclick=()=>{initAudio();$('#coop-name').value=net.name;$('#coop-code').value='';coopMsg('');$('#coop').classList.remove('hidden');$('#coop-code').focus()};
+$('#coop-x').onclick=()=>{closeCoop();if(net.peer&&!net.role)leaveNet(true)};
+$('#coop-join').onclick=()=>{const n=$('#coop-name').value.trim();if(n){net.name=n.slice(0,20);try{localStorage.setItem('mlc-name',net.name)}catch(e){}}joinGame($('#coop-code').value)};
+$('#coop-code').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('#coop-join').click()});$('#coop-name').addEventListener('keydown',e=>e.stopPropagation());
+$('#p-quit').onclick=()=>{game.paused=false;saveGame(true);showTitle()};
+$('#o-retry').onclick=()=>{const s=S.site,m=S.mode,cfg={name:S.worldName,settings:{...S.settings}};$('#over').classList.add('hidden');startNew(s,m,cfg)};
+$('#o-title').onclick=()=>showTitle();
+$$('[data-close]').forEach(b=>b.addEventListener('click',closePanels));

@@ -1,0 +1,314 @@
+'use strict';
+
+/* =========================================================
+   UI: TOASTS, CARDS, HUD, COMPASS
+   ========================================================= */
+function toast(text,kind=''){
+  if(game.state!=='play'&&game.state!=='intro')return;
+  const c=$('#toasts');if([...c.children].some(e=>e.textContent===text&&!e.classList.contains('out')))return;
+  const el=document.createElement('div');el.className='toast '+kind;el.textContent=text;c.appendChild(el);
+  while(c.children.length>1)c.firstChild.remove();
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),700)},4000);
+}
+function card(title,sub,body,color='#6fe0c8'){
+  S.log.unshift({title,sub,body,sol:solNum(),t:tod()});if(S.log.length>60)S.log.pop();
+  if(game.state!=='play')return;
+  const el=document.createElement('div');el.className='scard';
+  el.innerHTML=`<h4><i style="background:${color}"></i>${title}</h4><div class="s">${sub}</div><p>${body}</p>`;
+  el.onclick=()=>el.remove();
+  const c=$('#cards');c.appendChild(el);while(c.children.length>1)c.firstChild.remove();
+  setTimeout(()=>{el.style.opacity=0;setTimeout(()=>el.remove(),700)},20000);
+}
+function fmtTime(){const t=tod(),h=Math.floor(t),m=Math.floor((t-h)*60);return pad2(h)+':'+pad2(m)}
+const setHTML=(id,h)=>{const e=document.getElementById(id);if(e&&e.innerHTML!==h)e.innerHTML=h};
+const setTxt=(id,v)=>{const e=document.getElementById(id);if(e&&e.textContent!==v)e.textContent=v};
+function rateStr(r,unit){const v=r*SOL_H;return(v>=0?'+':'')+v.toFixed(1)+unit+'/sol'}
+
+/* ---------- collapsible panels (remembered per browser) ---------- */
+const UI=(()=>{try{return JSON.parse(localStorage.getItem('mlc-ui'))||{}}catch(e){return{}}})();
+const isCollapsed=id=>UI[id]!==false;
+function setCollapsed(id,c){UI[id]=c;$('#'+id).classList.toggle('collapsed',c);try{localStorage.setItem('mlc-ui',JSON.stringify(UI))}catch(e){}}
+function applyUIState(){for(const id of['journal','status'])$('#'+id).classList.toggle('collapsed',isCollapsed(id))}
+$('#journal').addEventListener('click',()=>setCollapsed('journal',!isCollapsed('journal')));
+$('#s-vital').addEventListener('click',()=>setCollapsed('status',!isCollapsed('status')));
+$('#s-main').addEventListener('click',()=>setCollapsed('status',!isCollapsed('status')));
+
+function getAlerts(){
+  const al=[];
+  if(S.spe.active)al.push(['Solar particle event: take shelter','bad']);
+  if(S.brownout)al.push(['Power shortage: some systems are off','bad']);
+  for(const[k,n]of[['o2','Oxygen'],['water','Water'],['food','Food']]){const r=S.rates[k];if(r<0){const sl=S.res[k]/(-r*SOL_H);if(sl<1.5)al.push([`${n} runs out in ${sl.toFixed(1)} sols`,'bad'])}}
+  const nf=blds.filter(b=>b.fault);if(nf.length)al.push([`${nf[0].fault.label} at ${BUILD[nf[0].type].name}${nf.length>1?` (+${nf.length-1} more)`:''}`,'bad']);
+  if(S.storm.active)al.push(['Dust storm: solar output down '+Math.round(S.storm.level*75)+'%','']);
+  else if(S.flags.stormWarned)al.push(['Dust storm on the way','']);
+  if(R.battery/R.maxBat<0.15)al.push(['Rover battery low','']);
+  const sol=blds.filter(b=>b.type==='solar');if(sol.length&&sol.reduce((a,b)=>a+b.dust,0)/sol.length>0.4)al.push(['Solar panels are dusty (clean with F)','']);
+  return al;
+}
+function updateHUD(){
+  setHTML('clock',`Sol ${solNum()} · ${fmtTime()}<span>${SITE.name}${S.mode==='sandbox'?' · sandbox':''}</span>`);
+  // the single most important warning sits under the guide
+  const al=getAlerts(),nb=al.filter(a=>a[1]==='bad').length;
+  // vitals line
+  const bar=(p,c)=>`<span class="mini"><i style="width:${clamp(p,0,100)}%;background:${c}"></i></span>`;
+  const vb=(l,v,c)=>`<div class="vbar"><span>${l}</span><i><i style="width:${clamp(v,0,100)}%;background:${c}"></i></i></div>`;
+  // suit integrity as diamond cells (20 points each), then oxygen and battery
+  const mh=maxHP();
+  setHTML('vitals2',vb('Health',P.hp/mh*100,P.hp<mh*0.3?'var(--bad)':'#ff6f61')+vb('Oxygen',P.o2,P.o2<25?'var(--bad)':'#7fd3ff')+vb('Battery',P.bat,P.bat<20?'var(--bad)':'#ffd34d')+
+    `<div class="vbar col"><span>Colony O₂</span><em class="${S.rates.o2<0&&S.res.o2/(-S.rates.o2*SOL_H)<1.5?'neg':''}">${S.res.o2.toFixed(1)} kg</em></div>`);
+  if(P.mode==='foot'){setHTML('s-vital',cave.active?`Underground · ${Math.round(cave.depth)} m deep`:esc(curRegion?curRegion.name:SITE.name))}
+  else{const bp=R.battery/R.maxBat*100;setHTML('s-vital',`Rover ${bar(bp,bp<15?'var(--bad)':bp<35?'var(--warn)':'#ffd34d')} ${Math.round(bp)}% · ${Math.round(Math.hypot(R.vx||0,R.vz||0)*3.6)} km/h${R.air?' · airborne':R.upside?' · flipped':''}${R.cruise?' · cruise':''}${S.roverKW>0?' · charging':''}`)}
+  const low=k=>S.rates[k]<0&&S.res[k]/(-S.rates[k]*SOL_H)<1.5?' class="neg"':'';
+  const col=isCollapsed('status');
+  setHTML('s-main',`<span><em>Power</em><b${S.brownout?' class="neg"':''}>${Math.round(S.battery/S.cap*100)}%</b></span><span><em>O₂</em><b${low('o2')}>${S.res.o2.toFixed(1)} kg</b></span>`+
+    `<span><em>Water</em><b${low('water')}>${Math.round(S.res.water)} L</b></span><span><em>Food</em><b${low('food')}>${S.res.food.toFixed(1)} kg</b></span>`+
+    `<span><em>Research</em><b>${Math.floor(S.res.rp)}</b></span>${nb?`<span class="neg">⚠ ${nb}</span>`:''}<span class="chev">▾</span>`);
+  if(!col){
+    const row=(a,b,c='')=>`<div class="row"><span>${a}</span><span class="${c}">${b}</span></div>`,pc=r=>r>=0?'pos':'neg';
+    setHTML('s-more',row('Power',`${S.powerNet>=0?'+':''}${S.powerNet.toFixed(1)} kW · ${Math.round(S.battery)}/${Math.round(S.cap)} kWh`,pc(S.powerNet))+
+      row('Oxygen',rateStr(S.rates.o2,' kg'),pc(S.rates.o2))+row('Water',rateStr(S.rates.water,' L'),pc(S.rates.water))+row('Food',rateStr(S.rates.food,' kg'),pc(S.rates.food))+
+      (S.rates.mat>0?row('Materials',rateStr(S.rates.mat,'')):'')+
+      row('Weather',`${Math.round(temperature())} °C · ${Math.round(pressure())} Pa · wind ${Math.round(windSpeed())} m/s`)+
+      row('Radiation dose',S.dose.toFixed(2)+' mSv')+row('Sample cache',`${S.samples.length}/${sampleCap()}${S.labQueue.length?` · ${S.labQueue.length} in the lab`:''}`)+
+      al.map(a=>`<div class="al ${a[1]}">${a[0]}</div>`).join(''));
+  }
+  // journal
+  let head,items=[];
+  const mi=S.mission;
+  if(mi==null||!CHAPTERS[mi])head=S.mode==='sandbox'?`Pop. ${S.crew} · <b>${TIERS[colonyTier()].name}</b>`:'No mission tracked · <span class="key">Tab</span> Missions';
+  else{const ch=CHAPTERS[mi];items=ch.objs.map(o=>[o.text,S.objDone.has(mi+':'+o.id)]);
+    head=`<span class="mlabel">Mission</span> <b>${ch.title}</b> · ${items.filter(i=>i[1]).length}/${items.length}`}
+  setHTML('j-head',head+(items.length?' <span class="chev">▾</span>':''));
+  let cur=false;setHTML('j-list',items.map(([t,d])=>{const c=!d&&!cur;if(c)cur=true;return`<li class="${d?'done':c?'cur':''}">${t}</li>`}).join(''));
+  // wardrobe hanger at base
+  $('#hanger').classList.toggle('hidden',!(P.mode==='foot'&&nearHab(P.pos,12)&&$('#wardrobe').classList.contains('hidden')));
+  if(invUI.open&&(game.colT=(game.colT||0)+1)%4===0){if(invUI.mtab==='inv')renderPlayerCard();else if(invUI.mtab==='colony'||invUI.mtab==='crew')renderColony()}
+  // blaster reticle with its cooldown ring
+  {const rt=$('#reticle'),gs=S.inv[P.hot],gun=gs&&ITEMS[gs.id]&&ITEMS[gs.id].tool==='gun'&&canUseWorld()&&!game.hudHidden;rt.classList.toggle('hidden',!gun);
+   if(gun){const gd=ITEMS[gs.id],rd=clamp((now-(mine.gunT||-9))/gd.cool,0,1);rt.style.left=mouse.x+'px';rt.style.top=mouse.y+'px';$('#retfg').style.strokeDashoffset=106.8*(1-rd);rt.classList.toggle('ready',rd>=1)}}
+}
+function updateCompass(){
+  const W=$('#compass').clientWidth,half=W/2,fov=Math.PI*0.62,f=focusPos();let h='';
+  const xOf=b=>half+wrapA(cam.yaw-b)/(fov/2)*half;
+  for(let deg=0;deg<360;deg+=15){const b=Math.PI-deg*Math.PI/180,x=xOf(b);if(x<-10||x>W+10)continue;
+    if(deg%90===0)h+=`<div class="cd ${deg===0?'n':''}" style="left:${x}px">${'NESW'[deg/90]}</div>`;
+    else h+=`<div class="tk" style="left:${x}px"></div>`}
+  const items=[],hm=home();
+  items.push([hm.x,hm.z,'#ffffff','Base']);
+  if(P.mode==='foot')items.push([R.pos.x,R.pos.z,'#ff9147','Rover']);
+  if(S.waypoint)items.push([S.waypoint.x,S.waypoint.z,'#6fe0c8','Waypoint']);
+  for(const b of blds)if(b.type==='beacon')items.push([b.x,b.z,'#ffb06a','']);
+  for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))items.push([p.x,p.z,POI[p.type].color,'']);
+  for(const[x,z,c,l]of items){const d=Math.hypot(x-f.x,z-f.z);if(d<8)continue;const px=xOf(Math.atan2(x-f.x,z-f.z));if(px<0||px>W)continue;
+    h+=`<div class="mk" style="left:${px}px;color:${c}"><i style="background:${c}"></i>${l}</div>`}
+  const g=game.guide;
+  if(g&&g.x!==undefined){const px=clamp(xOf(Math.atan2(g.x-f.x,g.z-f.z)),8,W-8);h+=`<div class="mk goal" style="left:${px}px">▼</div>`}
+  $('#cmp').innerHTML=h;
+}
+
+/* =========================================================
+   GUIDE: one arrow that always points at the next thing to do
+   ========================================================= */
+const ACCENT='#ff8a3d'; // guide arrow & beacon match the UI accent
+const guideArrow=(()=>{
+  const s=new THREE.Shape();s.moveTo(0,1.3);s.lineTo(1,0.15);s.lineTo(0.38,0.15);s.lineTo(0.38,-1);s.lineTo(-0.38,-1);s.lineTo(-0.38,0.15);s.lineTo(-1,0.15);s.closePath();
+  const geo=new THREE.ShapeGeometry(s);geo.rotateX(Math.PI/2);
+  const g=new THREE.Group();
+  const back=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:'#2a1206',transparent:true,opacity:0.45,side:THREE.DoubleSide,depthTest:false,fog:false}));back.scale.setScalar(1.18);back.renderOrder=998;
+  const front=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0.95,side:THREE.DoubleSide,depthTest:false,fog:false}));front.renderOrder=999;front.position.y=0.01;
+  g.add(back,front);g.visible=false;scene.add(g);return g;
+})();
+const guideBeacon=(()=>{
+  const g=new THREE.Group();
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(0.55,1.1,16),new THREE.MeshBasicMaterial({color:ACCENT,fog:false}));cone.rotation.x=Math.PI;g.add(cone);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(0.92,1,48),new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0.7,side:THREE.DoubleSide,depthWrite:false,fog:false}));ring.rotation.x=-Math.PI/2;g.add(ring);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,80,6,1,true),new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0.25,depthWrite:false,blending:THREE.AdditiveBlending}));beam.position.y=40;g.add(beam);
+  g.userData={cone,ring,beam};g.visible=false;scene.add(g);return g;
+})();
+function placeReason(t,x,z,loose,auth){
+  const def=BUILD[t];
+  if(!loose&&!auth&&S.mode!=='sandbox'&&!haveAll(ME,BUILD_COSTS[t]||{},nearBase(ME,40)))return'Missing: '+missingText(ME,BUILD_COSTS[t]||{},nearBase(ME,40));
+  let mn=1e9,mx=-1e9;for(let i=0;i<7;i++){const a=i/6*TAU,r=i?def.r*0.8:0,h=groundHeight(x+Math.cos(a)*r,z+Math.sin(a)*r);mn=Math.min(mn,h);mx=Math.max(mx,h)}
+  if(mx-mn>(def.maxSlope||Math.max(1.6,def.r*0.55)))return'Ground too steep here';
+  for(const b of blds)if(Math.hypot(b.x-x,b.z-z)<BUILD[b.type].r+def.r+(loose?2:0.4))return'Too close to '+BUILD[b.type].name;
+  if(!loose&&!auth&&Math.hypot(R.pos.x-x,R.pos.z-z)<def.r+2.4)return'The rover is in the way';
+  if(!loose&&!auth&&P.mode==='foot'&&Math.hypot(P.pos.x-x,P.pos.z-z)<def.r+0.6)return'You are standing there';
+  if(staticLander&&Math.hypot(staticLander.position.x-x,staticLander.position.z-z)<def.r+(loose?5:2.6))return'Too close to the lander';
+  if(loose&&Math.hypot(R.pos.x-x,R.pos.z-z)<def.r+4)return'Rover parked there';
+  if(!def.remote){const gr=nearestGrid(x,z,null);if(!gr||gr.d>BUILD[gr.b.type].r+def.r+38)return'Out of grid range: build within ~40 m of the colony'}
+  if(def.needsIce){sample(x,z,TS3);if(TS3.ice<0.35)return'No accessible ice here. Look for frosty, ice-rich ground'}
+  if(t==='reactor'&&blds.some(b=>b.type==='habitat'&&Math.hypot(b.x-x,b.z-z)<30))return'Must be at least 30 m from habitats';
+  return'';
+}
+function spotFor(t){
+  const c=game.spot;if(c&&c.t===t&&(now-c.at<4||!placeReason(t,c.x,c.z,true))){c.at=now;return c}
+  const hm=home();let cx=hm.x,cz=hm.z,r0=BUILD.habitat.r+BUILD[t].r+3,r1=60;
+  if(t==='drill'){const ice=storyPOIs.find(p=>p.type==='ice');cx=ice.x;cz=ice.z;r0=12;r1=70}
+  else if(t==='weather'){cx=hm.x+264;cz=hm.z+198;r0=0;r1=80}
+  else if(t==='reactor'){r0=34;r1=80}else if(t==='pad'){r0=26;r1=90}
+  for(let r=r0;r<=r1;r+=3){const n=Math.max(1,Math.round(r*TAU/6));for(let i=0;i<n;i++){const a=i/n*TAU+r*0.37,x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;
+    if(!placeReason(t,x,z,true)){game.spot={t,x,z,at:now,r:BUILD[t].r};return game.spot}}}
+  return null;
+}
+function researchStep(id){const r=RESEARCH.find(r=>r.id===id);
+  if(S.res.rp<r.cost)return poiGuide(`Earn research points for ${r.name} (${Math.floor(S.res.rp)}/${r.cost})`);
+  return{text:`Research ${r.name} (<span class="key">Tab</span> menu → Research)`}}
+function buildGuide(t,label){
+  const d=BUILD[t];if(d.res&&!S.research.has(d.res))return researchStep(d.res);
+  if(S.mode!=='sandbox'&&!haveAll(ME,BUILD_COSTS[t]||{},true))return gatherGuide(BUILD_COSTS[t]||{},d.name);
+  const s=spotFor(t);if(!s)return{text:`Press <span class="key">B</span> and build a ${d.name}`};
+  return{x:s.x,z:s.z,r:d.r,text:label||'Build a '+d.name+' here',near:`Press <span class="key">B</span>, pick ${d.name}, click the ring`,build:t};
+}
+// what to do when you can't afford something: points at the next step (craft or mine)
+const MAKE_FROM={plate:['iron',2],glass:['silica',2],brick:['regolith',3],tiplate:['titanium',2]};
+const FIND_HINT={alloy:'Find xeno alloy at ancient alien structures (Plasma Cutter needed)',resonite:'Resonant crystals grow in deep caves where the Lumari live',chitin:'Skitters drop chitin when driven off; they nest in caves',
+  scale:'Dune Wyrms shed scales when driven off; they hunt in the dunes',nickel:'Nickel-iron comes from meteorite impact sites',crystal:'Selenite crystals grow inside caves',ice:'Look for frosty, ice-rich ground'};
+function nearestDeposit(type){const f=focusPos();let best=null,bd=1e9;
+  const look=d=>{if(d.type!==type||depUnits(d.id)<=0)return;const dd=Math.hypot(d.x-f.x,d.z-f.z);if(dd<bd){bd=dd;best=d}};
+  FIXED_DEPS.forEach(look);(S.extraDeps||[]).forEach(look);
+  const cx=Math.floor(f.x/CHUNK),cz=Math.floor(f.z/CHUNK);for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++)chunkDepDescs(cx+i,cz+j).forEach(look);
+  return best}
+function gatherGuide(cost,forName){
+  const have=id=>slotsCount(S.inv,id)+slotsCount(S.storage,id);
+  for(const id in cost){const need=cost[id];if(have(id)>=need)continue;const missing=need-have(id);
+    const mk=MAKE_FROM[id];
+    if(id==='circuit'){if(have('plate')>=1&&have('glass')>=1)return{text:`Craft Circuit Boards at the habitat (press <span class="key">I</span>) for the ${forName}`};
+      return gatherGuide({plate:missing,glass:missing},forName)}
+    if(mk){const raw=mk[0],per=mk[1];
+      if(have(raw)>=per)return nearBase(ME)?{text:`Press <span class="key">I</span> and craft ${ITEMS[id].name} (${have(id)}/${need})`}:{x:home().x,z:home().z,r:8,text:`Take your ${ITEMS[raw].name} back to base to craft ${ITEMS[id].name}`,near:`Press <span class="key">I</span> to craft`};
+      if(raw==='regolith')return{text:`Select your drill and hold <span class="key">left mouse</span> on the ground to dig regolith (${have(raw)}/${per*missing})`};
+      const d=nearestDeposit(raw);
+      if(d)return{x:d.x,z:d.z,r:2,text:`Mine ${ITEMS[raw].name} for ${ITEMS[id].name} (${have(raw)}/${per*missing})`,near:`Select your drill (<span class="key">1</span>) and hold <span class="key">left mouse</span> on the deposit`};
+      return{text:`Explore to find ${ITEMS[raw].name} deposits`}}
+    if(FIND_HINT[id])return{text:FIND_HINT[id]+` (${have(id)}/${need})`};
+    return{text:`You need ${missing} more ${ITEMS[id].name}`};
+  }
+  return null;
+}function poiGuide(text,needSample){
+  const f=focusPos();let best=null,bd=1e9;
+  for(const p of nearPOIs){if(poiDone(p)||(POI[p.type].hidden&&!S.discovered.has(p.id)))continue;if(needSample&&(!POI[p.type].sample||S.sampled.has(p.id)))continue;
+    const d=Math.hypot(p.x-f.x,p.z-f.z)*(S.discovered.has(p.id)?1:1.6);if(d<bd){bd=d;best=p}}
+  if(!best)return{text:'Explore further out to find new sites'};
+  const scanned=S.scanned.has(best.id);
+  return{x:best.x,z:best.z,r:7.2,text,near:scanned?'Press <span class="key">F</span> to collect the sample':'Hold <span class="key">F</span> to scan it'};
+}
+function labGuide(text){const lab=blds.find(b=>b.type==='lab'&&b.progress>=1);if(!lab)return buildGuide('lab','Build a Science Lab to analyse samples');
+  return{x:lab.x,z:lab.z,r:BUILD.lab.r+2,text,near:'Handing over samples…'}}
+function storyGuide(id,text){
+  const p=storyPOIs.find(p=>p.id===id);if(!p)return poiGuide(text);
+  if(S.samples.some(s=>s.id===id))return labGuide('Take the sample to the lab');
+  if(S.sampled.has(id)||(S.scanned.has(id)&&!POI[p.type].sample))return{text:'Waiting for lab results…'};
+  return{x:p.x,z:p.z,r:7.2,text,near:S.scanned.has(id)?'Press <span class="key">F</span> to collect the sample':'Hold <span class="key">F</span> to scan it'};
+}
+const GUIDES={
+  rover:()=>({x:R.pos.x,z:R.pos.z,r:3,text:'Walk over to the rover',near:'Press <span class="key">E</span> to get in'}),
+  hab:()=>{const a=airlockPos(home());return{x:a.x,z:a.z,r:1.6,text:'Go to the habitat door',near:'Press <span class="key">F</span> for a systems check'}},
+  solar:()=>buildGuide('solar',`Build ${Math.max(1,5-count('solar'))} more Solar Array${5-count('solar')>1?'s':''}`),
+  comms:()=>buildGuide('comms','Build a Comms Antenna'),
+  moxie:()=>buildGuide('moxie','Build an Oxygen Unit'),
+  ice:()=>storyGuide('s_ice','Find the ice: scan the ice signature'),
+  drill:()=>buildGuide('drill','Build the Ice Drill on the frosty ground'),
+  gh:()=>buildGuide('greenhouse','Build a Greenhouse'),
+  pos:()=>S.brownout?buildGuide('solar','Add Solar Arrays: power is short'):S.rates.o2<=0?buildGuide('moxie','Build another Oxygen Unit'):buildGuide('drill','Build another Ice Drill'),
+  lab:()=>buildGuide('lab','Build a Science Lab'),
+  samples:()=>S.samples.length&&(S.samples.length>=sampleCap()||count('lab'))?labGuide(`Bring ${S.samples.length} sample${S.samples.length>1?'s':''} to the lab`):poiGuide(`Collect rock samples (${S.analyzed.length+S.labQueue.length+S.samples.length}/3)`,true),
+  wx:()=>buildGuide('weather','Drive out and build a Weather Station here'),
+  drive:()=>{const g=poiGuide(`Drive and explore: ${Math.max(0,(3000-S.stats.roverDist)/1000).toFixed(1)} km to go`);if(P.mode==='foot')return{x:R.pos.x,z:R.pos.z,r:3,text:'Get in the rover for a long drive',near:'Press <span class="key">E</span> to get in'};return g},
+  tube:()=>storyGuide('s_lava','Investigate the lava tube'),
+  org1:()=>storyGuide('s_org1','Sample the organic-bearing mudstone'),
+  org2:()=>storyGuide('s_org2','Repeat the test at a second mudstone site'),
+  pad:()=>buildGuide('pad','Build a Landing Pad'),
+  hab2:()=>buildGuide('habitat','Build a second Habitat'),
+  crew:()=>{const p=blds.find(b=>b.type==='pad');return p?{x:p.x,z:p.z,r:9,text:'Meet the crew lander at the pad'}:{text:'Wait for the crew lander'}},
+  gh2:()=>buildGuide('greenhouse','Build a second Greenhouse'),
+  r8:()=>{const r=RESEARCH.find(r=>!S.research.has(r.id)&&(!r.req||r.req()));return r?researchStep(r.id):{text:'Complete research projects'}},
+  reactor:()=>buildGuide('reactor','Build the Fission Power Unit'),
+  sustain:()=>({text:`Keep O₂, water and food in surplus for a full sol (${Math.round(S.sustain/SOL_H*100)}%)`}),
+};
+function computeGuide(){
+  const f=focusPos(),foot=P.mode==='foot',dist=g=>Math.hypot(g.x-f.x,g.z-f.z);
+  if(foot&&P.o2<30){const al=airlockPos(home()),dr=Math.hypot(R.pos.x-f.x,R.pos.z-f.z),dh=Math.hypot(al.x-f.x,al.z-f.z);
+    return dr<dh?{x:R.pos.x,z:R.pos.z,r:3,text:'Low oxygen: get back to the rover',near:'Press <span class="key">E</span> to get in'}:{x:al.x,z:al.z,r:1.6,text:'Low oxygen: get back to the habitat'}}
+  // dangerous weather: head for cover first
+  if(foot&&!sheltered(P.pos)&&((S.spe&&S.spe.active)||S.storm.level>0.72)){const al=airlockPos(home()),dr=Math.hypot(R.pos.x-f.x,R.pos.z-f.z),dh=Math.hypot(al.x-f.x,al.z-f.z);const what=S.spe&&S.spe.active?'Solar storm':'Severe dust storm';
+    return dr<dh?{x:R.pos.x,z:R.pos.z,r:3,text:what+'! Take cover in the rover',near:'Press <span class="key">E</span> to get in'}:{x:al.x,z:al.z,r:1.6,text:what+'! Get inside the habitat'}}
+  const fb=blds.find(b=>b.fault);if(fb)return{x:fb.x,z:fb.z,r:BUILD[fb.type].r+2,text:`Fix the ${BUILD[fb.type].name}: ${fb.fault.label.toLowerCase()}`,near:'Hold <span class="key">F</span> to repair it'};
+  for(const[k,t,fix]of[['o2','Oxygen','moxie'],['water','Water','drill'],['food','Food','greenhouse']]){const r=S.rates[k];if(r<0&&S.res[k]/(-r*SOL_H)<1){const g=buildGuide(fix,`Low on ${t.toLowerCase()}: build a ${BUILD[fix].name}`);if(g)return g}}
+  if(S.brownout)return buildGuide('solar','Power is short: build a Solar Array');
+  if(S.samples.length>=sampleCap()&&count('lab'))return labGuide('Sample cache full: take it to the lab');
+  let g=null;
+  const mi=S.mission;if(mi!=null&&CHAPTERS[mi]){const o=CHAPTERS[mi].objs.find(o=>!S.objDone.has(mi+':'+o.id));if(o)g=(GUIDES[o.id]||(()=>({text:o.text})))()}
+  if(!g&&S.waypoint)g={x:S.waypoint.x,z:S.waypoint.z,r:3,text:'Head to your waypoint'};
+  if(!g)return null; // nothing tracked: no arrow, just explore
+  if(g.x!==undefined&&foot&&dist(g)>180&&Math.hypot(R.pos.x-f.x,R.pos.z-f.z)>6)g={x:R.pos.x,z:R.pos.z,r:3,text:'It’s far: take the rover',near:'Press <span class="key">E</span> to get in'};
+  return g;
+}
+// ONE instruction on screen at a time. Priority: build mode > action in progress > nearby action > the current task.
+const _swv=new THREE.Vector3();
+function updateGuide(dt){
+  const g=game.guide,f=focusPos(),has=g&&g.x!==undefined&&!game.hudHidden&&!build.active;
+  let d=0,close=false,a=0;
+  if(has){
+    const dx=g.x-f.x,dz=g.z-f.z;a=Math.atan2(dx,dz);d=Math.hypot(dx,dz);
+    const rv=P.mode==='rover',off=rv?8:2.8;close=d<(g.r||2)+(rv?6:2.5);
+    guideArrow.visible=!close&&OPT.guide!==false;
+    const ax=f.x+Math.sin(a)*off,az=f.z+Math.cos(a)*off;
+    guideArrow.position.set(ax,floorAt(ax,az)+0.4+Math.sin(now*4)*0.1,az);guideArrow.rotation.y=a;guideArrow.scale.setScalar(rv?1.1:0.7);
+    const gy=floorAt(g.x,g.z),u=guideBeacon.userData;guideBeacon.visible=OPT.guide!==false;guideBeacon.position.set(g.x,gy,g.z);
+    const k=cave.active?1:clamp(d/40,1,8);u.cone.scale.setScalar(k);u.cone.position.y=2.6*k+Math.sin(now*3)*0.4*k;
+    u.ring.scale.setScalar(g.r||2);u.ring.position.y=0.3;u.ring.material.opacity=0.5+0.3*Math.sin(now*4);u.beam.visible=d>40&&!cave.active;
+  }else guideArrow.visible=guideBeacon.visible=false;
+  let text='',showArrow=false,dist='',cls='';
+  if(build.active){text=build.line;cls='build'}
+  else if(game.busy){text=game.busy}
+  else if(vac.mode||vac.msg){text=esc(vac.msg||'Working…')}
+  else if(game.dialogue){text=''}
+  else if(game.prompt){text=game.prompt}
+  else if(g){
+    if(close&&g.near)text=g.near;
+    else{text=g.text;if(has){showArrow=true;dist=fmtDist(d)}}
+  }
+  const gEl=$('#guide');gEl.classList.toggle('none',!text);gEl.className=(text?'':'none ')+cls;
+  $('#g-arrow').style.display=showArrow?'':'none';
+  if(showArrow)$('#g-arrow').style.transform=`rotate(${wrapA(cam.yaw-a)}rad)`;
+  setHTML('g-text',text);setTxt('g-dist',dist);
+  // stamina wheel beside the astronaut (only when it isn't full)
+  const sw=$('#stamwheel');if(P.mode==='foot'&&P.stam<99.5&&!game.hudHidden){_swv.set(P.pos.x,P.pos.y+1.4,P.pos.z).project(camera);sw.style.left=((_swv.x*0.5+0.5)*innerWidth+46)+'px';sw.style.top=((-_swv.y*0.5+0.5)*innerHeight-22)+'px';
+    sw.classList.add('show');const fg=$('#stamfg');fg.style.strokeDashoffset=106.8*(1-P.stam/100);fg.style.stroke=P.stam<25?'#ff6b5e':P.climbing?'#ffd25e':'#8fe39a'}else sw.classList.remove('show');
+}
+
+/* =========================================================
+   WARDROBE (at base)
+   ========================================================= */
+let LOOK=(()=>{try{return Object.assign({},LOOK_DEFAULT,JSON.parse(localStorage.getItem('mlc-look'))||{})}catch(e){return{...LOOK_DEFAULT}}})();
+const WOPTS=[['suit','Suit',['#efebe4','#f2c94c','#4f86f7','#e8553b','#3cb37a','#8a6cd8','#ff8fb1','#3a3a40']],
+  ['accent','Stripes and gloves',['#ff7a2e','#6fe0c8','#ffd34d','#e8553b','#4f86f7','#ffffff','#2e2e33']],
+  ['visor','Visor',['#2b2f5a','#c9a227','#1e5c4a','#7a1e2b','#111111','#6fa8ff']],
+  ['pack','Backpack',['#c9c3bb','#efebe4','#ff7a2e','#4f86f7','#3a3a40','#3cb37a']],
+  ['boots','Boots and belt',['#8d8781','#3a3532','#efebe4','#a5623f','#4f86f7']],
+  ['rover','Rover paint',['#efebe4','#ffd34d','#e8553b','#4f86f7','#3cb37a','#3a3a40','#ff8fb1']]];
+function applyLook(){const M=astro.userData.mats;M.suit.color.set(LOOK.suit);M.accent.color.set(LOOK.accent);M.visor.color.set(LOOK.visor);
+  M.visor.emissive.set(LOOK.visor);M.pack.color.set(LOOK.pack);M.boots.color.set(LOOK.boots);astro.userData.antenna.visible=!!LOOK.antenna;rover.userData.paint.color.set(LOOK.rover)}
+function renderWardrobe(){
+  $('#w-body').innerHTML=WOPTS.map(([k,l,cols])=>`<div class="wrow"><div class="sub">${l}</div><div class="sw">${cols.map(c=>`<button data-k="${k}" data-v="${c}" style="background:${c}" class="${LOOK[k]===c?'on':''}" title="${c}"></button>`).join('')}</div></div>`).join('')+
+    `<div class="wrow"><div class="sub">Extras</div><div class="opt"><button data-t="antenna" class="${LOOK.antenna?'on':''}">Helmet antenna</button><button data-t="lamp" class="${LOOK.lamp?'on':''}">Helmet lamp</button></div></div>`;
+}
+function openWardrobe(){
+  closePanels();$('#wardrobe').classList.remove('hidden');game.wardrobe={yaw:cam.yaw,pitch:cam.pitch,zoom:cam.zoom};
+  const hb=nearHab(P.pos,14)||home();P.yaw=Math.atan2(P.pos.x-hb.x,P.pos.z-hb.z);astro.rotation.set(0,P.yaw,0,'YXZ');
+  cam.yaw=P.yaw+Math.PI+0.35;cam.pitch=0.12;cam.zoom=0.42;renderWardrobe();
+}
+function closeWardrobe(){
+  if(!game.wardrobe)return;$('#wardrobe').classList.add('hidden');const w=game.wardrobe;cam.yaw=w.yaw;cam.pitch=w.pitch;cam.zoom=w.zoom;game.wardrobe=null;
+  try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(e){}
+}
+$('#hanger').addEventListener('click',openWardrobe);
+$('#w-done').addEventListener('click',closeWardrobe);
+$('#w-reset').addEventListener('click',()=>{LOOK={...LOOK_DEFAULT};applyLook();renderWardrobe()});
+$('#wardrobe').addEventListener('click',e=>{
+  const s=e.target.closest('[data-k]'),t=e.target.closest('[data-t]');
+  if(s){LOOK[s.dataset.k]=s.dataset.v;applyLook();renderWardrobe();beep(900,0.04)}
+  if(t){LOOK[t.dataset.t]=!LOOK[t.dataset.t];applyLook();renderWardrobe();beep(900,0.04)}
+  if(e.target.closest('[data-close]'))closeWardrobe();
+});
+applyLook();
