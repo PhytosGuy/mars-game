@@ -38,12 +38,13 @@ async function startNew(site,mode,cfg={}){
   spawnBase();placeActors();P.hp=100;P.bat=100;P.stam=100;P.hot=0;
   updateChunks(0,0,999);
   spawnStaticLander();game.introGY=staticLander.position.y;
-  game.state='intro';game.introT=0;game.puffed=false;astro.visible=false;rover.visible=true;
+  game.state='intro';game.introT=0;game.puffed=false;astro.visible=false;rover.visible=true;if(typeof startLanding==='function')startLanding();
   rover.position.set(R.pos.x,R.pos.y,R.pos.z);rover.rotation.set(0,R.yaw,0);
   $('#cards').innerHTML='';$('#toasts').innerHTML='';
   fade(false);
 }
 function introUpdate(dt){
+  if(game.landing){landingUpdate(dt);return}
   game.introT+=dt;S.time+=dt*HPS*0.3;updateEnv(dt,staticLander.position);
   const T=7.5,e=Math.min(1,game.introT/T),gy=game.introGY;
   staticLander.position.y=gy+240*Math.pow(1-e,3);
@@ -86,7 +87,7 @@ function gameOver(){
 }
 function togglePause(force){
   game.paused=force===undefined?!game.paused:force;$('#pause').classList.toggle('hidden',!game.paused);
-  $('#p-sound').textContent='Sound: '+(AU.sound?'on':'off');$('#p-gfx').textContent='Graphics: '+(GFX.q==='high'?'Cinematic':'Fast');if(typeof updateNetUI==='function')updateNetUI();$('#p-music').textContent='Music: '+(AU.music?'on':'off');
+  if(typeof updateNetUI==='function')updateNetUI();
 }
 function showTitle(){
   if(net.role)leaveNet(true);
@@ -108,12 +109,14 @@ function titleUpdate(dt){
   titleTime+=dt*0.01;titleCam(dt);updateEnv(dt,camera.position);updateChunks(camera.position.x,camera.position.z,3);updateWeatherFX(dt,camera.position);
 }
 function playUpdate(dt){
+  if(game.cine){game.cine(dt);return}
   const h=dt*HPS*dayMul();S.time+=h;
   const f0=focusPos();updateEnv(dt,f0);
-  const blocked=game.wardrobe||game.dialogue||game.typing||invUI.open||game.dead;
+  const blocked=game.wardrobe||game.dialogue||game.typing||invUI.open||game.dead||game.sleeping;
   const inp=blocked?{fwd:0,steer:0,camTurn:0,jump:false,sprint:false,brake:true}:readInput();
   updateRover(dt,inp);
   if(P.mode==='foot'){if(P.ragdoll)updateRagdoll(dt,inp);else updateWalker(dt,inp)}else P.pos.copy(R.pos);
+  if(P.mode==='foot'&&!P.inside&&!cave.active&&!setupDone()){const hb=home(),dx=P.pos.x-hb.x,dz=P.pos.z-hb.z,d=Math.hypot(dx,dz);if(d>SETUP_R){P.pos.x=hb.x+dx/d*SETUP_R;P.pos.z=hb.z+dz/d*SETUP_R;P.vel.x*=0.2;P.vel.z*=0.2;if(now-(game.edgeT||-99)>6){game.edgeT=now;toast('Mission Control: stay near the base until the solar arrays and oxygen unit are running','warn')}}}
   updateToolUse(dt);updateEmote(dt);
   updateCamera(dt);
   updateMeteors(dt);
@@ -157,7 +160,7 @@ addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyV')closeQuick()}
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 const HOTKEYS={Digit1:0,Digit2:1,Digit3:2,Digit4:3,Digit5:4,Digit6:5,Digit7:6,Digit8:7,Digit9:8};
 function onKey(c){
-  if(game.state==='intro'){if(c==='Space'||c==='Enter'||c==='Escape')game.introT=Math.max(game.introT,9.4);return}
+  if(game.state==='intro'){if(game.landing)return;if(c==='Space'||c==='Enter'||c==='Escape')game.introT=Math.max(game.introT,9.4);return}
   if(game.state!=='play'||S.over)return;
   if(c==='Escape'){
     if(game.dialogue){closeDialogue();return}if(invUI.open){openInventory(false);return}if(build.active){toggleBuild(false);return}
@@ -228,10 +231,9 @@ function renderSites(){
   $$('#sgrid .site').forEach(el=>el.onclick=()=>{if(selSite===el.dataset.site)return;selSite=el.dataset.site;renderSites();initSite(selSite);tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,40)});
 }
 $('#p-resume').onclick=()=>togglePause(false);
-$('#p-save').onclick=()=>{togglePause(false);saveGame()};
-$('#p-sound').onclick=()=>{AU.sound=!AU.sound;togglePause(true)};
-$('#p-music').onclick=()=>{AU.music=!AU.music;togglePause(true)};
-$('#p-gfx').onclick=()=>{GFX.q=GFX.q==='high'?'fast':'high';applyGfx();togglePause(true)};
+$('#p-save').onclick=()=>{saveGame()};
+$('#p-friends').onclick=()=>{if(typeof openFriends==='function')openFriends()};
+addEventListener('keydown',e=>{if(!game.paused||game.state!=='play'||$('#pause').classList.contains('hidden')||game.typing)return;const b={'1':'#p-resume','2':'#p-set','3':'#p-friends','4':'#p-save','5':'#p-quit'}[e.key];if(b){e.preventDefault();$(b).click()}});
 $('#p-coop').onclick=()=>{if(net.role==='guest'){leaveNet(false);showTitle();return}if(net.role==='host'){leaveNet(false);togglePause(true);return}hostGame();togglePause(false)};
 $('#b-coop').onclick=()=>{initAudio();$('#coop-name').value=net.name;$('#coop-code').value='';coopMsg('');$('#coop').classList.remove('hidden');$('#coop-code').focus()};
 $('#coop-x').onclick=()=>{closeCoop();if(net.peer&&!net.role)leaveNet(true)};

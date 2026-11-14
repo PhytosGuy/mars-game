@@ -44,11 +44,12 @@ const BUILD={
   reactor:{name:'Fission Power Unit',cost:60,r:2.6,power:0,res:'reactor',desc:'Kilopower-class reactor: 10 kW day and night. Keep it 30 m from habitats.'},
   pad:{name:'Landing Pad',cost:40,r:9,power:0,res:'landingpad',solid:false,maxSlope:2,desc:'Larger supply deliveries and crew landers.'},
   habitat:{name:'Habitat',cost:60,r:6.6,power:1.5,prio:10,res:'hab2',desc:'Pressurised living module with room for 2 more crew.'},
+  bed:{name:'Camp Bed',cost:2,r:1.2,power:0,remote:true,solid:false,desc:'A folding cot with a thermal blanket. Sleep through the night anywhere, alone or with your crew (F). Several crewmates can share one.'},
   beacon:{name:'Beacon',cost:1,r:0.6,power:0,remote:true,solid:false,desc:'Navigation marker that shows on the compass and map.'},
   fabricator:{name:'Fabricator',cost:30,r:3,power:1.5,prio:5,desc:'Advanced crafting: titanium plates, better tools, weapons and suit upgrades.'},
   seismo:{name:'Seismometer',cost:20,r:1.4,power:0.2,prio:7,desc:'Detects marsquake P-waves seconds before the shaking arrives, like NASA’s InSight.'},
 };
-const BUILD_ORDER=['solar','battery','moxie','drill','greenhouse','lab','fabricator','regolith','comms','charger','weather','seismo','reactor','pad','habitat','beacon'];
+const BUILD_ORDER=['solar','battery','moxie','drill','greenhouse','lab','fabricator','regolith','comms','charger','weather','seismo','reactor','pad','habitat','bed','beacon'];
 const RESEARCH=[
   {id:'icedrill',name:'Ice Extraction',branch:'Water',cost:10,req:()=>S.flags.iceFound,reqText:'Scan an ice signature first',desc:'Unlocks the Ice Drill.'},
   {id:'greenhouse',name:'Controlled Agriculture',branch:'Agriculture',cost:15,desc:'Unlocks the Greenhouse.'},
@@ -74,13 +75,12 @@ const CREW_NEW=[
 const hasRole=r=>S.crewList.some(c=>c.role===r);
 const analyzedType=t=>S.analyzed.filter(a=>a.type===t).length;
 const CHAPTERS=[
-  {title:'Touchdown',intro:'Your lander is down. Inspect the site, bring power online and call home.',reward:{mat:30,rp:15},objs:[
-    {id:'rover',text:'Inspect the landing site: walk to the rover',check:()=>S.flags.nearRover},
+  {title:'Touchdown',intro:'Your lander is down. Before you can take the rover out, set up the colony: check the habitat, bring power online and start making oxygen.',reward:{mat:30,rp:15},objs:[
     {id:'hab',text:'Run a systems check at the habitat airlock [F]',check:()=>S.flags.habCheck},
-    {id:'solar',text:'Deploy power: build 2 more Solar Arrays',check:()=>count('solar')>=5},
-    {id:'comms',text:'Establish communications: build a Comms Antenna',check:()=>count('comms')>=1}]},
-  {title:'First Survival',intro:'The stored supplies won’t last. Make oxygen, find water and start growing food.',reward:{mat:40,rp:10},objs:[
-    {id:'moxie',text:'Build an Oxygen Unit (MOXIE)',check:()=>count('moxie')>=1},
+    {id:'solar',text:'Deploy power: build 2 more Solar Arrays [B]',check:()=>count('solar')>=5},
+    {id:'moxie',text:'Make oxygen: build an Oxygen Unit (MOXIE) [B]',check:()=>count('moxie')>=1}]},
+  {title:'First Survival',intro:'The rover is yours. The stored supplies won’t last: call home, find water and start growing food.',reward:{mat:40,rp:10},objs:[
+    {id:'comms',text:'Establish communications: build a Comms Antenna',check:()=>count('comms')>=1},
     {id:'ice',text:'Find subsurface ice: scan an ice signature',check:()=>S.flags.iceFound},
     {id:'drill',text:'Research Ice Extraction, then build an Ice Drill',check:()=>count('drill')>=1},
     {id:'gh',text:'Research Agriculture, then build a Greenhouse',check:()=>count('greenhouse')>=1},

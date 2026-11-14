@@ -54,8 +54,9 @@ function updateHUD(){
   const vb=(l,v,c)=>`<div class="vbar"><span>${l}</span><i><i style="width:${clamp(v,0,100)}%;background:${c}"></i></i></div>`;
   // suit integrity as diamond cells (20 points each), then oxygen and battery
   const mh=maxHP();
-  setHTML('vitals2',vb('Health',P.hp/mh*100,P.hp<mh*0.3?'var(--bad)':'#ff6f61')+vb('Oxygen',P.o2,P.o2<25?'var(--bad)':'#7fd3ff')+vb('Battery',P.bat,P.bat<20?'var(--bad)':'#ffd34d')+
-    `<div class="vbar col"><span>Colony O₂</span><em class="${S.rates.o2<0&&S.res.o2/(-S.rates.o2*SOL_H)<1.5?'neg':''}">${S.res.o2.toFixed(1)} kg</em></div>`);
+  const hpP=P.hp/mh*100;
+  setHTML('vitals2',`<div class="hpbig${hpP<30?' low':''}"><span class="hpico">♥</span><div class="hpcol"><div class="hptop"><b>Health</b><em>${Math.ceil(P.hp)} / ${mh}</em></div><i><i style="width:${clamp(hpP,0,100)}%"></i></i></div></div>`+vb('Oxygen',P.o2,P.o2<25?'var(--bad)':'#7fd3ff')+vb('Battery',P.bat,P.bat<20?'var(--bad)':'#ffd34d')+
+    (renderCrew(),'')+`<div class="vbar col"><span>Colony O₂</span><em class="${S.rates.o2<0&&S.res.o2/(-S.rates.o2*SOL_H)<1.5?'neg':''}">${S.res.o2.toFixed(1)} kg</em></div>`);
   if(P.mode==='foot'){setHTML('s-vital',cave.active?`Underground · ${Math.round(cave.depth)} m deep`:esc(curRegion?curRegion.name:SITE.name))}
   else{const bp=R.battery/R.maxBat*100;setHTML('s-vital',`Rover ${bar(bp,bp<15?'var(--bad)':bp<35?'var(--warn)':'#ffd34d')} ${Math.round(bp)}% · ${Math.round(Math.hypot(R.vx||0,R.vz||0)*3.6)} km/h${R.air?' · airborne':R.upside?' · flipped':''}${R.cruise?' · cruise':''}${S.roverKW>0?' · charging':''}`)}
   const low=k=>S.rates[k]<0&&S.res[k]/(-S.rates[k]*SOL_H)<1.5?' class="neg"':'';
@@ -97,6 +98,7 @@ function updateCompass(){
   items.push([hm.x,hm.z,'#ffffff','Base']);
   if(P.mode==='foot')items.push([R.pos.x,R.pos.z,'#ff9147','Rover']);
   if(S.waypoint)items.push([S.waypoint.x,S.waypoint.z,'#6fe0c8','Waypoint']);
+  for(const c of S.lostCaches)if(cacheMeshes.has(c.id))items.push([c.x,c.z,'#ff6b5e','Your body']);
   for(const b of blds)if(b.type==='beacon')items.push([b.x,b.z,'#ffb06a','']);
   for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))items.push([p.x,p.z,POI[p.type].color,'']);
   for(const[x,z,c,l]of items){const d=Math.hypot(x-f.x,z-f.z);if(d<8)continue;const px=xOf(Math.atan2(x-f.x,z-f.z));if(px<0||px>W)continue;
@@ -287,13 +289,13 @@ const WOPTS=[['suit','Suit',['#efebe4','#f2c94c','#4f86f7','#e8553b','#3cb37a','
   ['pack','Backpack',['#c9c3bb','#efebe4','#ff7a2e','#4f86f7','#3a3a40','#3cb37a']],
   ['boots','Boots and belt',['#8d8781','#3a3532','#efebe4','#a5623f','#4f86f7']],
   ['rover','Rover paint',['#efebe4','#ffd34d','#e8553b','#4f86f7','#3cb37a','#3a3a40','#ff8fb1']]];
-function applyLook(){const M=astro.userData.mats;M.suit.color.set(LOOK.suit);M.accent.color.set(LOOK.accent);M.visor.color.set(LOOK.visor);
-  M.visor.emissive.set(LOOK.visor);M.pack.color.set(LOOK.pack);M.boots.color.set(LOOK.boots);astro.userData.antenna.visible=!!LOOK.antenna;rover.userData.paint.color.set(LOOK.rover)}
+function applyLook(){dressModel(astro,LOOK);setOutfit(astro,!!(typeof P!=='undefined'&&P.inside));rover.userData.paint.color.set(LOOK.rover);syncLampLook()}
+function syncLampLook(){}
 function renderWardrobe(){
   $('#w-body').innerHTML=WOPTS.map(([k,l,cols])=>`<div class="wrow"><div class="sub">${l}</div><div class="sw">${cols.map(c=>`<button data-k="${k}" data-v="${c}" style="background:${c}" class="${LOOK[k]===c?'on':''}" title="${c}"></button>`).join('')}</div></div>`).join('')+
     `<div class="wrow"><div class="sub">Extras</div><div class="opt"><button data-t="antenna" class="${LOOK.antenna?'on':''}">Helmet antenna</button><button data-t="lamp" class="${LOOK.lamp?'on':''}">Helmet lamp</button></div></div>`;
 }
-function openWardrobe(){
+function openWardrobe(){if(typeof openCreator==='function'){closePanels();openCreator();return}
   closePanels();$('#wardrobe').classList.remove('hidden');game.wardrobe={yaw:cam.yaw,pitch:cam.pitch,zoom:cam.zoom};
   const hb=nearHab(P.pos,14)||home();P.yaw=Math.atan2(P.pos.x-hb.x,P.pos.z-hb.z);astro.rotation.set(0,P.yaw,0,'YXZ');
   cam.yaw=P.yaw+Math.PI+0.35;cam.pitch=0.12;cam.zoom=0.42;renderWardrobe();
@@ -345,10 +347,23 @@ function drawMinimap(dt){
   for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))dot(p.x,p.z,3.2,POI[p.type].color,'#000');
   if(typeof creatures!=='undefined')for(const cr of creatures.values())if(!cr.gone&&Math.abs(cr.x-f.x)<MM.show&&Math.abs(cr.z-f.z)<MM.show)dot(cr.x,cr.z,2.4,SPECIES[cr.sp].kind==='hostile'?'#ff5a4f':'#8fe39a');
   if(typeof pings!=='undefined')for(const p of pings)dot(p.x,p.z,4,'#ffd25e');
+  for(const lc of S.lostCaches)if(cacheMeshes.has(lc.id)){const[px,py]=mmEdge(...toS(lc.x,lc.z),h,7);c.strokeStyle='#ff6b5e';c.lineWidth=3;c.beginPath();c.moveTo(px-5,py-5);c.lineTo(px+5,py+5);c.moveTo(px+5,py-5);c.lineTo(px-5,py+5);c.stroke()}
   if(P.mode==='foot')dot(R.pos.x,R.pos.z,4,'#ff8a3d','#000');
-  for(const rp of net.players.values()){const q=rp.t&&rp.t.p;if(q)dot(q[4]?q[5]:q[0],q[4]?q[7]:q[2],3.6,'#7fd3ff','#000')}
+  for(const rp of net.players.values()){const q=rp.t&&rp.t.p;if(!q)continue;const[px,py]=mmEdge(...toS(q[4]?q[5]:q[0],q[4]?q[7]:q[2]),h,14),im=rp.lookS&&pfpImage(rp.lookS);
+    c.save();c.beginPath();c.arc(px,py,13,0,TAU);c.fillStyle='#7fd3ff';c.fill();if(im&&im.complete&&im.naturalWidth){c.clip();c.drawImage(im,px-12,py-12,24,24)}c.restore();c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.arc(px,py,13,0,TAU);c.stroke()}
   const g=game.guide;if(g&&g.x!==undefined&&OPT.guide!==false){const[px,py]=mmEdge(...toS(g.x,g.z),h,8);c.strokeStyle='#ff8a3d';c.lineWidth=2.5;c.beginPath();c.arc(px,py,6,0,TAU);c.stroke()}
   // north marker on the rim, and you in the middle facing your way
   {const[nx,ny]=toS(f.x,f.z-1000),[px,py]=mmEdge(nx,ny,h,11);c.fillStyle='rgba(0,0,0,.55)';c.beginPath();c.arc(px,py,8,0,TAU);c.fill();c.fillStyle='#ff8a3d';c.font='800 11px Nunito Sans';c.textAlign='center';c.textBaseline='middle';c.fillText('N',px,py+0.5)}
   c.save();c.translate(h,h);c.rotate(wrapA((P.mode==='rover'?R.yaw:P.yaw)-cam.yaw));c.fillStyle='#fff';c.strokeStyle='#000';c.lineWidth=1.5;c.beginPath();c.moveTo(0,-9);c.lineTo(6,7);c.lineTo(0,3);c.lineTo(-6,7);c.closePath();c.fill();c.stroke();c.restore();
 }
+/* ---------- your crewmates online: profile picture, name, health and oxygen ---------- */
+const PFPIMG=new Map();
+function pfpImage(lookS){let im=PFPIMG.get(lookS);if(!im){im=new Image();let l={};try{l=JSON.parse(lookS)}catch(e){}im.src=pfpURL(l)||'';PFPIMG.set(lookS,im);if(PFPIMG.size>40)PFPIMG.delete(PFPIMG.keys().next().value)}return im}
+let crewSig='';
+function renderCrew(force){
+  const el=$('#crewhud');if(!el)return;const list=[...net.players.values()].filter(p=>p.t);
+  const sig=list.map(p=>p.id+(p.lookS||'').length+Math.round((p.t.hp||0)/2)+Math.round((p.t.o2||0)/4)+(p.t.in||0)).join('|');if(!force&&sig===crewSig)return;crewSig=sig;
+  el.innerHTML=list.map(p=>{const mh=p.t.mh||100,hp=clamp((p.t.hp||0)/mh*100,0,100),o2=clamp(p.t.o2??100,0,100);let l={};try{l=JSON.parse(p.lookS||'{}')}catch(e){}
+    return`<div class="crew${hp<30?' low':''}">${pfpImg(l)}<div class="cinfo"><b>${esc(p.name||'Crewmate')}${p.t.in?' <small>· in the habitat</small>':''}</b><span class="cb hp"><i style="width:${hp}%"></i></span><span class="cb o2"><i style="width:${o2}%"></i></span></div></div>`}).join('');
+  el.classList.toggle('hidden',!list.length)}
+$('#hudfold').addEventListener('click',()=>{document.body.classList.toggle('hudmin')});

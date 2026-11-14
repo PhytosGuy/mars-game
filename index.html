@@ -386,6 +386,105 @@ canvas#game{touch-action:none}
 body.touch #minimap{width:118px;height:118px}body.touch #vitals2{top:140px!important}body.touch #buffs{top:226px!important}
 body.touch #chatbtn{top:16px;left:148px;right:auto}
 @media (max-height:500px){body.touch #minimap{width:92px;height:92px;top:10px;left:12px}body.touch #vitals2{top:108px!important;transform:scale(.85);transform-origin:0 0}body.touch #buffs{top:186px!important}body.touch #chatbtn{left:116px;top:12px}#joyhint{width:110px;height:110px;bottom:70px;left:22px;border-radius:24px}body.touch #mmlabel{bottom:12px;font-size:9px}}
+
+/* character creator */
+.crwin{width:min(980px,96vw);max-height:94vh;display:flex;flex-direction:column}
+.crbody{display:grid;grid-template-columns:minmax(220px,38%) 1fr;gap:18px;min-height:0;flex:1}
+.crleft{display:flex;flex-direction:column;gap:10px}
+#cr-prev{position:relative;flex:1;min-height:300px;border-radius:16px;overflow:hidden;background:radial-gradient(ellipse at 50% 85%,#b8623a 0,#6a3020 45%,#24120c 100%);cursor:grab;touch-action:none}
+#cr-cv{width:100%;height:100%;display:block}#cr-prev span{position:absolute;right:10px;bottom:8px;font-size:11px;font-weight:700;color:rgba(255,255,255,.55);pointer-events:none}
+#cr-pfp{position:absolute;left:10px;top:10px;width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.7);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.crmode{justify-content:center}.crbtns{display:flex;gap:8px;justify-content:center}
+.crright{display:flex;flex-direction:column;min-height:0}
+.crtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.crtabs button{padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-weight:700;cursor:pointer}
+.crtabs button.on{background:var(--accent,#ff8a3d);color:#1d0f06;border-color:transparent}
+#cr-opts{overflow:auto;padding-right:6px;max-height:min(62vh,560px)}
+.crrow{margin-bottom:14px}.crrow .sub{margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-size:14px;cursor:pointer}
+.chips button.on{border-color:var(--accent,#ff8a3d);background:rgba(255,138,61,.18)}
+.crcall{display:flex;gap:14px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.05)}.crcall p{margin:4px 0 10px}
+.pfp{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;display:inline-block;background:#5a3a2a}.pfp.big{width:84px;height:84px}
+@media (max-width:760px){.crbody{grid-template-columns:1fr}#cr-prev{min-height:210px}#cr-opts{max-height:none}.crwin{overflow:auto}}
+/* airlock sequence */
+#hud.cinehide{opacity:0;pointer-events:none}
+#alov{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:30;width:min(520px,calc(100vw - 32px))}
+.alcard{padding:16px 18px;border-radius:16px;background:rgba(14,18,24,.86);border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.45);color:#f2f4f6}
+.alstep{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7fe8ff}.alcard h3{margin:4px 0 6px;font-size:20px}.alcard p{margin:0 0 10px;line-height:1.45;color:#cfd6de}
+.algauge{height:10px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}.algauge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff6a4d,#ffd34d,#3fe07a);transition:width .1s}
+.alrow{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:13px;color:#cfd6de}
+/* landing sequence: the view from the lander's window */
+#landui{position:fixed;inset:0;z-index:25;pointer-events:none;color:#f2f4f6}
+#landui .lwin{position:absolute;inset:0;background:radial-gradient(ellipse 47% 44% at 50% 42%,transparent 97%,#141820 98%);box-shadow:inset 0 0 0 9999px rgba(0,0,0,0)}
+#landui .lwin::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 47% 44% at 50% 42%,transparent 90%,rgba(120,140,160,.35) 96%,transparent 97%)}
+#landui .lstrut{position:absolute;top:0;bottom:0;width:18px;background:linear-gradient(90deg,#20262f,#3a424e,#20262f)}#landui .lstrut.l{left:calc(50% - 30vw)}#landui .lstrut.r{right:calc(50% - 30vw)}
+#landui .lglow{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at 50% 100%,rgba(255,120,40,.85),rgba(255,60,20,.3) 45%,transparent 70%);mix-blend-mode:screen}
+#landui .ltop{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:min(620px,calc(100vw - 32px));padding:12px 16px;border-radius:14px;background:rgba(14,18,24,.82);border:1px solid rgba(255,255,255,.14)}
+#landui .ltop h3{margin:3px 0 4px;font-size:20px}#landui .ltop p{margin:0;font-size:14px;line-height:1.45;color:#cfd6de}.lph{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ffb35c}
+#landui .ldash{position:absolute;left:0;right:0;bottom:0;height:150px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 18px;background:linear-gradient(transparent,#141820 38%)}
+.lins{display:grid;grid-template-columns:repeat(3,auto);gap:6px 22px;align-items:end}.lins span{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9fb0c0}
+.lins b{font:800 26px/1.1 var(--fb);font-variant-numeric:tabular-nums}.lins b.good{color:#7fe6a0}.lins b.warn{color:#ffd34d}.lins b.bad{color:#ff6a4d}
+.lsteps{grid-column:1/-1;display:flex;gap:6px}.lsteps i{width:34px;height:6px;border-radius:3px;background:rgba(255,255,255,.18)}.lsteps i.done{background:#7fe6a0}.lsteps i.on{background:#ffb35c}
+.lever{position:relative;width:74px;height:200px;margin-bottom:6px;pointer-events:auto;cursor:ns-resize;touch-action:none;opacity:.45;transition:opacity .3s}.lever.live{opacity:1}
+.ltrack{position:absolute;left:28px;top:10px;bottom:24px;width:18px;border-radius:9px;background:#0b0e13;border:2px solid #3a424e;overflow:hidden}.ltrack i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ffb35c,#ff6a2e)}
+.lhandle{position:absolute;left:8px;width:58px;height:28px;border-radius:9px;background:linear-gradient(#e8ecf0,#9aa3ad);border-bottom:4px solid #5a626e;box-shadow:0 4px 10px rgba(0,0,0,.5)}
+.lever span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.1em;color:#9fb0c0}
+#l-skip{position:absolute;right:16px;top:16px;pointer-events:auto}
+@media (max-width:760px){#landui .ltop{top:58px}.lins b{font-size:19px}#landui .ldash{padding:0 12px 12px}#landui .lstrut{display:none}}
+/* pause menu */
+#pause .tmenu{display:flex;flex-direction:column;gap:10px;align-items:stretch}.pbig{display:flex;align-items:center;gap:12px;font-size:17px;padding:13px 16px;text-align:left}
+.pbig b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:rgba(0,0,0,.25);font-size:13px}
+#verlbl{position:absolute;right:16px;bottom:12px;font-size:12px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.04em}
+/* health first and biggest; crewmates under it */
+.hpbig{display:flex;align-items:center;gap:8px;margin-bottom:4px}.hpico{font-size:24px;color:#ff5a5a;text-shadow:0 2px 6px rgba(0,0,0,.5)}
+.hpcol{display:flex;flex-direction:column;gap:3px}.hptop{display:flex;justify-content:space-between;align-items:baseline;width:190px}.hptop b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#fff}.hptop em{font-style:normal;font-weight:800;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}
+.hpcol>i{display:block;width:190px;height:13px;border-radius:7px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);overflow:hidden}.hpcol>i>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#ff5a5a,#ff8f6a)}
+.hpbig.low .hpico,.hpbig.low .hptop em{color:#ff3b3b;animation:hpPulse .8s ease-in-out infinite}.hpbig.low .hpcol>i{border-color:#ff3b3b;box-shadow:0 0 12px rgba(255,59,59,.7)}
+@keyframes hpPulse{50%{opacity:.45}}
+#crewhud{position:absolute;left:16px;top:300px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.crew{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(10,8,8,.45)}.crew .pfp{width:32px;height:32px;border:2px solid rgba(255,255,255,.6)}
+.cinfo b{display:block;font-size:12px;color:#fff}.cinfo small{font-weight:600;color:var(--dim)}.cb{display:block;width:110px;height:5px;border-radius:3px;background:rgba(0,0,0,.5);margin-top:3px;overflow:hidden}.cb i{display:block;height:100%}.cb.hp i{background:#ff6f61}.cb.o2 i{background:#7fd3ff}
+.crew.low{box-shadow:0 0 0 2px #ff3b3b}
+#hudfold{display:none;position:absolute;left:16px;width:30px;height:24px;border-radius:8px;border:0;background:rgba(10,8,8,.5);color:#fff;font-size:14px;pointer-events:auto}
+body.touch #hudfold{display:block;top:54px;left:150px}body.touch #crewhud{top:50px;left:188px;flex-direction:row;gap:4px}body.touch .crew{padding:2px;flex-direction:column;gap:2px;border-radius:12px}body.touch .crew .cinfo b,body.touch .cb.o2{display:none}body.touch .cb{width:30px;margin:0}
+body.hudmin #vitals2>:nth-child(n+3),body.hudmin #crewhud,body.hudmin #buffs,body.hudmin #radiofeed,body.hudmin #compass{display:none!important}body.hudmin #hudfold{transform:rotate(-90deg)}
+body.touch #crewhud .cinfo b small{display:none}
+@media (max-height:500px){body.touch #hudfold{top:54px;left:116px}body.touch #crewhud{top:50px;left:152px}body.touch .hptop,body.touch .hpcol>i{width:150px}}
+#sleepui{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:22;display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;background:rgba(14,18,24,.86);color:#f2f4f6;border:1px solid rgba(255,255,255,.14)}#sleepui span{font-size:13px;color:#cfd6de}
+/* friends: the join code and invites */
+.codecard{padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(255,138,61,.18),rgba(95,232,255,.08));border:1px solid rgba(255,138,61,.4);margin-bottom:14px}
+.bigcode{font:900 44px/1.1 var(--fb);letter-spacing:.22em;color:#fff;margin:6px 0 10px;user-select:all}.codein{font:800 26px/1 var(--fb)!important;letter-spacing:.3em;text-transform:uppercase;text-align:center}
+.bigbtn{font-size:17px;padding:12px 18px}#coop-code{font-size:26px;letter-spacing:.3em;text-transform:uppercase;text-align:center;font-weight:800}
+.frow .pfp{width:30px;height:30px}
+#notifs{position:fixed;top:12px;right:16px;z-index:40;display:flex;flex-direction:column;gap:8px;width:min(320px,calc(100vw - 32px))}
+.notif{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:rgba(14,18,24,.92);border:1px solid rgba(255,138,61,.6);box-shadow:0 10px 30px rgba(0,0,0,.45);color:#f2f4f6;animation:nIn .35s ease-out}
+.notif .pfp{width:44px;height:44px}.ntxt b{display:block}.ntxt span{font-size:13px;color:#cfd6de}.nbtn{display:flex;gap:6px;margin-top:6px}.notif.old{opacity:.7}
+@keyframes nIn{from{transform:translateX(40px);opacity:0}}
+/* NASA Mission Design Lab */
+.mlwin{width:min(1080px,97vw);height:min(92vh,860px);display:flex;flex-direction:column}
+.mlsteps{display:flex;gap:4px;margin-bottom:12px;overflow-x:auto}.mls{flex:1;min-width:92px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.05);border-bottom:3px solid transparent}
+.mls b{display:block;font-size:12px}.mls span{display:block;font-size:10.5px;color:var(--dim);line-height:1.25}.mls.on{border-color:var(--accent,#ff8a3d);background:rgba(255,138,61,.12)}.mls.done{border-color:#7fe6a0}
+.mlbody{flex:1;overflow:auto;padding-right:6px}.mlbody h3{margin:4px 0 6px}.mlnav{margin-top:10px}
+.mlintro p{line-height:1.55}.segs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:12px 0}.segs>div{padding:12px;border-radius:12px;background:rgba(255,255,255,.05)}.segs b{display:block;margin-bottom:4px}.segs span{font-size:13.5px;line-height:1.45;color:#d6dbe0}
+.mlcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:10px 0}
+.mlcard{text-align:left;padding:11px 12px;border-radius:12px;border:2px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:inherit;cursor:pointer}.mlcard b{display:block;margin-bottom:4px}.mlcard span{display:block;font-size:12.5px;color:var(--dim)}
+.mlcard.on{border-color:var(--accent,#ff8a3d);background:rgba(255,138,61,.14)}.mlcard:disabled{opacity:.4;cursor:default}.mlcard em{display:block;font-style:normal;font-size:12px;color:#ff9a7a;margin-top:3px}
+.mltab{width:100%;border-collapse:collapse;font-size:13.5px}.mltab td,.mltab th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.mltab small{color:var(--dim)}.mltab tr.on{background:rgba(255,138,61,.12)}.mltab tr.off{opacity:.45}
+.mlnote{margin-top:12px;padding:12px;border-radius:12px;background:rgba(95,232,255,.08);border:1px solid rgba(95,232,255,.3);line-height:1.5;font-size:14px}
+.mlbud{display:flex;align-items:center;gap:10px;margin:8px 0}.mlbud>i{flex:1;height:10px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden}.mlbud>i>i{display:block;height:100%}
+.chips.col{flex-direction:column;align-items:stretch;margin-top:8px}
+.mltraj{display:grid;grid-template-columns:1.4fr 1fr;gap:14px}#mlviz{position:relative;min-height:340px;border-radius:14px;overflow:hidden;background:#05060c}#mlcv{width:100%;height:100%;display:block}#ml-vr{position:absolute;right:10px;bottom:10px}
+.mlside p{line-height:1.5;font-size:14px;margin-top:0}.mlside input[type=range]{width:100%}#ml-dayl{font-size:13px;margin:6px 0 12px;line-height:1.5}
+.good{color:#7fe6a0}.warn{color:#ffd34d}.bad{color:#ff6a4d}
+.mlev{display:flex;flex-direction:column;gap:4px;margin-top:8px}.mlev span{font-size:13px;color:var(--dim);padding-left:16px;position:relative}.mlev span::before{content:'';position:absolute;left:2px;top:6px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25)}.mlev span.on{color:#fff}.mlev span.on::before{background:#ffb35c}
+.mlchk{list-style:none;padding:0;margin:10px 0}.mlchk li{padding:8px 10px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04)}.mlchk li.ok{color:#bff5d0}.mlchk li.bad{color:#ffb4a0;background:rgba(255,90,60,.1)}
+.mlsum{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}
+.mllaunch{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 0}.rocket{width:40px;height:150px;position:relative;transition:transform 2.2s cubic-bezier(.6,0,.9,.4)}
+.rocket::before{content:'';position:absolute;left:8px;top:0;width:24px;height:120px;border-radius:12px 12px 4px 4px;background:linear-gradient(90deg,#c9d0d8,#fff,#c9d0d8)}.rocket::after{content:'';position:absolute;left:0;bottom:24px;width:40px;height:20px;background:#e8553b;clip-path:polygon(20% 0,80% 0,100% 100%,0 100%)}
+.rocket i{position:absolute;left:12px;bottom:0;width:16px;height:26px;border-radius:0 0 50% 50%;background:radial-gradient(#fff3c2,#ff8a3d 60%,transparent 70%);opacity:0}.rocket.go{transform:translateY(-120vh)}.rocket.go i{opacity:1;animation:flick .08s infinite alternate}
+@keyframes flick{to{transform:scaleY(1.4)}}
+.mlres h2{margin:6px 0}.bigscore{font:900 54px/1 var(--fb)}.bigscore small{font-size:15px;font-weight:600;color:var(--dim);margin-left:8px}.mlreal{margin:6px 0 10px;line-height:1.7}.mlsrc{margin-top:14px;font-size:13.5px}.mlsrc a{color:#7fe8ff}
+.mlpage{line-height:1.55}
+@media (max-width:760px){.mltraj{grid-template-columns:1fr}#mlviz{min-height:240px}.mls span{display:none}.mlwin{height:96vh}}
 h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -407,7 +506,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <button id="chatbtn" title="Radio chat (Enter)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg><span>Chat</span><kbd>Enter</kbd></button>
   <button id="hanger" class="hidden" title="Wardrobe"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9a3 3 0 1 1 4.2 2.75c-.75.35-1.2 1-1.2 1.8V15"/><path d="M16 15 3.5 23.2c-.9.6-.5 1.8.5 1.8h24c1 0 1.4-1.2.5-1.8Z"/></svg><span>Wardrobe</span></button>
   <div id="lockaim" class="hidden"></div><div id="hotbar"></div><svg id="reticle" width="46" height="46" viewBox="0 0 46 46" class="hidden"><circle cx="23" cy="23" r="17" stroke="rgba(0,0,0,.45)" stroke-width="4" fill="none"/><circle id="retfg" cx="23" cy="23" r="17" stroke="#bff8f2" stroke-width="2.5" fill="none" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 23 23)"/><path d="M23 8v7M23 31v7M8 23h7M31 23h7" stroke="#e9f6f2" stroke-width="1.6"/><circle cx="23" cy="23" r="1.6" fill="#e9f6f2"/></svg><div id="hblabel"></div><div id="pickfeed"></div>
-  <div id="minimap"><canvas id="mmc" width="300" height="300"></canvas><div id="mmlabel"></div></div><div id="vitals2"></div><div id="buffs"></div><svg id="stamwheel" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" stroke="rgba(0,0,0,.45)" stroke-width="6" fill="none"/><circle id="stamfg" cx="22" cy="22" r="17" stroke="#8fe39a" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
+  <div id="minimap"><canvas id="mmc" width="300" height="300"></canvas><div id="mmlabel"></div></div><div id="vitals2"></div><div id="crewhud" class="hidden"></div><button id="hudfold" title="Show or hide details">▾</button><div id="buffs"></div><svg id="stamwheel" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" stroke="rgba(0,0,0,.45)" stroke-width="6" fill="none"/><circle id="stamfg" cx="22" cy="22" r="17" stroke="#8fe39a" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
   <div id="radiofeed"></div>
   <div id="toasts"></div>
   <div id="cards"></div>
@@ -430,7 +529,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <div id="maplegend"></div>
 </div></div>
 
-<div id="title" class="screen">
+<div id="title" class="screen"><div id="verlbl"></div>
   <button id="acctbtn" class="homechip" title="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Guest</span></button>
   <button id="friendsbtn" class="homechip round" title="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c1-3.6 3.6-5.4 6.5-5.4s5.5 1.8 6.5 5.4"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c2.6.2 4.6 1.9 5.5 4.8"/></svg></button>
   <div class="tbox">
@@ -440,6 +539,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
     <p class="tag">An open red world of canyons, caves and ancient ruins. Survive, explore and build humanity's first home on Mars.</p>
     <div class="btns tmenu">
       <button id="b-exp" class="btn primary">Expeditions</button>
+      <button id="b-mlab" class="btn">NASA Mission Lab</button>
       <button id="b-set" class="btn">Settings</button>
       <button id="b-ctrl" class="btn">Controls</button>
     </div>
@@ -471,14 +571,12 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <div id="pause" class="overlay hidden"><div class="win pausewin">
   <div class="winhead"><h2>Paused</h2></div>
   <div class="btns tmenu">
-    <button class="btn primary" id="p-resume">Resume</button>
-    <button class="btn" id="p-save">Save game</button>
-    <button class="btn" id="p-sound">Sound: on</button>
-    <button class="btn" id="p-music">Music: on</button>
-    <button class="btn" id="p-coop">Invite friends (co-op)</button>
-    <button class="btn" id="p-gfx">Graphics: Cinematic</button>
-    <button class="btn" id="p-set">Settings</button>
-    <button class="btn" id="p-quit">Save &amp; quit to title</button>
+    <button class="btn primary pbig" id="p-resume"><b>1</b>Resume</button>
+    <button class="btn pbig" id="p-set"><b>2</b>Settings</button>
+    <button class="btn pbig" id="p-friends"><b>3</b>Friends</button>
+    <button class="btn pbig" id="p-save"><b>4</b>Save</button>
+    <button class="btn pbig" id="p-quit"><b>5</b>Save &amp; quit</button>
+    <button class="btn hidden" id="p-coop"></button>
   </div>
   <div id="p-ctrl" style="margin-top:16px;font-size:13px;line-height:1.85;color:var(--dim)"></div>
 </div></div>
@@ -510,6 +608,16 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <div id="pane-col" class="hidden"><div class="sec"><span id="col-title"></span> <span class="sub" id="col-sub"></span></div><div id="col-body"></div></div>
 </div></div>
 <div id="journalov" class="hidden"><div id="jbookroot"></div></div>
+<div id="creator" class="overlay hidden"><div class="win crwin"><div class="winhead"><h2>Your character</h2><button class="x" id="cr-x">✕</button></div>
+<div class="crbody"><div class="crleft"><div id="cr-prev"><canvas id="cr-cv"></canvas><img id="cr-pfp" alt="Your profile picture" title="Your profile picture"><span>Drag to turn</span></div>
+<div class="opt crmode"><button data-cm="suit">Spacesuit</button><button data-cm="casual">Everyday clothes</button></div>
+<div class="crbtns"><button class="btn sm" id="cr-rand">Randomise</button><button class="btn sm" id="cr-reset">Reset</button></div></div>
+<div class="crright"><div class="crtabs" id="cr-tabs"></div><div id="cr-opts"></div></div></div>
+<div class="btns"><button class="btn primary" id="cr-done">Done</button></div></div></div>
+<div id="habcol" class="overlay hidden"><div class="win pausewin"><div class="winhead"><h2>Room colours</h2><button class="x" id="hc-x">✕</button></div><div id="habcolbody"></div><div class="btns"><button class="btn" id="hc-reset">Reset</button><button class="btn primary" id="hc-done">Done</button></div></div></div>
+<div id="mlab" class="overlay hidden"><div class="win mlwin"><div class="winhead"><h2>NASA Mission Design Lab</h2><button class="x" id="ml-x">✕</button></div>
+<div id="mlsteps" class="mlsteps"></div><div id="mlbody" class="mlbody"></div>
+<div class="btns mlnav"><button class="btn" id="ml-back">Back</button><span style="flex:1"></span><button class="btn primary" id="ml-next">Next</button></div></div></div>
 <div id="account" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Account</h2><button class="x" id="acc-x">✕</button></div><div id="acc-prev"><canvas id="acc-cv"></canvas><span>Drag to turn</span></div><div id="acctbody"></div></div></div>
 <div id="friends" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Friends</h2><button class="x" id="fr-x">✕</button></div><div id="frbody"></div></div></div>
 <div id="tour" class="hidden"><div id="tourhole"></div><div id="tourcard"></div><button class="btn" id="tourskip">Skip tour</button></div>
@@ -532,8 +640,8 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass});
-const V='3.10.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
-const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','menus','render','helpers','items','inventory-ui','mining','actions','comms','disasters','city','caves','world','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
+const V='4.0.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','aliens','habitat','dialogue','net','touch','config','account','missionlab','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});
 for(const f of FILES){

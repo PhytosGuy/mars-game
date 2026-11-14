@@ -67,8 +67,20 @@ Tab: open the menu on Inventory, Tab again for the next page (Shift+Tab goes bac
 - **Onboarding:** a guided tour of the screen and controls the first time you land. Skip (bottom right) ends it, and Settings → Replay the tour shows it again.
 - **Touch controls:** a rounded block-style joystick and buttons, sized and spaced for phones.
 
+## New in 4.0
+- **Landing sequence:** your first landing is flown from the lander’s window. Entry, parachute and heat-shield release are automatic (like a real Mars landing); you fly the powered descent with a throttle lever (drag it, or W/S / arrow keys). Touch down under 3 m/s.
+- **Airlock:** entering or leaving the habitat runs a short airlock cycle (pressure gauge, dust shower, suit on/off). Inside you wear your everyday clothes.
+- **Character creator:** Bitmoji-style choices for skin, eyes, brows, nose, mouth, hair, facial hair, headwear, glasses, build, height, clothes and spacesuit, with a live 3D preview. Your suited portrait is your profile picture.
+- **Habitat:** a wardrobe (walk up to it), a holo-map table, a room panel to recolour the floor and lights, and a shared sleep pod.
+- **Mars movement:** low-traction walking, long forward leaps and a bounding run.
+- **Death:** your body stays where you fell with everything you carried; a red “Your body” marker shows on the compass and map, and the rover is driven back to base.
+- **Co-op:** steadier joining (retries and relay servers), newcomers start at the base with the tour, everyone in bed at night skips to morning, buildable Camp Beds, crewmates’ health and profile pictures on the HUD and maps, a big join code in Esc → Friends, and invites that pop up at the top right.
+- **Colony setup first:** the rover and the land beyond 130 m unlock after the first mission (solar arrays and an Oxygen Unit).
+- **Settings:** field of view and dynamic FOV. **Esc menu:** Resume, Settings, Friends, Save, Save & quit (keys 1–5). **F** toggles your flashlight when nothing is nearby.
+- **NASA Mission Design Lab** (home screen, or Tab → Mission Lab): design a mission from idea to launch using NASA’s process (mission segments, Concept Maturity Levels, Mission Design Lab stages, Webb-style instrument choices, CubeSats, real Earth–Mars launch windows, a 3D trajectory and timeline with a VR view, verification, results compared with real missions, and CSA contributions).
+
 ## Accounts setup (Supabase)
-Accounts are optional: without them the game works as before, with a local name and look. To switch them on, create a free Supabase project, run the SQL for the `profiles`, `friendships` and `presence` tables (all with Row Level Security), and put the project URL and the public anon/publishable key in `js/config.js`. Never put the service_role / secret key in this repo.
+Accounts are optional: without them the game works as before, with a local name and look. To switch them on, create a free Supabase project, run the SQL for the `profiles`, `friendships` and `presence` tables (all with Row Level Security), and put the project URL and the public anon/publishable key in `js/config.js`. Never put the service_role / secret key in this repo. For world invites, also run `supabase-invites.sql`.
 
 ## External services
 - **unpkg.com:** serves Three.js r160 and PeerJS 1.5.4.

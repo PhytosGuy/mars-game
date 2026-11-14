@@ -78,7 +78,7 @@ const STATION_NAME={suit:'Anywhere',base:'At a habitat',fab:'At a Fabricator'};
 const BUILD_COSTS={
   solar:{plate:2,glass:2},battery:{plate:3,circuit:1},moxie:{plate:4,circuit:2},drill:{plate:5,circuit:2},greenhouse:{glass:6,brick:4},
   lab:{brick:6,plate:3,circuit:2},regolith:{plate:4,brick:2},comms:{plate:3,circuit:2},charger:{plate:2,circuit:1},weather:{plate:2,circuit:1},
-  reactor:{tiplate:4,plate:6,circuit:4},pad:{brick:16},habitat:{brick:14,plate:8,glass:4},beacon:{basalt:2},
+  reactor:{tiplate:4,plate:6,circuit:4},pad:{brick:16},habitat:{brick:14,plate:8,glass:4},bed:{plate:1,regolith:2},beacon:{basalt:2},
   fabricator:{plate:6,circuit:3,glass:2},seismo:{plate:3,circuit:3},
   atmo:{tiplate:4,plate:6,circuit:3},dome:{glass:20,tiplate:6,brick:10},tower:{tiplate:12,glass:12,brick:16,alloy:2},
   fusion:{tiplate:10,circuit:8,resonite:2},spaceport:{brick:30,tiplate:10,circuit:6},

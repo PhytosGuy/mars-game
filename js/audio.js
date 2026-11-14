@@ -3,7 +3,7 @@
 /* =========================================================
    AUDIO (all synthesized; thin-atmosphere muffled ambience)
    ========================================================= */
-const AU={ctx:null,sound:true,music:true,nextChord:0,ci:0};
+const AU={ctx:null,sound:OPT.sound!==false,music:true,nextChord:0,ci:0};
 function initAudio(){
   if(AU.ctx){if(AU.ctx.state==='suspended')AU.ctx.resume();return}
   try{

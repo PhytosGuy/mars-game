@@ -30,7 +30,7 @@ async function loadProfile(){
     for(let i=0;i<5&&!data;i++){const name=i?(base.slice(0,15)+'-'+Math.floor(Math.random()*9000+1000)):base;
       const r=await ACC.sb.from('profiles').insert({id:ACC.user.id,username:name,look:LOOK}).select('id,username,look').maybeSingle();data=r.data;if(r.error&&!/duplicate|unique/i.test(r.error.message))break}}
   if(data){ACC.profile=data;net.name=data.username;try{localStorage.setItem('mlc-name',net.name)}catch(e){}
-    if(data.look&&typeof data.look==='object'&&Object.keys(data.look).length){LOOK=Object.assign({},LOOK_DEFAULT,LOOK,data.look);applyLook();try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(e){}}}
+    if(data.look&&typeof data.look==='object'&&Object.keys(data.look).length){LOOK=cleanLook(Object.assign({},LOOK,data.look));applyLook();try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(e){}}}
   heartbeat();renderAccount();renderAcctBtn();
 }
 // let friends see you're online (and which co-op code to join, if you're hosting)
@@ -40,19 +40,20 @@ async function heartbeat(){
 }
 /* ---------- account window ---------- */
 function renderAcctBtn(){const b=$('#acctbtn');if(!b)return;b.querySelector('span').textContent=ACC.profile?ACC.profile.username:(net.name||'Guest')}
-function lookEditor(){return WOPTS.filter(o=>o[0]!=='rover').map(([k,l,cols])=>`<div class="wrow"><div class="sub">${l}</div><div class="sw">${cols.map(c=>`<button data-lk="${k}" data-v="${c}" style="background:${c}" class="${LOOK[k]===c?'on':''}"></button>`).join('')}</div></div>`).join('')}
+function lookEditor(){return`<div class="crcall">${pfpImg(LOOK,'pfp big')}<div><b>Face, hair, clothes and spacesuit</b><p class="sub">This suited portrait is your profile picture.</p><button class="btn primary" data-opencr="1">Customise character</button></div></div>`}
+function lookEditorOld(){return WOPTS.filter(o=>o[0]!=='rover').map(([k,l,cols])=>`<div class="wrow"><div class="sub">${l}</div><div class="sw">${cols.map(c=>`<button data-lk="${k}" data-v="${c}" style="background:${c}" class="${LOOK[k]===c?'on':''}"></button>`).join('')}</div></div>`).join('')}
 function renderAccount(msg){
   const box=$('#acctbody');if(!box)return;const m=msg?`<div class="amsg">${esc(msg)}</div>`:'';
   let h='';
   if(ACC.user&&ACC.profile){
     h=`<div class="arow"><span class="sub">Signed in as ${esc(ACC.user.email||'')}</span></div>
       <div class="field"><span class="sub">Username</span><div class="inrow"><input id="acc-name" maxlength="20" value="${esc(ACC.profile.username)}"><button class="btn sm primary" id="acc-save">Save</button></div></div>
-      <div class="sec">Appearance</div>${lookEditor()}
+      <div class="sec">Your character</div>${lookEditor()}
       <div class="srow"><span>Open my games to friends</span><div class="opt"><button data-ah="1" class="${OPT.autoHost?'on':''}">On</button><button data-ah="0" class="${OPT.autoHost?'':'on'}">Off</button></div></div>
       <div class="btns"><button class="btn" id="acc-out">Sign out</button></div>`;
   }else{
     h=`<div class="field"><span class="sub">Your name (shown to other players)</span><div class="inrow"><input id="acc-local" maxlength="20" value="${esc(net.name||'')}"><button class="btn sm" id="acc-localsave">Save</button></div></div>
-      <div class="sec">Appearance</div>${lookEditor()}`;
+      <div class="sec">Your character</div>${lookEditor()}`;
     if(sbConfigured())h+=`<div class="sec" style="margin-top:14px">Online account</div><p class="sub">Sign in to keep your name and look on any device, add friends and join their games.</p>
       <div class="field"><span class="sub">Email</span><input id="acc-email" type="email" autocomplete="email"></div>
       <div class="field"><span class="sub">Password (8+ characters)</span><input id="acc-pass" type="password" autocomplete="current-password"></div>
@@ -61,37 +62,14 @@ function renderAccount(msg){
   }
   box.innerHTML=m+h;
 }
-/* ---------- live preview of your astronaut while you pick colours ---------- */
-const PREV={r:null,sc:null,cam:null,a:null,yaw:0.5,spin:true,drag:null,on:false};
-const NO_ROVER={userData:{paint:{color:{set(){}}}}};
-function prevLook(){if(PREV.a)applyLookTo(PREV.a,NO_ROVER,LOOK)}
-function prevInit(){
-  if(PREV.r)return true;const cv=$('#acc-cv');if(!cv)return false;
-  try{PREV.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){$('#acc-prev').style.display='none';return false}
-  PREV.r.outputColorSpace=THREE.SRGBColorSpace;PREV.r.toneMapping=THREE.ACESFilmicToneMapping;PREV.r.toneMappingExposure=1.15;PREV.r.setPixelRatio(Math.min(2,devicePixelRatio||1));
-  const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xfff0e0,0x7a4030,1.6));
-  const key=new THREE.DirectionalLight(0xfff2e2,2.6);key.position.set(3,5,4);const rim=new THREE.DirectionalLight(0xffb27a,1.6);rim.position.set(-4,3,-4);sc.add(key,rim);
-  const pad=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1,0.12,40),new THREE.MeshStandardMaterial({color:'#8a4a30',roughness:0.9}));pad.position.y=-0.06;sc.add(pad);
-  const a=mkAstronaut();sc.add(a);a.traverse(o=>{if(o.isSpotLight)o.intensity=0});PREV.a=a;PREV.sc=sc;
-  PREV.cam=new THREE.PerspectiveCamera(28,1,0.1,50);PREV.cam.position.set(0,1.25,5.4);PREV.cam.lookAt(0,1.0,0);
-  const box=$('#acc-prev');
-  box.addEventListener('pointerdown',e=>{PREV.drag={x:e.clientX,yaw:PREV.yaw};PREV.spin=false;box.setPointerCapture(e.pointerId)});
-  box.addEventListener('pointermove',e=>{if(PREV.drag)PREV.yaw=PREV.drag.yaw+(e.clientX-PREV.drag.x)*0.012});
-  const up=()=>{PREV.drag=null};box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
-  return true}
-function prevLoop(){
-  if(!PREV.on)return;if($('#account').classList.contains('hidden')){PREV.on=false;return}requestAnimationFrame(prevLoop);
-  const cv=PREV.r.domElement,w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
-  if(cv.width!==Math.round(w*PREV.r.getPixelRatio())||cv.height!==Math.round(h*PREV.r.getPixelRatio())){PREV.r.setSize(w,h,false);PREV.cam.aspect=w/h;PREV.cam.updateProjectionMatrix()}
-  const t=performance.now()/1000;if(PREV.spin&&!PREV.drag)PREV.yaw+=0.006;PREV.a.rotation.y=PREV.yaw;PREV.a.position.y=Math.sin(t*1.6)*0.015;
-  PREV.r.render(PREV.sc,PREV.cam)}
-function prevStart(){if(!prevInit())return;prevLook();PREV.spin=true;if(!PREV.on){PREV.on=true;requestAnimationFrame(prevLoop)}}
-async function openAccount(){$('#account').classList.remove('hidden');prevStart();renderAccount(sbConfigured()&&!ACC.sb?'Connecting…':'');await sbInit();renderAccount()}
+let ACCP=null;
+async function openAccount(){$('#account').classList.remove('hidden');ACCP=ACCP||makePreview('#acc-prev','#acc-cv','account');ACCP.start();renderAccount(sbConfigured()&&!ACC.sb?'Connecting…':'');await sbInit();renderAccount()}
 $('#acc-x').onclick=()=>$('#account').classList.add('hidden');
 $('#account').addEventListener('keydown',e=>e.stopPropagation());
 $('#account').addEventListener('click',async e=>{
   const t=e.target,lk=t.closest('[data-lk]'),ah=t.closest('[data-ah]');
-  if(lk){LOOK[lk.dataset.lk]=lk.dataset.v;applyLook();prevLook();try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(err){}renderAccount();if(ACC.sb&&ACC.user)ACC.sb.from('profiles').update({look:LOOK}).eq('id',ACC.user.id).then(()=>{});return}
+  if(t.closest('[data-opencr]')){openCreator();return}
+  if(lk){LOOK[lk.dataset.lk]=lk.dataset.v;applyLook();if(ACCP)ACCP.look();try{localStorage.setItem('mlc-look',JSON.stringify(LOOK))}catch(err){}renderAccount();if(ACC.sb&&ACC.user)ACC.sb.from('profiles').update({look:LOOK}).eq('id',ACC.user.id).then(()=>{});return}
   if(ah){OPT.autoHost=ah.dataset.ah==='1';saveOpts();renderAccount();return}
   if(t.id==='acc-localsave'){const n=cleanUser($('#acc-local').value);if(n.length<2){renderAccount('Pick a name with at least 2 letters');return}net.name=n;try{localStorage.setItem('mlc-name',n)}catch(err){}renderAcctBtn();renderAccount('Saved');return}
   if(ACC.busy)return;
@@ -115,33 +93,38 @@ async function loadFriends(){
   if(!ACC.sb||!ACC.user)return;const me=ACC.user.id;
   const{data:fs}=await ACC.sb.from('friendships').select('id,requester,addressee,status').or(`requester.eq.${me},addressee.eq.${me}`);
   const rows=fs||[],ids=[...new Set(rows.map(f=>f.requester===me?f.addressee:f.requester))];
-  const profs=ids.length?((await ACC.sb.from('profiles').select('id,username').in('id',ids)).data||[]):[],name=id=>(profs.find(p=>p.id===id)||{}).username||'Unknown';
-  const accepted=rows.filter(f=>f.status==='accepted').map(f=>{const id=f.requester===me?f.addressee:f.requester;return{fid:f.id,id,name:name(id)}});
+  const profs=ids.length?((await ACC.sb.from('profiles').select('id,username,look').in('id',ids)).data||[]):[],name=id=>(profs.find(p=>p.id===id)||{}).username||'Unknown',lookOf=id=>(profs.find(p=>p.id===id)||{}).look||{};
+  const accepted=rows.filter(f=>f.status==='accepted').map(f=>{const id=f.requester===me?f.addressee:f.requester;return{fid:f.id,id,name:name(id),look:lookOf(id)}});
   const pres=accepted.length?((await ACC.sb.from('presence').select('user_id,room_code,last_seen').in('user_id',accepted.map(a=>a.id))).data||[]):[];
   for(const a of accepted){const p=pres.find(x=>x.user_id===a.id);a.online=!!(p&&Date.now()-new Date(p.last_seen).getTime()<ONLINE_MS);a.code=a.online&&p.room_code?p.room_code:null}
   accepted.sort((a,b)=>(b.code?2:b.online?1:0)-(a.code?2:a.online?1:0)||a.name.localeCompare(b.name));
-  ACC.friends=accepted;ACC.incoming=rows.filter(f=>f.status==='pending'&&f.addressee===me).map(f=>({fid:f.id,id:f.requester,name:name(f.requester)}));
+  ACC.friends=accepted;ACC.incoming=rows.filter(f=>f.status==='pending'&&f.addressee===me).map(f=>({fid:f.id,id:f.requester,name:name(f.requester),look:lookOf(f.requester)}));
   ACC.outgoing=rows.filter(f=>f.status==='pending'&&f.requester===me).map(f=>({fid:f.id,id:f.addressee,name:name(f.addressee)}));
 }
 function renderFriends(msg,results){
-  const box=$('#frbody');if(!box)return;let h=msg?`<div class="amsg">${esc(msg)}</div>`:'';
+  const box=$('#frbody');if(!box)return;let h=codeCard()+(msg?`<div class="amsg">${esc(msg)}</div>`:'');
   if(!sbConfigured()||!ACC.user){h+=`<p class="sub">${sbConfigured()?'Sign in to add friends and see when they’re online.':'Online friends aren’t switched on for this copy of the game yet.'}</p>${sbConfigured()?'<button class="btn primary" id="fr-signin">Sign in</button>':''}`}
   else{
     h+=`<div class="inrow"><input id="fr-q" maxlength="20" placeholder="Find people by username"><button class="btn sm" id="fr-search">Search</button></div>`;
     if(results)h+=`<div class="flist">${results.length?results.map(p=>{const isF=ACC.friends.some(f=>f.id===p.id),out=ACC.outgoing.some(f=>f.id===p.id);return`<div class="frow"><b>${esc(p.username)}</b><span style="flex:1"></span>${isF?'<span class="sub">Friend</span>':out?'<span class="sub">Requested</span>':`<button class="btn sm primary" data-add="${esc(p.id)}">Add friend</button>`}</div>`}).join(''):'<p class="sub">Nobody found.</p>'}</div>`;
     if(ACC.incoming.length)h+=`<div class="sec">Friend requests</div><div class="flist">${ACC.incoming.map(r=>`<div class="frow"><b>${esc(r.name)}</b><span style="flex:1"></span><button class="btn sm primary" data-acc="${r.fid}">Accept</button><button class="btn sm" data-del="${r.fid}">Decline</button></div>`).join('')}</div>`;
-    h+=`<div class="sec">Friends</div><div class="flist">${ACC.friends.length?ACC.friends.map(f=>`<div class="frow"><i class="dot ${f.code?'on':f.online?'idle':''}"></i><b>${esc(f.name)}</b><span class="sub">${f.code?'Playing · can join':f.online?'Online':'Offline'}</span><span style="flex:1"></span>${f.code?`<button class="btn sm primary" data-join="${esc(f.code)}">Join</button>`:''}<button class="btn sm" data-del="${f.fid}" title="Remove friend">✕</button></div>`).join(''):'<p class="sub">No friends yet: search for someone’s username above.</p>'}</div>`;
+    h+=`<div class="sec">Friends</div><div class="flist">${ACC.friends.length?ACC.friends.map(f=>`<div class="frow">${pfpImg(f.look)}<i class="dot ${f.code?'on':f.online?'idle':''}"></i><b>${esc(f.name)}</b><span class="sub">${f.code?'Playing · can join':f.online?'Online':'Offline'}</span><span style="flex:1"></span>${game.state==='play'&&net.role!=='guest'&&f.online?`<button class="btn sm" data-inv="${esc(f.id)}" data-name="${esc(f.name)}">Invite</button>`:''}${f.code?`<button class="btn sm primary" data-join="${esc(f.code)}">Join</button>`:''}<button class="btn sm" data-del="${f.fid}" title="Remove friend">✕</button></div>`).join(''):'<p class="sub">No friends yet: search for someone’s username above.</p>'}</div>`;
     if(ACC.outgoing.length)h+=`<p class="sub">Waiting for: ${ACC.outgoing.map(o=>esc(o.name)).join(', ')}</p>`;
   }
-  h+=`<div class="btns" style="margin-top:12px"><button class="btn" id="fr-code">Join with a code</button></div>`;
   box.innerHTML=h;
 }
 async function openFriends(){$('#friends').classList.remove('hidden');renderFriends(sbConfigured()?'Loading…':'');await sbInit();if(ACC.user)await loadFriends();renderFriends()}
 $('#fr-x').onclick=()=>$('#friends').classList.add('hidden');
-$('#friends').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='fr-q')$('#fr-search').click()});
+$('#friends').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.id==='fr-q')$('#fr-search').click();if(e.key==='Enter'&&e.target.id==='fr-joincode')$('#fr-joinbtn').click()});
 $('#friends').addEventListener('click',async e=>{
   const t=e.target,add=t.closest('[data-add]'),acc=t.closest('[data-acc]'),del=t.closest('[data-del]'),join=t.closest('[data-join]');
   if(t.id==='fr-signin'){$('#friends').classList.add('hidden');openAccount();return}
+  if(t.id==='fr-host'){hostGame();renderFriends('Opening your colony…');const w=setInterval(()=>{if(net.code||!winOpen('friends')){clearInterval(w);if(winOpen('friends'))renderFriends()}},300);return}
+  if(t.id==='fr-copy'){try{navigator.clipboard.writeText(net.code)}catch(x){}toast('Code copied: '+net.code,'good');return}
+  if(t.id==='fr-closeco'){leaveNet(false);renderFriends('Your colony is closed to friends.');return}
+  if(t.id==='fr-leave'){leaveNet(false);showTitle();return}
+  if(t.id==='fr-joinbtn'){const c=($('#fr-joincode').value||'').trim().toUpperCase();if(!/^[A-Z0-9]{5}$/.test(c)){renderFriends('Enter the 5-character code from your friend.');return}$('#coop-name').value=net.name;$('#coop-code').value=c;coopMsg('');$('#coop').classList.remove('hidden');joinGame(c);return}
+  const inv=t.closest('[data-inv]');if(inv){sendInvite(inv.dataset.inv,inv.dataset.name);return}
   if(t.id==='fr-code'){$('#friends').classList.add('hidden');$('#coop-name').value=net.name;$('#coop-code').value='';coopMsg('');$('#coop').classList.remove('hidden');$('#coop-code').focus();return}
   if(join){$('#friends').classList.add('hidden');$('#coop-name').value=net.name;$('#coop-code').value=join.dataset.join;$('#coop').classList.remove('hidden');joinGame(join.dataset.join);return}
   if(!ACC.sb||!ACC.user)return;
@@ -162,3 +145,33 @@ renderAcctBtn();
 if(sbConfigured())sbInit();
 // signed in with "open my games to friends": host automatically so friends can join from their list
 function autoHostIfWanted(){if(OPT.autoHost&&ACC.user&&!net.role&&game.state==='play')hostGame();setTimeout(heartbeat,3000)}
+
+/* ---------- the join code, front and centre in the Friends window ---------- */
+function codeCard(){
+  if(game.state==='play'&&net.role==='host')return`<div class="codecard"><span class="sub">Your colony code</span><div class="bigcode">${esc(net.code||'…')}</div><div class="btns"><button class="btn primary" id="fr-copy">Copy code</button><button class="btn" id="fr-closeco">Close to friends</button></div><p class="sub">Friends type this code into “Join a friend”, or tap Join next to your name in their friends list.</p></div>`;
+  if(game.state==='play'&&net.role==='guest')return`<div class="codecard"><span class="sub">You’re in a friend’s colony</span><div class="bigcode">${esc(net.joinCode||'')}</div><div class="btns"><button class="btn" id="fr-leave">Leave and go home</button></div></div>`;
+  if(game.state==='play')return`<div class="codecard"><span class="sub">Play together</span><p style="margin:6px 0 10px">Open this colony so friends can join you. You’ll get a 5-letter code to share.</p><button class="btn primary bigbtn" id="fr-host">Open to friends</button></div>`;
+  return`<div class="codecard"><span class="sub">Join a friend</span><div class="inrow"><input id="fr-joincode" class="codein" maxlength="5" autocomplete="off" spellcheck="false" placeholder="ABCDE"><button class="btn primary bigbtn" id="fr-joinbtn">Join</button></div><p class="sub">Ask your friend for the code in their Friends window (Esc → Friends).</p></div>`}
+/* ---------- invites: send one to an online friend; it pops up for them at the top right ---------- */
+const INV={seen:new Set(),missing:false,t:null};
+async function sendInvite(id,name){
+  if(!ACC.sb||!ACC.user)return;
+  if(net.role!=='host'){hostGame();const t0=Date.now();while(!net.code&&Date.now()-t0<12000)await wait(250);if(!net.code){toast('Could not open your colony to friends. Try again.','bad');return}}
+  const{error}=await ACC.sb.from('invites').insert({sender:ACC.user.id,recipient:id,room_code:net.code});
+  if(error){INV.missing=/relation|schema cache|does not exist/i.test(error.message);toast(INV.missing?'Invites need the invites table in Supabase (see supabase-invites.sql)':'Could not send the invite','warn');return}
+  toast(`Invite sent to ${name}`,'good');renderFriends()}
+async function pollInvites(){
+  if(!ACC.sb||!ACC.user||INV.missing)return;
+  const since=new Date(Date.now()-15*60000).toISOString();
+  const{data,error}=await ACC.sb.from('invites').select('id,sender,room_code,created_at').eq('recipient',ACC.user.id).gte('created_at',since).order('created_at',{ascending:false}).limit(5);
+  if(error){if(/relation|schema cache|does not exist/i.test(error.message))INV.missing=true;return}
+  for(const iv of data||[]){if(INV.seen.has(iv.id))continue;INV.seen.add(iv.id);
+    const{data:p}=await ACC.sb.from('profiles').select('username,look').eq('id',iv.sender).maybeSingle();notify(iv,p||{username:'A friend',look:{}})}}
+function notify(iv,p){
+  let box=$('#notifs');if(!box){box=document.createElement('div');box.id='notifs';document.body.appendChild(box)}
+  const el=document.createElement('div');el.className='notif';
+  el.innerHTML=`${pfpImg(p.look,'pfp')}<div class="ntxt"><b>${esc(p.username)}</b><span>invited you to their colony</span><div class="nbtn"><button class="btn sm primary">Join</button><button class="btn sm">Dismiss</button></div></div>`;
+  const[jb,db]=el.querySelectorAll('button'),gone=()=>{el.remove();ACC.sb.from('invites').delete().eq('id',iv.id).then(()=>{})};
+  jb.onclick=()=>{gone();if(game.state==='play'){if(net.role==='guest')leaveNet(true);else saveGame(true);showTitle()}setTimeout(()=>{$('#coop-name').value=net.name;$('#coop-code').value=iv.room_code;coopMsg('');$('#coop').classList.remove('hidden');joinGame(iv.room_code)},300)};
+  db.onclick=gone;box.prepend(el);SFX.radio();setTimeout(()=>{if(el.isConnected)el.classList.add('old')},60000)}
+setInterval(()=>{if(ACC.user)pollInvites()},15000);

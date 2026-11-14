@@ -6,7 +6,7 @@
    ========================================================= */
 const invUI={open:false,tab:'craft',mtab:'inv',held:null,dragFrom:null,moved:false,hover:null};
 // the Tab menu: Tab opens it on Inventory, Tab again moves to the next page (Shift+Tab goes back)
-const MTABS=[['inv','Inventory'],['journal','Journal'],['missions','Missions'],['colony','Colony'],['research','Research'],['crew','Crew'],['stats','Stats'],['log','Logbook'],['data','Mars data']];
+const MTABS=[['inv','Inventory'],['journal','Journal'],['mlab','Mission Lab'],['missions','Missions'],['colony','Colony'],['research','Research'],['crew','Crew'],['stats','Stats'],['log','Logbook'],['data','Mars data']];
 function slotHTML(s,c,i,heldN){
   const n=s?s.n-heldN:0,d=s&&ITEMS[s.id];
   let h=`<div class="slot${c==='inv'&&i<HOTBAR?' hb':''}${c==='inv'&&i===P.hot&&i<HOTBAR?' sel':''}" data-c="${c}" data-i="${i}">`;
@@ -102,6 +102,7 @@ function renderStats(){
 }
 function renderMenuPage(){
   const t=invUI.mtab;$('#col-title').textContent=(MTABS.find(x=>x[0]===t)||['',''])[1];
+  if(t==='mlab'){$('#col-body').innerHTML=`<div class="mlpage"><h3>NASA Mission Design Lab</h3><p>Design a real-style science mission, step by step the way NASA does: pick a science goal, compare spacecraft in a trade study, choose instruments that see the right kind of light, pick a rocket, find a launch window to Mars, verify every requirement and launch. Good designs earn your colony research points.</p><button class="btn primary bigbtn" id="mlab-open">Open the Mission Lab</button><p class="sub" style="margin-top:12px">Missions designed: ${S.stats.missionsDesigned||0}</p></div>`;$('#mlab-open').onclick=()=>openMissionLab();$('#col-sub').textContent='· learn how missions are built';return}
   if(t==='journal'){mountBook($('#col-body'),{compact:true,title:(S.worldName||'Expedition')+' · journal'});$('#col-sub').textContent='· saved with this expedition';return}
   if(t==='missions')renderMissions();else if(t==='stats')renderStats();
   else{colTab=t==='colony'?'overview':t;renderColony()}

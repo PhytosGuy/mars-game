@@ -51,10 +51,13 @@ function renderSettings(){
   const sl=(k,min,max,step)=>`<input type="range" data-r="${k}" min="${min}" max="${max}" step="${step}" value="${OPT[k]}"><b>${Math.round(OPT[k]*100)}%</b>`;
   $('#setbody').innerHTML=
     `<div class="srow"><span>Graphics</span>${tog('quality',[['high','Cinematic'],['fast','Fast']])}</div>`+
+    `<div class="srow"><span>Sound effects on</span>${tog('sound',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Painted look</span>${tog('paint',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Music</span>${sl('music',0,1,0.05)}</div>`+
     `<div class="srow"><span>Sound effects</span>${sl('sfx',0,1,0.05)}</div>`+
     `<div class="srow"><span>Look sensitivity</span>${sl('sens',0.3,2,0.05)}</div>`+
+    `<div class="srow"><span>Field of view</span><input type="range" data-fov="1" min="50" max="100" step="1" value="${OPT.fov||60}"><b>${OPT.fov||60}°</b></div>`+
+    `<div class="srow"><span>Dynamic field of view<br><small class="sub">Widens when you run or drive fast</small></span>${tog('fovAuto',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Guide arrow</span>${tog('guide',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Touch controls</span>${tog('touch',[['auto','Auto'],['on','On'],['off','Off']])}</div>`+
     `<div class="srow"><span>Tutorial</span><button class="btn sm" id="tour-replay">Replay the tour</button></div>`+
@@ -63,25 +66,29 @@ function renderSettings(){
 function openSettings(from){setFrom=from;renderSettings();$('#settings').classList.remove('hidden')}
 function closeSettings(){$('#settings').classList.add('hidden');saveOpts()}
 $('#b-set').onclick=()=>{initAudio();openSettings('title')};
+$('#b-mlab').onclick=()=>{initAudio();openMissionLab()};
 $('#p-set').onclick=()=>openSettings('pause');
 $('#set-x').onclick=closeSettings;$('#set-done').onclick=closeSettings;
 $('#setbody').addEventListener('click',e=>{
   if(e.target.id==='tour-replay'){OPT.onboarded=false;saveOpts();closeSettings();if(game.state==='play'){if(game.paused)togglePause(false);startTour()}else toast('The tour will play when you next land');return}
   const b=e.target.closest('[data-o]');if(!b)return;const k=b.dataset.o,v=b.dataset.v;
   if(k==='quality'){GFX.q=v;applyGfx()}
-  else if(k==='paint'||k==='guide')OPT[k]=v==='true';
+  else if(k==='paint'||k==='guide'||k==='fovAuto')OPT[k]=v==='true';
+  else if(k==='sound'){AU.sound=v==='true';OPT.sound=AU.sound}
   else if(k==='touch'){OPT.touch=v;if(v==='off')document.body.classList.remove('touch');else if(v==='on'||matchMedia('(pointer:coarse)').matches)enableTouch()}
   saveOpts();renderSettings()});
 /* ---------- one window at a time ----------
    Opening any window closes whichever one was open. A window opened from the pause menu
    hides the pause menu, and closing it brings the pause menu back. */
-const WINS=['pause','settings','coop','account','friends','mapov','wardrobe','invov','journalov'];
+const WINS=['pause','settings','coop','account','friends','mapov','wardrobe','invov','journalov','creator','habcol','mlab'];
 const winOpen=id=>!$('#'+id).classList.contains('hidden');
 function closeWin(id){
   if(!winOpen(id))return;
   if(id==='invov'&&invUI.open)openInventory(false);
   else if(id==='wardrobe'&&game.wardrobe)closeWardrobe();
   else if(id==='journalov')closeJournal();
+  else if(id==='creator')closeCreator();
+  else if(id==='mlab')closeMissionLab();
   else if(id==='settings')closeSettings();
   else if(id==='coop'){closeCoop();if(net.peer&&!net.role)leaveNet(true)}
   else $('#'+id).classList.add('hidden');
@@ -96,5 +103,5 @@ const winWatch=(recs=>{
 {const mo=new MutationObserver(winWatch);for(const id of WINS)mo.observe($('#'+id),{attributes:true,attributeFilter:['class'],attributeOldValue:true})}
 // Escape closes the open window first (on the home screen too)
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;
-  const w=['settings','coop','account','friends','journalov'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
-$('#setbody').addEventListener('input',e=>{const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});
+  const w=['settings','coop','account','friends','journalov','creator','habcol','mlab'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
+$('#setbody').addEventListener('input',e=>{const fv=e.target.closest('[data-fov]');if(fv){OPT.fov=+fv.value;fv.nextElementSibling.textContent=OPT.fov+'°';saveOpts();return}const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});

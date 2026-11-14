@@ -96,5 +96,5 @@ sun.shadow.bias=-0.0005;sun.shadow.normalBias=0.05;
 scene.add(sun,sun.target);
 const hemi=new THREE.HemisphereLight(0xd8a070,0x5a2a18,0.7);scene.add(hemi);
 /* ---------- player settings (this device): volume, sensitivity, look, controls ---------- */
-const OPT=Object.assign({music:0.7,sfx:0.9,sens:1,paint:true,guide:true,touch:'auto'},(()=>{try{return JSON.parse(localStorage.getItem('mlc-opts'))||{}}catch(e){return{}}})());
+const OPT=Object.assign({music:0.7,sfx:0.9,sens:1,paint:true,guide:true,touch:'auto',fov:60,fovAuto:true,sound:true},(()=>{try{return JSON.parse(localStorage.getItem('mlc-opts'))||{}}catch(e){return{}}})());
 function saveOpts(){try{localStorage.setItem('mlc-opts',JSON.stringify(OPT))}catch(e){}}

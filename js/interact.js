@@ -21,6 +21,7 @@ function updateInteraction(dt){
     }else if(T.sample&&!S.sampled.has(p.id))hints.push(`<span class="key">F</span>Collect sample: ${T.name}`);
     else if(p.type==='lavatube'&&!cave.active)hints.push(P.mode==='foot'?'A cave entrance: walk down into the sinkhole to explore':'Get out of the rover (<span class="key">E</span>) to explore the cave');
   }
+  if(P.mode==='foot'&&nearBed()){const t=tod();hints.push(t>19.5||t<5.5?'<span class="key">F</span>Sleep until morning':'<span class="key">F</span>Camp bed (sleep after 19:30)')}
   if(P.mode==='foot'){
     let nb=null,nbd=1e9;
     for(const b of blds){if(b.progress<1)continue;const d=Math.hypot(b.x-P.pos.x,b.z-P.pos.z)-BUILD[b.type].r;
@@ -50,7 +51,11 @@ function pressF(){
   if(p&&S.scanned.has(p.id)&&POI[p.type].sample&&!S.sampled.has(p.id)){tryCollect(p);return}
   if(P.inside){interiorPressF();return}
   if(P.mode==='foot'&&nearAirlock()){enterHabitat();return}
+  if(P.mode==='foot'&&nearBed()){trySleep();return}
+  toggleFlash();
 }
+function nearBed(){for(const b of blds)if(b.type==='bed'&&b.progress>=1&&Math.hypot(b.x-P.pos.x,b.z-P.pos.z)<2.2)return b;return null}
+function toggleFlash(){P.flash=!P.flash;toast(P.flash?'Flashlight on':'Flashlight off');beep(P.flash?1200:700,0.05)}
 function repair(b){
   act({a:'repairBld',id:b.id});
 }

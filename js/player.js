@@ -128,9 +128,11 @@ function updateWalker(dt,inp){
     P.climbing=true;P.onGround=false;const cs=buffOn('stam')?1.6:P.stam>0?1:0.55;P.vel.set(mx*1.4*cs,2.3*cs,mz*1.4*cs);if(!buffOn('stam'))P.stam=Math.max(0,P.stam-dt*15);P.stamT=0;
   }else{
     if(P.climbing){P.climbing=false;if(steep)P.vel.y=Math.min(P.vel.y,0)}
-    if(P.onGround){const k=damp(9,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)}
-    else if(ml>0.1){const k=damp(2.2,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)} // air control: steer, keep momentum
-    if(P.onGround&&inp.jump&&!game.dead){P.vel.y=Math.max(P.vel.y,0)+(buffOn('jump')?8:4.6);P.onGround=false;jumped=true;P.jetLock=true}
+    if(P.onGround){const k=damp(ml>0.1?6:4,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)}   // low gravity means less grip: you slide a little
+    else if(ml>0.1){const k=damp(1.1,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)} // air control: steer, keep momentum
+    if(P.onGround&&inp.jump&&!game.dead){P.vel.y=Math.max(P.vel.y,0)+(buffOn('jump')?8:4.4);if(ml>0.1){P.vel.x+=mx*spd*0.5;P.vel.z+=mz*spd*0.5}P.onGround=false;jumped=true;P.jetLock=true}   // a leap: up and forward
+    // running on Mars turns into a bounding lope, like the Apollo astronauts' moon hops
+    if(P.onGround&&sprint&&!jumped&&!P.inside){P.hopT=(P.hopT||0)+dt;if(P.hopT>0.48){P.hopT=0;P.vel.y=2.1;P.onGround=false;jumped=true}}else if(!sprint)P.hopT=0;
     if(!inp.jump)P.jetLock=false;
     // thruster pack: hold Space in mid-air
     P.jet=false;if(!P.onGround&&inp.jump&&!P.jetLock&&S.ups&&S.ups.u_jets&&P.bat>0){P.vel.y=Math.min(P.vel.y+7.8*dt,5);P.bat=Math.max(0,P.bat-dt*7*batMult());P.jet=true;if(Math.random()<0.7)emitSparks(_v1.set(P.pos.x-Math.sin(P.yaw)*0.4,P.pos.y+0.9,P.pos.z-Math.cos(P.yaw)*0.4),2,'#ffb070')}
@@ -170,7 +172,7 @@ function updateWalker(dt,inp){
   else P.o2-=dt*100/240*o2Mult()*o2Diff()*(typeof coldFactor==='function'?coldFactor():1);
   if(P.o2<25&&(game.o2Beep=(game.o2Beep||0)-dt)<=0){game.o2Beep=2.5;beep(740,0.12,'square',0.04)}
   if(P.o2<=0&&!game.dead)die('oxygen');
-  u.lamp.intensity=(LOOK.lamp||cave.active)?smooth(0.4,0.9,ENV.night+ENV.storm*0.6+(cave.active?1:0))*(cave.active?50:30):0;
+  u.lamp.intensity=P.flash?(cave.active?50:32):(LOOK.lamp||cave.active)?smooth(0.4,0.9,ENV.night+ENV.storm*0.6+(cave.active?1:0))*(cave.active?50:30):0;
 }
 function blackout(){die('oxygen')}
 /* ---------- rover: the original arcade driving model, plus full air control (A/D yaw, W/S flips) ---------- */
@@ -246,6 +248,7 @@ function updateRover(dt,inp){
 function toggleRover(){
   if(P.mode==='foot'){
     if(P.ragdoll||P.inside)return;
+    if(!setupDone()&&Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<6){toast('Finish setting up the colony first: build the Solar Arrays and the Oxygen Unit (mission: Touchdown)','warn');return}
     if(Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<6){P.mode='rover';astro.visible=false;R.cruise=false;cam.yaw=R.yaw;beep(500,0.08);beep(700,0.1,'sine',0.06,0.08);S.flags.nearRover=true}
   }else{
     // you can always get out; at speed (or in the air) you keep the rover's momentum and tumble
@@ -350,6 +353,6 @@ function updateCamera(dt){
     camera.position.lerpVectors(cam.target,camera.position,cam.free);
     const gh=groundHeight(camera.position.x,camera.position.z)+0.6;if(camera.position.y<gh)camera.position.y=gh;camera.lookAt(cam.target)}
   if(P.mode==='foot')astro.visible=camera.position.distanceTo(cam.target)>0.9; // don't render the suit from inside the helmet
-  const fov=60+(rv?Math.min(14,Math.abs(R.speed)*0.7):0);
+  const base=clamp(+OPT.fov||60,50,100),dyn=OPT.fovAuto!==false,fov=base+(dyn?(rv?Math.min(14,Math.abs(R.speed)*0.7):P.mode==='foot'&&Math.hypot(P.vel.x,P.vel.z)>6.5?5:0):0);
   if(Math.abs(camera.fov-fov)>0.05){camera.fov=lerp(camera.fov,fov,damp(3,dt));camera.updateProjectionMatrix()}
 }

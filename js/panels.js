@@ -95,7 +95,7 @@ function drawMap(){
     const[x,y]=w2m(e.x,e.z);c.fillStyle='#120c0a';c.strokeStyle='#d9a066';c.lineWidth=2;c.beginPath();c.ellipse(x,y,7,4.5,0,0,TAU);c.fill();c.stroke()}
   for(const lc of S.lostCaches){const[x,y]=w2m(lc.x,lc.z);c.strokeStyle='#ff6b5e';c.lineWidth=2.5;c.beginPath();c.moveTo(x-5,y-5);c.lineTo(x+5,y+5);c.moveTo(x+5,y-5);c.lineTo(x-5,y+5);c.stroke()}
   for(const p of pings){const[x,y]=w2m(p.x,p.z);c.strokeStyle='#ffd25e';c.lineWidth=2;c.beginPath();c.arc(x,y,7,0,TAU);c.stroke()}
-  for(const rp of net.players.values()){if(!rp.a)continue;const[x,y]=w2m(rp.a.position.x,rp.a.position.z);c.fillStyle='#8fe3ff';c.beginPath();c.arc(x,y,4.5,0,TAU);c.fill();c.fillStyle='#cfefff';c.fillText(rp.name||'',x,y-8)}
+  for(const rp of net.players.values()){if(!rp.a)continue;const[x,y]=w2m(rp.a.position.x,rp.a.position.z),im=rp.lookS&&pfpImage(rp.lookS);c.save();c.beginPath();c.arc(x,y,14,0,TAU);c.fillStyle='#8fe3ff';c.fill();if(im&&im.complete&&im.naturalWidth){c.clip();c.drawImage(im,x-13,y-13,26,26)}c.restore();c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.arc(x,y,14,0,TAU);c.stroke();c.fillStyle='#cfefff';c.fillText(rp.name||'',x,y-19)}
   c.textAlign='left';
   if(S.waypoint){const[x,y]=w2m(S.waypoint.x,S.waypoint.z);c.strokeStyle='#5fe3c9';c.lineWidth=2.5;c.beginPath();c.arc(x,y,9,0,TAU);c.stroke();c.beginPath();c.arc(x,y,2,0,TAU);c.stroke()}
   {const[x,y]=w2m(R.pos.x,R.pos.z);c.fillStyle='#ff8a3d';c.beginPath();c.arc(x,y,5,0,TAU);c.fill()}

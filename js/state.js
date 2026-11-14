@@ -25,6 +25,9 @@ function starterInv(sb){const a=newSlots(INV_SIZE);
   return a}
 function starterStorage(sb){const a=newSlots(STORE_SIZE);if(sb)return a;
   slotsAdd(a,'plate',14);slotsAdd(a,'glass',8);slotsAdd(a,'circuit',6);slotsAdd(a,'brick',12);slotsAdd(a,'regolith',10);slotsAdd(a,'o2can',2);return a}
+// the first mission is the colony setup: until it's done the rover stays parked and you stay near the base
+const SETUP_R=130;
+function setupDone(){if(!S||S.mode==='sandbox'||S.flags.setupDone)return true;if((S.flags&&S.flags.mdone0)||(count('solar')>=5&&count('moxie')>=1)){S.flags.setupDone=true;return true}return false}
 function count(t){let n=0;for(const b of blds)if(b.type===t&&b.progress>=1)n++;return n}
 /* ---------- world options chosen when the expedition was created ---------- */
 const WS=()=>(S&&S.settings)||{};

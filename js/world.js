@@ -183,27 +183,34 @@ function hurt(n,cause){
 const DEATH={oxygen:'Your suit ran out of oxygen.',fall:'You fell too far.',creature:'Hostile creatures overwhelmed you.',storm:'The storm shredded your suit.',rock:'Falling rock crushed your suit.',crash:'The crash was too much for your suit.',cold:'The cold froze your suit’s systems.',radiation:'The radiation dose was too high.'};
 async function die(cause){
   if(game.dead)return;game.dead=true;mouse.drag=false;
-  act({a:'die',x:P.pos.x,y:P.pos.y,z:P.pos.z});
+  act({a:'die',x:P.pos.x,y:P.pos.y,z:P.pos.z});syncCaches();
   fade(true,(DEATH[cause]||'Suit failure.')+' The crew brings you home…');await wait(1800);
   const hb=home(),a=hb.rot||0;P.mode='foot';astro.visible=true;P.pos.set(hb.x+Math.sin(a)*8.5,0,hb.z+Math.cos(a)*8.5);P.pos.y=groundHeight(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.lastG=undefined;
-  P.hp=maxHP()*0.7;P.o2=100;P.ragdoll=null;P.inside=false;if(INT.g)INT.g.visible=false;astro.rotation.set(0,0,0);P.buffs={};renderBuffs(true);P.bat=Math.max(P.bat,60);P.stam=100;game.camSnap=true;game.dead=false;refreshInvUI();onHotbarChange();
-  fade(false);card('You made it back','Lost cache','Your backpack items were left where you fell. A marker shows the way: get back there and press F to recover them.','#ff9147');
+  P.hp=maxHP()*0.7;P.o2=100;P.ragdoll=null;if(typeof outfitFor==='function')outfitFor(false);P.inside=false;if(INT.g)INT.g.visible=false;astro.rotation.set(0,0,0);P.buffs={};renderBuffs(true);P.bat=Math.max(P.bat,60);P.stam=100;game.camSnap=true;game.dead=false;refreshInvUI();onHotbarChange();
+  if(net.role!=='guest'||P.mode==='rover')roverHome();
+  fade(false);card('You made it back','Your body','Your suit and everything in your backpack are still where you fell, and the rover has been driven back to base. Follow the red “Your body” marker on the compass and press F at your body to collect your things.','#ff6b5e');
 }
 ACT.die=(pid,a,predict)=>{
   if(predict)return true;const inv=invOf(pid),items=[];if(!inv)return false;
   for(let i=0;i<inv.length;i++){const s=inv[i];if(s&&!ITEMS[s.id].dur){items.push(s);inv[i]=null}}
-  if(items.length){const p=posOf(pid)||{x:a.x,y:a.y,z:a.z};S.lostCaches.push({id:'lc'+Date.now().toString(36)+Math.floor(Math.random()*1e4),owner:pid||ME,x:p.x,y:p.y,z:p.z,items});if(S.lostCaches.length>8)S.lostCaches.shift()}
+  {const p=posOf(pid)||{x:a.x,y:a.y,z:a.z};S.lostCaches=S.lostCaches.filter(c=>!(c.owner===(pid||ME)&&!c.items.length));S.lostCaches.push({id:'lc'+Date.now().toString(36)+Math.floor(Math.random()*1e4),owner:pid||ME,x:p.x,y:p.y,z:p.z,items});if(S.lostCaches.length>8)S.lostCaches.shift()}
   if(net.role==='host')net.snapDirty=true;return true;
 };
 ACT.cacheTake=(pid,a,predict)=>{
   const i=S.lostCaches.findIndex(c=>c.id===a.id);if(i<0)return false;const c=S.lostCaches[i],p=posOf(pid);
   if(c.owner!==(pid||ME)||!p||Math.hypot(p.x-c.x,p.z-c.z)>4)return false;if(predict)return true;
-  S.lostCaches.splice(i,1);for(const s of c.items)giveItem(pid,s.id,s.n,s);if(pid===ME||!pid)toast('Lost cache recovered','good');if(net.role==='host')net.snapDirty=true;return true;
+  S.lostCaches.splice(i,1);for(const s of c.items)giveItem(pid,s.id,s.n,s);if(pid===ME||!pid)toast(c.items.length?'You collected your belongings':'You recovered your suit','good');if(net.role==='host')net.snapDirty=true;return true;
 };
 const cacheMeshes=new Map();
 function syncCaches(){const mine=S.lostCaches.filter(c=>c.owner===(net.role==='guest'?net.token:ME)||net.role!=='guest'&&c.owner===ME),ids=new Set(mine.map(c=>c.id));
   for(const[id,m]of cacheMeshes)if(!ids.has(id)){scene.remove(m);cacheMeshes.delete(id)}
-  for(const c of mine)if(!cacheMeshes.has(c.id)){const g=new THREE.Group();g.add(sp(0.45,glow('#ff9147',1.6),0,0.45,0,12,8));const b=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,40,6,1,true),new THREE.MeshBasicMaterial({color:'#ff9147',transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false}));b.position.y=20;g.add(b);g.position.set(c.x,c.y,c.z);scene.add(g);cacheMeshes.set(c.id,g)}}
+  for(const c of mine)if(!cacheMeshes.has(c.id)){const g=new THREE.Group();
+    // your body, lying where you fell, in your own suit colours
+    const body=mkAstronaut();applyLookTo(body,NO_ROVER,LOOK);body.traverse(o=>{if(o.isSpotLight)o.intensity=0});body.rotation.set(-Math.PI/2,0,(c.id.charCodeAt(3)%7)*0.6,'YXZ');body.position.y=0.42;g.add(body);
+    g.add(sp(0.2,glow('#ff6b5e',1.8),0,2.1,0,10,8));const b=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,40,6,1,true),new THREE.MeshBasicMaterial({color:'#ff9147',transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false}));b.position.y=20;g.add(b);g.position.set(c.x,c.y,c.z);scene.add(g);cacheMeshes.set(c.id,g)}}
+// after a death the rover is driven back and parked beside the base
+function roverHome(){const hb=home(),a=(hb.rot||0)+0.9;R.pos.set(hb.x+Math.sin(a)*16,0,hb.z+Math.cos(a)*16);R.pos.y=groundHeight(R.pos.x,R.pos.z);
+  Object.assign(R,{speed:0,vy:0,vx:0,vz:0,wp:0,wr:0,wy:0,air:false,upside:false,upT:0,pitch:0,roll:0,cruise:false,cruiseV:0,visY:R.pos.y,lastG:R.pos.y,yaw:a+Math.PI/2})}
 /* ---------- F-key interactions for world objects ---------- */
 const wprog={id:null,t:0};
 function worldInteract(hints,holdF,dt){
@@ -213,7 +220,7 @@ function worldInteract(hints,holdF,dt){
   if(N&&!(S.caves[N.D.e.id]&&S.caves[N.D.e.id].myst)){hints.unshift(`<span class="key">F</span>Hold to study the ${MYST[N.D.myst].name}`);hold('myst',3,'Studying…',()=>studyMystery(N))}
   for(const s of lootSpots.values()){if(!s.g.visible)continue;const sy=s.g.position.y;if(Math.hypot(s.x-p.x,s.z-p.z)<2.6&&Math.abs(sy-p.y)<3){hints.unshift('<span class="key">F</span>Hold to open the supply crate');hold(s.id,1.2,'Opening…',()=>{act({a:'loot',id:s.id});sfx(0.4,800,1,0.06,'bandpass',0,300)});break}}
   for(const M of lmMeshes.values())for(const e of M.extra){const id=e.userData.id;if(S.pylons&&S.pylons[id])continue;if(Math.hypot(e.position.x-p.x,e.position.z-p.z)<3){hints.unshift('<span class="key">F</span>Hold to touch the pylon');hold(id,1.5,'The pylon responds…',()=>act({a:'pylon',id}))}}
-  for(const c of S.lostCaches)if(cacheMeshes.has(c.id)&&Math.hypot(c.x-p.x,c.z-p.z)<2.5)hints.unshift('<span class="key">F</span>Recover your lost cache');
+  for(const c of S.lostCaches)if(cacheMeshes.has(c.id)&&Math.hypot(c.x-p.x,c.z-p.z)<2.5)hints.unshift((c.items.length?'<span class="key">F</span>Collect your belongings from your body':'<span class="key">F</span>Recover your suit'));
   if(nearestLamp())hints.push('<span class="key">F</span>Pick up the lamp');
   if(typeof alienInteract==='function'){const r2=alienInteract(hints,holdF,dt);if(r2)ring=r2}
   if(typeof feedHint==='function')feedHint(hints);

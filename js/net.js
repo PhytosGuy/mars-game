@@ -18,8 +18,9 @@ const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const num=(v,a,b,d=0)=>isNum(v)?clamp(v,a,b):d;
 const str=(v,n)=>typeof v==='string'?v.slice(0,n):'';
 const cleanName=v=>str(v,20).replace(/[\u0000-\u001f<>]/g,'').trim()||'Crewmate';
-function cleanLook(l){const o={...LOOK_DEFAULT};if(l&&typeof l==='object')for(const k in LOOK_DEFAULT){if(typeof LOOK_DEFAULT[k]==='boolean')o[k]=!!l[k];else if(typeof l[k]==='string'&&/^#[0-9a-f]{6}$/i.test(l[k]))o[k]=l[k]}return o}
 /* ---------- transport ---------- */
+const PEER_OPTS={config:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:global.stun.twilio.com:3478'},
+  {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}],sdpSemantics:'unified-plan'},debug:0};
 function loadPeerJS(){return new Promise((res,rej)=>{if(window.Peer)return res();const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
   s.onload=()=>res();s.onerror=()=>rej(new Error('Could not load the multiplayer library. Check your internet connection.'));document.head.appendChild(s)})}
 const genCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b%32]).join('');
@@ -39,14 +40,14 @@ function netPickupUpdate(pk){if(net.role==='host')netSend({t:'pkn',id:pk.id,n:pk
 async function hostGame(){
   if(net.role)return;
   try{await loadPeerJS()}catch(e){toast(e.message,'bad');return}
-  const tryCode=()=>{const code=genCode(),peer=new Peer('marslc-'+code);
+  const tryCode=()=>{const code=genCode(),peer=new Peer('marslc-'+code,PEER_OPTS);
     peer.on('open',id=>{net.peer=peer;net.role='host';net.code=code;net.id=id;updateNetUI();toast(`Co-op is open! Share the code ${code} with friends`,'good');SFX.radio();radio('System',`Colony open for co-op. Code ${code}.`,'sys')});
     peer.on('connection',conn=>{
       conn.on('open',()=>{const g={conn,token:null,name:'',ready:false,pos:null,last:now,bucket:120,tb:now,flood:0};net.conns.set(conn.connectionId||conn.peer,g);
         conn.on('data',d=>hostReceive(g,d));conn.on('close',()=>dropGuest(g,'left the colony'));conn.on('error',()=>dropGuest(g,'lost connection'))});
     });
     peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
-    peer.on('error',e=>{if(e.type==='unavailable-id'){peer.destroy();tryCode()}else toast('Co-op error: '+e.type,'bad')});
+    peer.on('error',e=>{if(e.type==='unavailable-id'){peer.destroy();tryCode()}else if(e.type==='network'||e.type==='server-error'||e.type==='socket-error'||e.type==='socket-closed'){setTimeout(()=>{try{if(!peer.destroyed)peer.reconnect()}catch(x){}},2000)}else if(e.type!=='peer-unavailable')toast('Co-op error: '+e.type,'bad')});
   };
   tryCode();
 }
@@ -77,26 +78,29 @@ function hostReceive(g,d){
     case'talk':{if(typeof onRemoteTalk==='function')onRemoteTalk(g,d);break}
     case'fx':{const v=okBolt(d);if(!v||now-(g.fxT||0)<0.3)return;g.fxT=now;drawBolt(v[0],v[1]);netSend({t:'fx',k:'bolt',f:d.f,to:d.to},g.conn);break}
     case'bye':g.conn.close();break;
+    case'sleep':if(d.on)net.sleepers.add(g.token);else net.sleepers.delete(g.token);hostCheckSleep();break;
   }
 }
-function dropGuest(g,why){const key=g.conn.connectionId||g.conn.peer;if(!net.conns.has(key))return;net.conns.delete(key);
+function dropGuest(g,why){const key=g.conn.connectionId||g.conn.peer;if(!net.conns.has(key))return;net.conns.delete(key);if(net.sleepers){net.sleepers.delete(g.token);setTimeout(hostCheckSleep,50)}
   if(g.ready){toast(`${g.name} ${why}`);radio('System',`${g.name} ${why}.`,'sys');dropPlayer(g.token);netSend({t:'bye',id:g.token})}updateNetUI()}
 /* ---------- joining ---------- */
 async function joinGame(code){
   code=(code||'').trim().toUpperCase();if(!/^[A-Z0-9]{5}$/.test(code)){coopMsg('Enter the 5-character code from your friend.');return}
-  coopMsg('Connecting…');net.joinCode=code;net.leaving=false;
+  coopMsg('Connecting…');net.joinCode=code;net.leaving=false;net.tries=0;
   try{await loadPeerJS()}catch(e){coopMsg(e.message);return}
   connectToHost(code,false);
 }
 function connectToHost(code,isRe){
   try{net.peer&&net.peer.destroy()}catch(e){}
-  const peer=new Peer();net.peer=peer;
-  peer.on('open',id=>{net.id=id;const c=peer.connect('marslc-'+code,{reliable:true,serialization:'json'});net.hostConn=c;
-    const to=setTimeout(()=>{if(net.role!=='guest'&&!isRe){coopMsg('No colony found with that code. Check it and try again.');leaveNet(true)}},12000);
+  const peer=new Peer(PEER_OPTS);net.peer=peer;const attempt=++net.tries;
+  const retry=why=>{if(isRe||net.role==='guest'||net.leaving||attempt!==net.tries)return;if(net.tries<3){coopMsg(`${why} Trying again (${net.tries+1} of 3)…`);setTimeout(()=>{if(!net.leaving&&net.role!=='guest')connectToHost(code,false)},1500)}else{coopMsg(why+' Make sure your friend’s game is open and they pressed “Open to friends”, then try again.');leaveNet(true)}};
+  const openTo=setTimeout(()=>retry('The connection server is slow.'),10000);
+  peer.on('open',id=>{clearTimeout(openTo);net.id=id;const c=peer.connect('marslc-'+code,{reliable:true,serialization:'json'});net.hostConn=c;
+    const to=setTimeout(()=>{if(net.role!=='guest')retry('No answer from that colony yet.')},10000);
     c.on('open',()=>sendTo(c,{t:'hello',v:NET_V,name:net.name,look:LOOK,token:net.token}));
     c.on('data',d=>{if(d&&d.t==='welcome')clearTimeout(to);guestReceive(d)});
     c.on('close',()=>{if(net.role==='guest'&&!net.leaving)startReconnect()})});
-  peer.on('error',e=>{if(isRe)return;coopMsg(e.type==='peer-unavailable'?'No colony found with that code. Check it and try again.':'Connection error: '+e.type);if(net.role!=='guest')leaveNet(true)});
+  peer.on('error',e=>{if(isRe)return;clearTimeout(openTo);if(net.role!=='guest')retry(e.type==='peer-unavailable'?'No colony found with that code yet.':'Connection problem ('+e.type+').')});
 }
 function startReconnect(){
   if(net.reconnect>0)return;net.reconnect=1;toast('Lost connection to the host. Reconnecting…','warn');radio('System','Signal lost. Re-establishing link…','sys');
@@ -123,7 +127,9 @@ function guestReceive(d){
     case'meteor':if(isNum(d.x)&&isNum(d.z))spawnMeteor(d.x,d.z,str(d.id,24),d.big);break;
     case'lander':if(isNum(d.x)&&isNum(d.z))spawnLander(!!d.crew,num(d.n,1,40,2),d.x,d.z);break;
     case'card':card(esc(d.a),esc(d.b),esc(d.c),/^#[0-9a-f]{6}$/i.test(d.d)?d.d:'#6fe0c8',true);break;
-    case'sys':toast(str(d.m,160));break;
+    case'sys':{const m=str(d.m,160);toast(m);coopMsg(m.startsWith('Version mismatch')?'Your friend is on a different version of the game. Both of you reload the page, then try again.':m);break}
+    case'sleepn':sleepUI(true,num(d.n,0,9,0),num(d.of,1,9,1),true);break;
+    case'slept':sleepUI(false);fade(true,'Resting…');setTimeout(()=>{P.o2=100;fade(false);toast('Everyone slept through the night. Good morning!','good')},1400);break;
     case'fx':{const v=okBolt(d);if(v)drawBolt(v[0],v[1]);break}
     case'dv':onDevilSnap(d);break;
     case'chat':onChat({from:cleanName(d.from),id:str(d.id,40),m:str(d.m,160)});break;
@@ -140,7 +146,7 @@ function okBolt(d){if(d.k!=='bolt'||!Array.isArray(d.f)||!Array.isArray(d.to)||d
   const a=new THREE.Vector3(...d.f),b=new THREE.Vector3(...d.to);return a.distanceTo(b)<=60?[a,b]:null}
 function cleanPose(d){const p=d.p;if(!Array.isArray(p)||p.length!==11||!p.every(isNum))return null;
   return{t:'pose',p:p.map((v,i)=>i===3||i>=8?clamp(v,-50,50):clamp(v,-1e6,1e6)),h:typeof d.h==='string'&&ITEMS[d.h]?d.h:null,
-    v:Array.isArray(d.v)&&d.v.length===7&&d.v.every(isNum)?d.v:0,e:str(d.e,12),hp:num(d.hp,0,200,100),
+    v:Array.isArray(d.v)&&d.v.length===7&&d.v.every(isNum)?d.v:0,e:str(d.e,12),hp:num(d.hp,0,200,100),o2:num(d.o2,0,100,100),mh:num(d.mh,50,200,100),in:d.in?1:0,
     hd:Array.isArray(d.hd)&&d.hd.length===2&&d.hd.every(isNum)?[clamp(d.hd[0],-1.2,1.2),clamp(d.hd[1],-0.6,0.6)]:[0,0],
     rd:Array.isArray(d.rd)&&d.rd.length===2&&d.rd.every(isNum)?[clamp(d.rd[0],-4,4),clamp(d.rd[1],-4,4)]:0}}
 async function joinWorld(d){
@@ -148,14 +154,15 @@ async function joinWorld(d){
     net.reconnect=0;toast('Reconnected to the host','good');radio('System','Link restored.','sys');
     S.inv=cleanSlots(d.you&&d.you.inv,INV_SIZE);S.ups=(d.you&&d.you.ups)||{};refreshInvUI();return}
   fade(true,'Joining colony…');await wait(400);
-  for(const id of['title','sites','coop','over'])$('#'+id).classList.add('hidden');
+  for(const id of['title','sites','worlds','coop','over','friends','account','settings','creator','pause'])$('#'+id).classList.add('hidden');
   if(!loadFromData(d.save)){fade(false);toast('The colony data was invalid','bad');showTitle();return}
   net.role='guest';net.reconnect=0;net.lastHost=now;
   S.inv=cleanSlots(d.you&&d.you.inv,INV_SIZE);S.ups=(d.you&&d.you.ups)||{};S.guests={};
-  P.mode='foot';P.o2=100;P.hp=maxHP();P.bat=100;const sp=d.spawn||{x:0,z:0};P.pos.set(num(sp.x,-1e6,1e6),0,num(sp.z,-1e6,1e6));P.pos.y=groundHeight(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.lastG=undefined;
+  P.mode='foot';P.o2=100;P.hp=maxHP();P.bat=100;const hb=home(),sa=(hb.rot||0)+(Math.random()-0.5)*1.4;const sp={x:hb.x+Math.sin(sa)*10,z:hb.z+Math.cos(sa)*10};P.pos.set(sp.x,0,sp.z);P.pos.y=groundHeight(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.lastG=undefined;
   R.pos.set(P.pos.x+6,0,P.pos.z+4);R.pos.y=groundHeight(R.pos.x,R.pos.z);R.battery=100;R.speed=0;R.visY=R.pos.y;R.lastG=R.pos.y;
   S.samples=[];updateChunks(P.pos.x,P.pos.z,999);enterPlay();updateNetUI();fade(false);
-  toast(`You joined ${cleanName(d.host)}’s colony!`,'good');SFX.radio();radio('System',`Connected to ${cleanName(d.host)}’s colony.`,'sys');
+  toast(`You joined ${cleanName(d.host)}’s colony!`,'good');SFX.radio();
+  {let seen=[];try{seen=JSON.parse(localStorage.getItem('mlc-joined'))||[]}catch(e){}const key=cleanName(d.host)+'@'+(S.site||'');if(!seen.includes(key)){seen.push(key);try{localStorage.setItem('mlc-joined',JSON.stringify(seen.slice(-30)))}catch(e){}setTimeout(()=>{if(game.state==='play'&&!game.tour)startTour()},2200)}}radio('System',`Connected to ${cleanName(d.host)}’s colony.`,'sys');
 }
 function leaveNet(silent){
   net.leaving=true;
@@ -173,8 +180,7 @@ function nameSprite(name){
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));s.scale.set(2.6,0.65,1);s.renderOrder=999;return s;
 }
-function applyLookTo(a,rv,l){const M=a.userData.mats;M.suit.color.set(l.suit);M.accent.color.set(l.accent);M.visor.color.set(l.visor);M.visor.emissive.set(l.visor);
-  M.pack.color.set(l.pack);M.boots.color.set(l.boots);a.userData.antenna.visible=!!l.antenna;rv.userData.paint.color.set(l.rover)}
+function applyLookTo(a,rv,l){l=cleanLook(l);dressModel(a,l);rv.userData.paint.color.set(l.rover)}
 function getRemote(id,name,look){
   let p=net.players.get(id);
   if(!p){const a=mkAstronaut(),rv=mkRover();a.userData.lamp.parent.remove(a.userData.lamp,a.userData.lamp.target);rv.userData.body.remove(rv.userData.lamp,rv.userData.lamp.target);rv.rotation.order='YXZ';
@@ -184,10 +190,10 @@ function getRemote(id,name,look){
   return p;
 }
 function dropPlayer(id){const p=net.players.get(id);if(!p)return;scene.remove(p.a,p.rv);net.players.delete(id);updateNetUI()}
-function myPose(){return{t:'pose',id:net.role==='host'?ME:net.token,name:net.name,look:LOOK,h:S.inv[P.hot]?S.inv[P.hot].id:null,hp:P.hp,e:game.emote||'',
+function myPose(){return{t:'pose',id:net.role==='host'?ME:net.token,name:net.name,look:LOOK,h:S.inv[P.hot]?S.inv[P.hot].id:null,hp:P.hp,o2:P.o2,mh:maxHP(),in:P.inside?1:0,e:game.emote||'',
   hd:[+astro.userData.head.rotation.y.toFixed(2),+astro.userData.head.rotation.x.toFixed(2)],rd:P.ragdoll?[+P.ragdoll.rx.toFixed(2),+P.ragdoll.rz.toFixed(2)]:0,p:[P.pos.x,P.pos.y,P.pos.z,P.yaw,P.mode==='rover'?1:0,rover.position.x,rover.position.y,rover.position.z,R.yaw,R.pitch,R.roll],
   v:vac.mode?[vac.mode==='mine'?1:2,vac.from.x,vac.from.y,vac.from.z,vac.target.x,vac.target.y,vac.target.z]:0}}
-function updateRemotePose(d){if(d.id===net.token&&net.role==='guest')return;const p=getRemote(d.id,d.name,d.look);p.t=d;if(p.a.userData.held!==d.h)setHeld(p.a,d.h)}
+function updateRemotePose(d){if(d.id===net.token&&net.role==='guest')return;const p=getRemote(d.id,d.name,d.look);p.t=d;if(!!p.a.userData.casual!==!!d.in)setOutfit(p.a,!!d.in);if(p.a.userData.held!==d.h)setHeld(p.a,d.h)}
 function updateRemotes(dt){
   for(const p of net.players.values()){
     const d=p.t;if(!d)continue;const q=d.p,k=damp(12,dt),a=p.a,rv=p.rv,u=a.userData;
@@ -272,3 +278,15 @@ function coopMsg(m){$('#coop-msg').textContent=m}
 function closeCoop(){$('#coop').classList.add('hidden')}
 // cards are mirrored to crewmates when you're the host
 {const _card=card;card=function(a,b,c,d,remote){_card(a,b,c,d);if(net.role==='host'&&!remote)netSend({t:'card',a,b,c,d})}}
+
+/* ---------- sleeping together: when everyone in the colony is in bed at night, skip to morning ---------- */
+net.sleepers=new Set();
+function netSleep(on){
+  sleepUI(on,0,1,false);game.sleeping=!!on;
+  if(net.role==='host'){if(on)net.sleepers.add(ME);else net.sleepers.delete(ME);hostCheckSleep()}
+  else if(net.role==='guest')sendTo(net.hostConn,{t:'sleep',on:on?1:0})}
+function hostCheckSleep(){if(net.role!=='host')return;const ids=[ME,...[...net.conns.values()].filter(g=>g.ready).map(g=>g.token)],n=ids.filter(i=>net.sleepers.has(i)).length;
+  netSend({t:'sleepn',n,of:ids.length});if(net.sleepers.has(ME))sleepUI(true,n,ids.length,true);
+  if(n>0&&n>=ids.length){net.sleepers.clear();netSend({t:'slept'});sleepUI(false);game.sleeping=false;rest()}}
+function sleepUI(on,n,of,upd){let el=$('#sleepui');if(!el){el=document.createElement('div');el.id='sleepui';el.className='hidden';el.innerHTML='<b>Sleeping…</b><span id="sl-n"></span><button class="btn sm" id="sl-up">Get up</button>';document.body.appendChild(el);el.querySelector('#sl-up').onclick=()=>netSleep(false)}
+  if(!on){el.classList.add('hidden');game.sleeping=false;return}if(!upd&&!el.classList.contains('hidden')&&!game.sleeping)return;el.classList.remove('hidden');$('#sl-n').textContent=of>1?`${n} of ${of} crew in bed. Night is skipped when everyone is asleep.`:'Waiting…'}
