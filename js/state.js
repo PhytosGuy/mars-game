@@ -34,6 +34,10 @@ const dayMul=()=>({short:2,long:0.5}[WS().day]||1);                   // how fas
 const dmgMul=()=>({easy:0.5,hard:1.5}[WS().difficulty]||1);            // damage you take
 const o2Diff=()=>({easy:0.7,hard:1.3}[WS().difficulty]||1);            // how fast your suit uses oxygen
 function wxGap(hours){const w={off:0,rare:0.45,frequent:2.2}[WS().weather];const m=w===undefined?1:w;return m<=0?1e12:hours/m} // time until the next disaster
+// the base is a safe zone: hostiles, dust devils and meteors stay out of this radius around any habitat
+const SAFE_R=75;
+function nearestHabDist(x,z){let d=1e9;for(const b of blds)if(b.type==='habitat')d=Math.min(d,Math.hypot(b.x-x,b.z-z));return d}
+function nearestHabitat(x,z){let best=null,d=1e9;for(const b of blds)if(b.type==='habitat'){const k=Math.hypot(b.x-x,b.z-z);if(k<d){d=k;best=b}}return best}
 function home(){return blds.find(b=>b.type==='habitat')||{x:0,z:0}}
 function sampleCap(){return S.research.has('rovercell')?6:3}
 function temperature(){const[lo,hi]=SITE.temp,k=0.5+0.5*Math.cos((tod()-14.2)/SOL_H*TAU);let T=lo+(hi-lo)*Math.pow(k,1.3);return lerp(T,(lo+hi)/2,S.storm.level*0.45)-(S.cold?S.cold.level*25:0)}

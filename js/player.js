@@ -33,7 +33,7 @@ function toWorld(b,lx,lz){const c=Math.cos(b.rot),s=Math.sin(b.rot);return[b.x+l
 function bldField(b){
   const done=b.progress>=1,key=done+'|'+(b.type==='solar'?Math.floor(now/6)+'|'+!!S.stowed:'')+'|'+b.y;
   if(b._hf&&b._hfKey===key)return b._hf;
-  const d=BUILD[b.type];let F;
+  const d=BUILD[b.type]||{r:12};let F;
   if(!done){const r=d.r*0.7;F={x0:-r,z0:-r,cs:r/2,n:4,m:4,h:new Float32Array(16).fill(Math.max(0.15,b.progress*1.2))}} // a low construction frame
   else{
     b.g.updateMatrixWorld(true);_bmInv.copy(b.g.matrixWorld).invert();const u=new THREE.Box3();
@@ -69,19 +69,22 @@ function surfaceY(obj,x,z){_ro.set(x,obj.position.y+70,z);_downRay.set(_ro,_dn);
 function solidTopAt(x,z){
   let t=-1e9;
   for(const b of blds){const d=BUILD[b.type];if(b.progress<0.05||Math.abs(b.x-x)>d.r+4||Math.abs(b.z-z)>d.r+4)continue;const h=fieldTop(b,x,z);if(h>-50)t=Math.max(t,b.y+h)}
-  if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values()){if(!M.solids||Math.abs(M.L.x-x)>45||Math.abs(M.L.z-z)>45)continue;if(M.solids.some(s=>Math.hypot(x-s.x,z-s.z)<s.r))t=Math.max(t,surfaceY(M.g,x,z))}
+  if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values()){if(!M.fb||Math.abs(M.L.x-x)>60||Math.abs(M.L.z-z)>60)continue;const h=fieldTop(M.fb,x,z);if(h>-50)t=Math.max(t,M.fb.y+h)}
   forRocks(x,z,0.5,k=>{t=Math.max(t,rockTopAt(k,Math.hypot(k.p.x-x,k.p.z-z)))});
   return t}
 function solidFloor(x,z,y,g){const t=solidTopAt(x,z);return t>g&&y>=t-0.5?t:g}
 /* ---------- boulders: solid from the side, standable from above ---------- */
 function forRocks(x,z,r,fn){const c0=Math.floor((x-r)/CHUNK),c1=Math.floor((x+r)/CHUNK),d0=Math.floor((z-r)/CHUNK),d1=Math.floor((z+r)/CHUNK);
   for(let i=c0;i<=c1;i++)for(let j=d0;j<=d1;j++){const c=chunks.get(i+','+j);if(!c||!c.rocks)continue;for(const k of c.rocks)if(k.hp>0&&Math.abs(k.p.x-x)<r+4&&Math.abs(k.p.z-z)<r+4)fn(k)}}
-const rockHR=k=>(k.sc.x+k.sc.z)*0.45;
-function rockTopAt(k,d){const hr=rockHR(k);return d>=hr?-Infinity:k.p.y+k.sc.y*0.92*Math.sqrt(1-(d/hr)*(d/hr))}
+// each boulder's true footprint and height, measured once from its actual (rotated, scaled) shape
+const _rv=new THREE.Vector3();
+function rockShape(k){if(k._hr)return k;const pa=rockGeo.attributes.position;let hr=0,top=0;for(let i=0;i<pa.count;i++){_rv.set(pa.getX(i),pa.getY(i),pa.getZ(i)).multiply(k.sc).applyQuaternion(k.q);hr=Math.max(hr,Math.hypot(_rv.x,_rv.z));top=Math.max(top,_rv.y)}k._hr=hr*0.93;k._top=top;return k}
+const rockHR=k=>rockShape(k)._hr;
+function rockTopAt(k,d){const hr=rockHR(k);return d>=hr?-Infinity:k.p.y+k._top*Math.sqrt(1-(d/hr)*(d/hr))}
 function rockFloor(x,z,y,g){let f=g;forRocks(x,z,1,k=>{const t=rockTopAt(k,Math.hypot(k.p.x-x,k.p.z-z));if(t>f&&y>=t-0.5)f=t});return f}
 function collideRocks(pos,rad,stepH){let hit=false;
   forRocks(pos.x,pos.z,rad,k=>{const hr=rockHR(k),d=Math.hypot(pos.x-k.p.x,pos.z-k.p.z);if(d>=hr+rad)return;
-    if(k.p.y+k.sc.y*0.92-groundHeight(k.p.x,k.p.z)<stepH)return;                // small stones: step over them
+    if(k.p.y+rockShape(k)._top-groundHeight(k.p.x,k.p.z)<stepH)return;           // small stones: step over them
     if(pos.y>=rockTopAt(k,Math.max(0,d-rad*0.7))-0.45)return;                     // you're on top of it
     if(pushOut(pos,k.p.x,k.p.z,hr+rad))hit=true});
   return hit}
@@ -93,11 +96,10 @@ function collideBodies(pos,rad,self){let hit=false;
   if(typeof net!=='undefined')for(const p of net.players.values()){const q=p.t&&p.t.p;if(!q)continue;
     if(q[4]){if(self!=='rover'&&pushOut(pos,p.rv.position.x,p.rv.position.z,2.2+rad))hit=true}
     else if(Math.abs(p.a.position.y-pos.y)<1.8&&pushOut(pos,p.a.position.x,p.a.position.z,0.42+rad))hit=true}
-  if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values()){if(!M.solids||Math.abs(M.L.x-pos.x)>60||Math.abs(M.L.z-pos.z)>60)continue;
-    for(const s of M.solids){if(Math.hypot(pos.x-s.x,pos.z-s.z)>=s.r+rad)continue;if(pos.y>s.top-0.4)continue;
-      if(self==='p'&&P.climbing&&pos.y>groundHeight(s.x,s.z)+0.2)continue;
-      if(self!=='rover'&&pos.y>groundHeight(s.x,s.z)+0.6){const sy=surfaceY(M.g,pos.x,pos.z);if(sy>-1e8&&pos.y>=sy-0.45)continue}
-      if(pushOut(pos,s.x,s.z,s.r+rad))hit=true}}
+  // crash sites, stations, ruins and huts: the same exact height-map hitboxes as modules (pylons stay round)
+  if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values()){if(!M.fb||Math.abs(M.L.x-pos.x)>70||Math.abs(M.L.z-pos.z)>70)continue;
+    for(let it=0;it<3;it++)if(pushField(pos,M.fb,rad,pos.y,self==='rover'?0.6:0.45))hit=true;else break;
+    for(const s of M.solids||[])if(s.pylon&&pos.y<s.top-0.4&&pushOut(pos,s.x,s.z,s.r+rad))hit=true}
   return hit}
 /* ---------- the suit's walk cycle (you and your crewmates) ---------- */
 function animSuit(av,ph,amt,ground,climb){
@@ -118,7 +120,7 @@ function updateWalker(dt,inp){
   tickBuffs(dt);
   // steep ground ahead? Climb it (uses stamina) like a cliff face
   let climb=false,steep=false;
-  if(ml>0.1&&!cave.active&&!underground(P.pos.x,P.pos.z,P.pos.y)){const ah=groundHeight(P.pos.x+mx*1.1,P.pos.z+mz*1.1),rise=ah-P.pos.y;
+  if(ml>0.1&&!cave.active&&!P.inside&&!underground(P.pos.x,P.pos.z,P.pos.y)){const ah=groundHeight(P.pos.x+mx*1.1,P.pos.z+mz*1.1),rise=ah-P.pos.y;
     let st=-1e9;for(const f of[0.5,0.9])st=Math.max(st,solidTopAt(P.pos.x+mx*f,P.pos.z+mz*f));const srise=st-P.pos.y; // probe only right at the wall;               // walls of modules, wrecks, ruins and big boulders
     if((rise>1.15&&rise<40)||(srise>0.55&&srise<30)){steep=true;climb=true}}           // any slope or wall can be climbed; tired just means slower
   let jumped=false;
@@ -139,9 +141,10 @@ function updateWalker(dt,inp){
   // environment pushes you around: storm wind, quakes
   if(typeof envPush==='function')envPush(P,dt);
   P.pos.x+=P.vel.x*dt;P.pos.z+=P.vel.z*dt;P.pos.y+=P.vel.y*dt;
-  const ug=cave.active||underground(P.pos.x,P.pos.z,P.pos.y);
-  if(cave.active||caveNear(P.pos))caveCollide(P.pos);if(!cave.active){collideWorld(P.pos,0.45,'p');collideRocks(P.pos,0.42,0.5);collideBodies(P.pos,0.42,'p')}
-  const fl=floorAt(P.pos.x,P.pos.z,P.pos.y),g=ug?fl:solidFloor(P.pos.x,P.pos.z,P.pos.y,fl),gv=(g-(P.lastG===undefined?g:P.lastG))/Math.max(dt,1e-3);P.lastG=g;
+  const ug=!P.inside&&(cave.active||underground(P.pos.x,P.pos.z,P.pos.y));
+  if(P.inside)interiorCollide(P.pos,0.42);                                       // inside the habitat: just the room's walls and furniture
+  else{if(cave.active||caveNear(P.pos))caveCollide(P.pos);if(!cave.active){collideWorld(P.pos,0.45,'p');collideRocks(P.pos,0.42,0.5);collideBodies(P.pos,0.42,'p')}}
+  const fl=P.inside?INT.y:floorAt(P.pos.x,P.pos.z,P.pos.y),g=P.inside||ug?fl:solidFloor(P.pos.x,P.pos.z,P.pos.y,fl),gv=(g-(P.lastG===undefined?g:P.lastG))/Math.max(dt,1e-3);P.lastG=g;
   const ceil=caveCeil(P.pos.x,P.pos.z,P.pos.y);if(P.pos.y>ceil-1.9){P.pos.y=ceil-1.9;if(P.vel.y>0)P.vel.y=0}
   if(P.onGround&&!jumped&&P.pos.y-g<0.12){P.pos.y=g;P.vel.y=clamp(gv,-25,5)}   // walking: follow the ground
   else if(P.pos.y<=g){                                                           // landing
@@ -150,7 +153,8 @@ function updateWalker(dt,inp){
     P.pos.y=g;P.vel.y=0;P.onGround=true}
   else if(!P.climbing)P.onGround=false;                                         // falling: ledge, ramp or jump
   const hs=Math.hypot(P.vel.x,P.vel.z);
-  if(ml>0.1)P.yaw=lerpA(P.yaw,Math.atan2(mx,mz),damp(P.onGround||P.climbing?10:5,dt));
+  if(game.shiftLock&&!P.climbing)P.yaw=lerpA(P.yaw,cam.yaw,damp(14,dt));                 // shift lock: face where you're looking
+  else if(ml>0.1)P.yaw=lerpA(P.yaw,Math.atan2(mx,mz),damp(P.onGround||P.climbing?10:5,dt));
   P.lean=lerp(P.lean||0,P.onGround||P.climbing?(P.climbing?-0.25:0):clamp(0.3*hs/6-P.vel.y*0.03,-0.35,0.45),damp(5,dt));
   // walk cycle: stride lengthens with speed so the feet don't skate
   P.walkAmt=lerp(P.walkAmt||0,P.climbing?1:clamp(hs/4.6,0,1.25),damp(8,dt));
@@ -241,7 +245,7 @@ function updateRover(dt,inp){
 }
 function toggleRover(){
   if(P.mode==='foot'){
-    if(P.ragdoll)return;
+    if(P.ragdoll||P.inside)return;
     if(Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<6){P.mode='rover';astro.visible=false;R.cruise=false;cam.yaw=R.yaw;beep(500,0.08);beep(700,0.1,'sine',0.06,0.08);S.flags.nearRover=true}
   }else{
     // you can always get out; at speed (or in the air) you keep the rover's momentum and tumble
@@ -267,7 +271,9 @@ function startRagdoll(v,msg){
 }
 // joint limits so the floppy limbs never bend the wrong way
 const RAG_LIM={aLx:[-3.1,1.4],aLz:[-0.2,2.7],aRx:[-3.1,1.4],aRz:[-2.7,0.2],lL:[-1.7,1.0],lR:[-1.7,1.0],kL:[0,2.3],kR:[0,2.3],hx:[-0.7,0.7],hy:[-1.1,1.1]};
+function endRagdoll(){P.ragdoll=null;P.onGround=true;P.lastG=undefined;P.vel.x*=0.4;P.vel.z*=0.4;P.vel.y=0;astro.rotation.set(0,P.yaw,0,'YXZ')}
 function updateRagdoll(dt,inp){
+  if(P.ragdoll&&P.ragdoll.t>2.6&&P.pos.y-floorAt(P.pos.x,P.pos.z,P.pos.y)<0.3){endRagdoll();return}   // never more than a couple of seconds once you're down
   const r=P.ragdoll,u=astro.userData;r.t+=dt;inp=inp||{fwd:0,steer:0,camTurn:0,jump:false};
   // ---- you're still in charge: steer, turn, pitch and brace ----
   if(inp.camTurn)cam.yaw+=inp.camTurn*dt*1.8;
@@ -291,8 +297,9 @@ function updateRagdoll(dt,inp){
     // stuck the landing: feet first, braced and not too fast → you stay on your feet
     if(upright&&brace&&P.vel.y>-14&&r.t>0.3){if(!r.hit&&r.dmg>0.5)hurt(r.dmg*0.25,'crash');P.ragdoll=null;P.onGround=true;P.lastG=undefined;P.vel.y=0;P.vel.x*=0.5;P.vel.z*=0.5;astro.rotation.set(0,P.yaw,0,'YXZ');puff(P.pos.x,g,P.pos.z,1.2);toast('Nice landing!','good');return}
     if(!r.hit){r.hit=true;if(r.dmg>0.5)hurt(r.dmg,'crash');puff(P.pos.x,g,P.pos.z,1.6)}
-    if(P.vel.y<-2.2){P.vel.y=-P.vel.y*0.32;sfx(0.12,300,1,0.06,'lowpass');for(const k in r.j)r.j[k].v+=(Math.random()-0.5)*14}   // limbs slap the ground
-    else P.vel.y=0;
+    // short ragdolls: a bounce ends on the next impact; otherwise you slide briefly and get straight back up
+    if(P.vel.y<-2.2){if(r.bounced&&r.t>0.25){endRagdoll();return}r.bounced=true;P.vel.y=-P.vel.y*0.32;sfx(0.12,300,1,0.06,'lowpass');for(const k in r.j)r.j[k].v+=(Math.random()-0.5)*14}
+    else{P.vel.y=0;if(r.bounced||r.t>1.4||hs<2.5){endRagdoll();return}}
     const f=Math.max(0,hs-dt*7)/(hs||1);P.vel.x*=f;P.vel.z*=f;               // sliding across the regolith
     r.spin.multiplyScalar(1-Math.min(1,dt*2.4));if(hs>2&&Math.random()<0.3)puff(P.pos.x,g,P.pos.z,0.6);
   }
@@ -323,7 +330,7 @@ function camBlocked(x,y,z){
   if(y<groundHeight(x,z)+0.3)return true;
   for(const b of blds){const d=BUILD[b.type];if(d.solid===false||b.progress<0.3||Math.abs(b.x-x)>d.r+2||Math.abs(b.z-z)>d.r+2)continue;const h=fieldTop(b,x,z);if(h>-50&&y<b.y+h+0.15)return true}
   let hit=false;forRocks(x,z,0.5,k=>{if(!hit&&y<rockTopAt(k,Math.hypot(k.p.x-x,k.p.z-z))+0.15)hit=true});if(hit)return true;
-  if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values())if(M.solids&&Math.abs(M.L.x-x)<50&&Math.abs(M.L.z-z)<50)for(const s of M.solids)if(y<s.top&&Math.hypot(x-s.x,z-s.z)<s.r)return true;
+  if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values())if(M.fb&&Math.abs(M.L.x-x)<60&&Math.abs(M.L.z-z)<60){const h=fieldTop(M.fb,x,z);if(h>-50&&y<M.fb.y+h+0.15)return true}
   return false}
 function updateCamera(dt){
   const rv=P.mode==='rover';
@@ -332,9 +339,10 @@ function updateCamera(dt){
   _v1.copy(rv?rover.position:P.pos);_v1.y+=rv?2.2:1.5;
   if(game.camSnap){cam.target.copy(_v1);game.camSnap=false}else cam.target.lerp(_v1,damp(10,dt));
   if(rv&&now-cam.lastDrag>1.5&&Math.abs(R.speed)>1)cam.yaw=lerpA(cam.yaw,R.yaw,damp(2.2,dt));
-  const d=(rv?15:9)*cam.zoom*(cave.active?0.7:1),p=cam.pitch;
+  const d=(rv?15:9)*cam.zoom*(cave.active?0.7:1)*(P.inside?0.55:1),p=cam.pitch;
   camera.position.set(cam.target.x-Math.sin(cam.yaw)*Math.cos(p)*d,cam.target.y+Math.sin(p)*d,cam.target.z-Math.cos(cam.yaw)*Math.cos(p)*d);
-  if(cave.active)caveCamClamp();
+  if(P.inside)interiorCamera();
+  else if(cave.active)caveCamClamp();
   else{
     // pull the camera in front of anything between it and you (hills, modules, boulders, ruins)
     const N=14;let free=1;for(let i=1;i<=N;i++){const f=i/N;_v2.lerpVectors(cam.target,camera.position,f);if(camBlocked(_v2.x,_v2.y,_v2.z)){free=Math.max(0.08,(i-1)/N);break}}

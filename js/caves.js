@@ -10,6 +10,7 @@ const CAVE_CELL=400,HOLE_R=4.6,BOWL_R=20,BOWL_D=5;
 const cave={active:false,depth:0,nets:new Map(),inId:null};
 const caveLights=[0,1,2].map(()=>{const l=new THREE.PointLight(0x9fd8ff,0,36,1.4);scene.add(l);return l});
 const caveMat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,side:THREE.BackSide,roughness:1});
+const shaftMat=new THREE.MeshStandardMaterial({color:'#6a4332',flatShading:true,side:THREE.BackSide,roughness:1});
 const capMat=new THREE.MeshStandardMaterial({color:'#2e221d',flatShading:true,side:THREE.DoubleSide,roughness:1});
 const MYST={
   cathedral:{name:'Crystal Cathedral',color:'#dff3ff',rp:45,text:'A chamber filled with metre-long gypsum (selenite) crystals. On Earth, giant crystals like these grew slowly in warm, mineral-rich water, so a find like this would point to long-lived groundwater beneath Mars.'},
@@ -47,7 +48,8 @@ function caveData(e){
     const rad=u=>{let v=base+0.9*Math.sin(u*len*0.09+a1)+0.5*Math.sin(u*len*0.23+a2);for(const[c,w,amp]of chambers)v+=amp*Math.exp(-(((u-c)/w)**2));return Math.max(2.4,v)};
     return{curve,rad,len}};
   // main tunnel: a steep ramp from the sinkhole, then a winding descent
-  const pts=[new THREE.Vector3(e.x,top,e.z)];let x=e.x,z=e.z,y=top;
+  // the tunnel starts a little behind the sinkhole, so there's solid floor under the whole opening
+  const pts=[new THREE.Vector3(e.x-Math.cos(dir)*6.5,top+0.6,e.z-Math.sin(dir)*6.5),new THREE.Vector3(e.x,top,e.z)];let x=e.x,z=e.z,y=top;
   for(let i=0;i<2;i++){x+=Math.cos(dir)*12;z+=Math.sin(dir)*12;y-=7.5;pts.push(new THREE.Vector3(x,y,z))}
   const n=10+Math.floor(r()*6);
   for(let i=0;i<n;i++){dir+=(r()-0.5)*1.0;const len=14+r()*10;x+=Math.cos(dir)*len;z+=Math.sin(dir)*len;const g=tH(x,z);y=clamp(y+(r()-0.78)*10,g-80,g-14);pts.push(new THREE.Vector3(x,y,z))}
@@ -103,6 +105,12 @@ function buildCaveMesh(D){
     geo.computeVertexNormals();g.add(new THREE.Mesh(geo,caveMat));
     const ue=1,c=t.curve.getPointAt(ue),cap=new THREE.Mesh(new THREE.CircleGeometry(t.rad(ue)*1.35,20),capMat);cap.position.copy(c);cap.lookAt(_v1.copy(c).add(t.curve.getTangentAt(ue)));g.add(cap);
   }
+  // a rock shaft lines the sinkhole all the way down to the tunnel floor (open on the side the tunnel leads off)
+  {const t0=D.tubes[0],dir=Math.atan2(t0.curve.getPointAt(0.12).x-D.e.x,t0.curve.getPointAt(0.12).z-D.e.z),gTop=groundHeight(D.e.x+HOLE_R,D.e.z)+0.4,s0=D.samples[t0.s0+8]||D.samples[t0.s0],floorY=Math.min(s0.fy,D.samples[t0.s0].fy)-1;
+   const h=Math.max(2,gTop-floorY),gap=1.15;
+   const back=new THREE.Mesh(new THREE.CylinderGeometry(HOLE_R+0.25,HOLE_R+0.05,h,28,4,true,dir+gap,TAU-gap*2),shaftMat);back.position.set(D.e.x,gTop-h/2,D.e.z);g.add(back);
+   const lip=new THREE.Mesh(new THREE.CylinderGeometry(HOLE_R+0.25,HOLE_R+0.2,2.2,12,1,true,dir-gap,gap*2),shaftMat);lip.position.set(D.e.x,gTop-1.1,D.e.z);g.add(lip);
+   const cap=new THREE.Mesh(new THREE.CircleGeometry(t0.rad(0)*1.3,20),capMat);const c0=t0.curve.getPointAt(0);cap.position.copy(c0);cap.lookAt(_v1.copy(c0).sub(t0.curve.getTangentAt(0)));g.add(cap)}
   // rocks ringing the sinkhole hide the edge of the cut
   const r=mulberry(strHash(D.e.id)+9);
   for(let i=0;i<16;i++){const a=i/16*TAU+r()*0.2,d=HOLE_R+0.6+r()*1.2,x=D.e.x+Math.cos(a)*d,z=D.e.z+Math.sin(a)*d,s=0.8+r()*1.3;
@@ -158,6 +166,9 @@ function floorAt(x,z,y){
 }
 function caveCeil(x,z,y){if(!cave.nets.size||!underground(x,z,y))return Infinity;const c=caveQuery(x,z,y);return c?c.s.y+c.s.rr*0.72:Infinity}
 function caveCollide(pos){
+  // inside a sinkhole you can't walk out through its walls into empty space
+  for(const e of entrancesNear(pos.x,pos.z,HOLE_R+3)){const d=Math.hypot(pos.x-e.x,pos.z-e.z);if(d<HOLE_R-0.45||d>HOLE_R+2.5)continue;if(pos.y>groundHeight(pos.x,pos.z)-1)continue;
+    const c=caveQuery(pos.x,pos.z,pos.y);if(c&&c.d<c.s.rr*0.8)continue;const k=(HOLE_R-0.45)/d;pos.x=e.x+(pos.x-e.x)*k;pos.z=e.z+(pos.z-e.z)*k}
   if(!underground(pos.x,pos.z,pos.y)||inHole(pos.x,pos.z))return;const c=caveQuery(pos.x,pos.z,pos.y);
   if(!c){let best=null,bd=1e9;for(const N of cave.nets.values())for(const s of N.D.samples){const d=Math.hypot(s.x-pos.x,s.z-pos.z)+Math.abs(s.fy-pos.y)*0.5;if(d<bd){bd=d;best=s}}if(best&&bd<30){pos.x=best.x;pos.z=best.z;pos.y=Math.max(pos.y,best.fy)}return}
   const s=c.s,m=s.rr*0.8;if(c.d>m&&c.d>0.001){pos.x=s.x+(pos.x-s.x)/c.d*m;pos.z=s.z+(pos.z-s.z)/c.d*m}

@@ -35,6 +35,7 @@ function spawnMeteor(x,z,id,small){
   const f=focusPos();
   if(x===undefined){const nearBase=Math.random()<0.25,c=nearBase?home():f,a=Math.random()*TAU,d=nearBase?25+Math.random()*40:90+Math.random()*260;
     x=c.x+Math.cos(a)*d;z=c.z+Math.sin(a)*d;id='m'+Math.floor(S.time*100)+Math.floor(Math.random()*99)}
+  if(S){const hb=nearestHabitat(x,z);if(hb){const dx=x-hb.x,dz=z-hb.z,dd=Math.hypot(dx,dz);if(dd<110){const a0=dd>1?Math.atan2(dz,dx):Math.random()*TAU;x=hb.x+Math.cos(a0)*(110+Math.random()*40);z=hb.z+Math.sin(a0)*(110+Math.random()*40)}}} // never on the base
   const gy=groundHeight(x,z),a=Math.random()*TAU;
   const start=new THREE.Vector3(x+Math.cos(a)*700,gy+600,z+Math.sin(a)*700),end=new THREE.Vector3(x,gy,z);
   const head=new THREE.Mesh(metGeo,new THREE.MeshStandardMaterial({color:'#ffd2a0',emissive:'#ffb070',emissiveIntensity:4}));head.scale.setScalar(small?1:2.2);
@@ -84,9 +85,6 @@ function startQuake(mag,epi,dur){
   radio(crewName('Engineer'),`Marsquake! Magnitude ${mag.toFixed(1)}. Brace yourself!`,'crew');SFX.boom(0.6);
   if(net.role!=='guest'){
     const f=focusPos();
-    // structures nearer the epicentre may crack
-    for(const b of blds){if(b.fault||b.progress<1||!FAULTS[b.type])continue;const d=Math.hypot(b.x-epi.x,b.z-epi.z),p=clamp((mag-2.5)/3,0,1)*clamp(1-d/2500,0.2,1)*0.35;
-      if(Math.random()<p){b.fault={...FAULTS[b.type][0],label:'Quake damage: '+FAULTS[b.type][0].label.toLowerCase()};addFaultMarker(b)}}
     // a fissure opens and exposes titanium
     const a=Math.random()*TAU,cx=f.x+Math.cos(a)*(60+Math.random()*120),cz=f.z+Math.sin(a)*(60+Math.random()*120),dir=Math.random()*TAU;
     if(Math.hypot(cx-home().x,cz-home().z)>60){for(let i=-6;i<=6;i++)digAt(cx+Math.cos(dir)*i*3,cz+Math.sin(dir)*i*3,1.4);rebuildDirtyChunks();
@@ -101,10 +99,11 @@ function quakeTick(dt){
   const k=quakeLocal();
   // rockfall in caves, boulders tumbling down slopes on the surface
   if(cave.depth>3&&Math.random()<dt*k*1.6)rockfall(P.pos.x+(Math.random()-0.5)*8,P.pos.z+(Math.random()-0.5)*8);
-  if(cave.depth<2&&k>0.25&&Math.random()<dt*k*1.2){sample(P.pos.x,P.pos.z,TS3);const steep=Math.abs(groundHeight(P.pos.x+6,P.pos.z)-groundHeight(P.pos.x-6,P.pos.z))+Math.abs(groundHeight(P.pos.x,P.pos.z+6)-groundHeight(P.pos.x,P.pos.z-6));
+  const atBase=nearestHabDist(P.pos.x,P.pos.z)<SAFE_R+15;
+  if(cave.depth<2&&k>0.25&&!atBase&&Math.random()<dt*k*1.2){sample(P.pos.x,P.pos.z,TS3);const steep=Math.abs(groundHeight(P.pos.x+6,P.pos.z)-groundHeight(P.pos.x-6,P.pos.z))+Math.abs(groundHeight(P.pos.x,P.pos.z+6)-groundHeight(P.pos.x,P.pos.z-6));
     if(TS3.mtn>0.08||steep>4)surfaceRock(P.pos.x+(Math.random()-0.5)*14,P.pos.z+(Math.random()-0.5)*14)}
   // strong shaking can throw you to the ground
-  if(k>0.45&&P.mode==='foot'&&!P.ragdoll&&P.onGround&&!game.dead&&Math.random()<dt*k*0.35){P.vel.x+=(Math.random()-0.5)*6;P.vel.z+=(Math.random()-0.5)*6;P.vel.y=3;P.onGround=false;startRagdoll(5,null);P.ragdoll.dmg=4;toast('The ground heaves and throws you down!','bad')}
+  if(k>0.45&&P.mode==='foot'&&!P.ragdoll&&P.onGround&&!game.dead&&!atBase&&Math.random()<dt*k*0.35){P.vel.x+=(Math.random()-0.5)*6;P.vel.z+=(Math.random()-0.5)*6;P.vel.y=3;P.onGround=false;startRagdoll(5,null);P.ragdoll.dmg=4;toast('The ground heaves and throws you down!','bad')}
   if(quake.t>=quake.dur){quake.active=false;radio(crewName('Engineer'),'Shaking has stopped. Check the colony for damage.','crew')}
 }
 const falling=[];
@@ -126,7 +125,7 @@ function disasterTick(dt,h){
     S.cold=S.cold||{level:0,until:0};
     if(S.time>=S.nextCold&&!S.cold.on){S.cold.on=true;S.cold.until=S.time+6+Math.random()*8;S.nextCold=S.time+wxGap(SOL_H*(3+Math.random()*3));toast('A cold front is moving in: temperatures are dropping fast','warn');crewSay('Engineer','Cold snap! The heaters will pull extra power, and water lines may freeze. Keep the batteries topped up.')}
     if(S.cold.on){S.cold.level=Math.min(1,S.cold.level+h*0.4);if(S.time>=S.cold.until)S.cold.on=false;
-      if(Math.random()<h*0.05){const d=blds.find(b=>b.type==='drill'&&!b.fault&&b.progress>=1);if(d){d.fault={kind:'jam',label:'Frozen water line'};addFaultMarker(d);toast('A drill’s water line has frozen','bad')}}}
+}
     else S.cold.level=Math.max(0,S.cold.level-h*0.3);
     // meteor showers
     if(S.time>=S.nextShower&&!game.resting){S.nextShower=S.time+wxGap(SOL_H*(3+Math.random()*4));toast('Meteor shower! Watch the sky, and stay clear of impacts','warn');const f=focusPos();
@@ -136,9 +135,8 @@ function disasterTick(dt,h){
     const st=S.storm.level;
     if(S.storm.active&&S.storm.dir==null)S.storm.dir=Math.random()*TAU;if(!S.storm.active)S.storm.dir=null;
     if(st>0.7){
-      if(!S.stowed&&Math.random()<h*st*0.25){const b=blds.find(b=>b.type==='solar'&&!b.fault&&b.progress>=1);if(b){b.fault={kind:'jam',label:'Storm-damaged panel'};addFaultMarker(b);toast('The storm damaged a solar array. Stow the panels!','bad')}}
       if(Math.random()<dt*st*0.12){const tall=blds.filter(b=>['comms','weather','tower','atmo'].includes(b.type)&&b.progress>=1);const b=tall[Math.floor(Math.random()*tall.length)];
-        if(b){staticArc(b.x,b.y+8,b.z);if(net.role==='host')netSend({t:'ev',k:'arc',x:b.x,y:b.y+8,z:b.z});if(!b.fault&&Math.random()<0.3){b.fault={kind:'jam',label:'Static discharge damage'};addFaultMarker(b)}}}
+        if(b){staticArc(b.x,b.y+8,b.z);if(net.role==='host')netSend({t:'ev',k:'arc',x:b.x,y:b.y+8,z:b.z});}}
     }
   }
   // exposure for you (each player handles their own suit)

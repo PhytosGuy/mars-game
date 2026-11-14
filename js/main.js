@@ -10,7 +10,7 @@ function loop(t){
   const dt=Math.min(0.05,Math.max(0,(t-last)/1000));last=t;now=t/1000;
   if(game.state==='title'||game.state==='sites')titleUpdate(dt);
   else if(game.state==='intro')introUpdate(dt);
-  else if(game.state==='play'&&(!game.paused||(net.role&&!S.over)))playUpdate(dt);
+  else if(game.state==='play'&&(!game.paused||(net.role&&!S.over))&&(!game.tour||net.role))playUpdate(dt);
   updateAudio();
   renderFrame();
 }

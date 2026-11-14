@@ -6,7 +6,7 @@
    ========================================================= */
 const invUI={open:false,tab:'craft',mtab:'inv',held:null,dragFrom:null,moved:false,hover:null};
 // the Tab menu: Tab opens it on Inventory, Tab again moves to the next page (Shift+Tab goes back)
-const MTABS=[['inv','Inventory'],['missions','Missions'],['colony','Colony'],['research','Research'],['crew','Crew'],['stats','Stats'],['log','Logbook'],['data','Mars data']];
+const MTABS=[['inv','Inventory'],['journal','Journal'],['missions','Missions'],['colony','Colony'],['research','Research'],['crew','Crew'],['stats','Stats'],['log','Logbook'],['data','Mars data']];
 function slotHTML(s,c,i,heldN){
   const n=s?s.n-heldN:0,d=s&&ITEMS[s.id];
   let h=`<div class="slot${c==='inv'&&i<HOTBAR?' hb':''}${c==='inv'&&i===P.hot&&i<HOTBAR?' sel':''}" data-c="${c}" data-i="${i}">`;
@@ -57,8 +57,8 @@ function renderHotbar(){
 }
 function selectHot(i){P.hot=((i%HOTBAR)+HOTBAR)%HOTBAR;renderHotbar();const s=S.inv[P.hot];const l=$('#hblabel');l.textContent=s?ITEMS[s.id].name:'Empty hand';l.classList.remove('show');void l.offsetWidth;l.classList.add('show');if(typeof onHotbarChange==='function')onHotbarChange()}
 function openMenu(tab){
-  if(tab===false){if(!invUI.open)return;invUI.open=false;$('#invov').classList.add('hidden');invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');renderHotbar();return}
-  if(!invUI.open){invUI.open=true;$('#invov').classList.remove('hidden');closePanels(true);if(nearBase(ME)&&invUI.tab!=='craft')invUI.tab='store';mouse.drag=false;sfx(0.08,1400,2,0.04)}
+  if(tab===false){if(!invUI.open)return;invUI.open=false;if(game.wantLock)setShiftLock(true);$('#invov').classList.add('hidden');invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');renderHotbar();return}
+  if(!invUI.open){if(document.pointerLockElement)document.exitPointerLock();invUI.open=true;$('#invov').classList.remove('hidden');closePanels(true);if(nearBase(ME)&&invUI.tab!=='craft')invUI.tab='store';mouse.drag=false;sfx(0.08,1400,2,0.04)}
   else sfx(0.04,1900,2,0.03);
   invUI.mtab=tab||'inv';invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');refreshInvUI();
 }
@@ -102,6 +102,9 @@ function renderStats(){
 }
 function renderMenuPage(){
   const t=invUI.mtab;$('#col-title').textContent=(MTABS.find(x=>x[0]===t)||['',''])[1];
+  if(t==='journal'){$('#col-body').innerHTML='<div class="jpage"><textarea id="mjtext" spellcheck="true" placeholder="Write anything: plans, discoveries, notes for your crew…"></textarea><button class="btn sm" id="mjdate">Add today&#8217;s date</button></div>';
+    const ta=$('#mjtext');ta.value=journalText();ta.addEventListener('input',()=>{S.journal=ta.value.slice(0,20000)});ta.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')ta.blur()});ta.addEventListener('focus',()=>game.typing=true);ta.addEventListener('blur',()=>{game.typing=false});
+    $('#mjdate').addEventListener('mousedown',e=>{e.preventDefault();ta.value+=(ta.value&&!ta.value.endsWith('\n')?'\n\n':'')+`Sol ${solNum()}, ${fmtTime()}: `;S.journal=ta.value;ta.focus()});$('#col-sub').textContent='· saved with this expedition';return}
   if(t==='missions')renderMissions();else if(t==='stats')renderStats();
   else{colTab=t==='colony'?'overview':t;renderColony()}
 }

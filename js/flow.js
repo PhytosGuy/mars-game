@@ -25,12 +25,14 @@ function enterPlay(){
   if(P.mode==='foot'){astro.position.copy(P.pos)}
   if(P.hp==null||P.hp<=0)P.hp=maxHP();P.stam=100;game.dead=false;syncLamps();onHotbarChange();refreshInvUI();updateDeposits();
   updateHUD();
+  if(typeof autoHostIfWanted==='function')setTimeout(autoHostIfWanted,2500);
+  if(!OPT.onboarded&&!net.role)setTimeout(()=>{if(game.state==='play'&&!game.tour&&typeof startTour==='function')startTour()},1800);   // first landing: show the tour
 }
 let selSite='jezero',selMode='survival';
 async function startNew(site,mode,cfg={}){
   initAudio();fade(true,'Entering Mars orbit…');await wait(900);
   $('#title').classList.add('hidden');$('#sites').classList.add('hidden');$('#over').classList.add('hidden');
-  clearAll();initSite(site);S=newState(site,mode);curWorld=newWorldId();
+  clearAll();initSite(site);S=newState(site,mode);curWorld=newWorldId();P.inside=false;if(INT.g)INT.g.visible=false;
   S.worldName=String(cfg.name||'').trim().slice(0,28)||(SITES[site].name+' expedition');Object.assign(S.settings,cfg.settings||{});
   S.nextStorm=S.time+wxGap(S.nextStorm-S.time);S.nextSPE=S.time+wxGap(S.nextSPE-S.time);
   spawnBase();placeActors();P.hp=100;P.bat=100;P.stam=100;P.hot=0;
@@ -88,7 +90,7 @@ function togglePause(force){
 }
 function showTitle(){
   if(net.role)leaveNet(true);
-  game.state='title';game.paused=false;S=null;
+  game.state='title';game.paused=false;S=null;P.inside=false;if(INT.g)INT.g.visible=false;$('#journalov').classList.add('hidden');game.typing=false;
   for(const id of['hud','buildbar','mapov','pause','over','sites','worlds','settings','invov','dlg','chatbox','quick'])$('#'+id).classList.add('hidden');invUI.open=false;game.dialogue=null;game.dead=false;
   build.active=false;selectBuild(null);
   $('#title').classList.remove('hidden');curWorld=null;
@@ -164,7 +166,8 @@ function onKey(c){
   if(game.dialogue)return;
   switch(c){
     case'KeyE':toggleRover();break;
-    case'KeyB':toggleBuild();break;
+    case'CapsLock':setShiftLock(!game.shiftLock);break;
+    case'KeyB':if(P.inside){toast('Go outside to build');break}toggleBuild();break;
     case'KeyI':openInventory();break;
     case'Tab':cycleMenu(keys.ShiftLeft||keys.ShiftRight?-1:1);break;
     case'KeyM':togglePanel('mapov');break;
@@ -189,7 +192,12 @@ function onKey(c){
 }
 canvas.addEventListener('mousedown',e=>{initAudio();mouse.drag=true;mouse.btn=e.button;mouse.lx=e.clientX;mouse.ly=e.clientY;mouse.moved=0;canvas.focus();
   if(e.button===0&&game.state==='play')onWorldClick()});
+/* ---------- shift lock (Caps Lock): the mouse turns the camera and you aim at the centre ---------- */
+function setShiftLock(on){game.wantLock=on;if(on&&document.pointerLockElement!==canvas){try{const r=canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>{})}catch(e){}}if(!on&&document.pointerLockElement)document.exitPointerLock()}
+document.addEventListener('pointerlockchange',()=>{const on=document.pointerLockElement===canvas;game.shiftLock=on;$('#lockaim').classList.toggle('hidden',!on);
+  if(on){mouse.x=innerWidth/2;mouse.y=innerHeight/2;mouse.nx=0;mouse.ny=0.05;toast('Shift lock on: the mouse looks around. Caps Lock to turn it off')}else if(game.state==='play'&&!game.paused&&!invUI.open&&game.wantLock&&!game.typing)toast('Shift lock off')});
 addEventListener('mousemove',e=>{
+  if(document.pointerLockElement===canvas&&game.state==='play'){cam.yaw-=e.movementX*0.0024*OPT.sens;cam.pitch=clamp(cam.pitch+e.movementY*0.002*OPT.sens,-0.3,1.35);cam.lastDrag=now;mouse.x=innerWidth/2;mouse.y=innerHeight/2;mouse.nx=0;mouse.ny=0.05;return}
   mouse.x=e.clientX;mouse.y=e.clientY;mouse.nx=e.clientX/innerWidth*2-1;mouse.ny=-(e.clientY/innerHeight)*2+1;
   if(mouse.drag&&game.state==='play'){const dx=e.clientX-mouse.lx,dy=e.clientY-mouse.ly;mouse.lx=e.clientX;mouse.ly=e.clientY;mouse.moved+=Math.abs(dx)+Math.abs(dy);
     const rotate=mouse.btn===2||mouse.btn===1||(mouse.btn===0&&(P.mode==='rover'||build.active)&&mouse.moved>=6);
@@ -208,7 +216,7 @@ const CONTROLS=`<b>WASD</b> walk / drive · <b>Shift</b> sprint · <b>Space</b> 
 <b>1–9</b>, <b>scroll</b> or <b>click</b> the hotbar · <b>Hold left mouse</b> use the item (drill, blaster, prod) · <b>Q</b> drop one<br>
 <b>I</b> inventory & crafting · <b>F</b> interact, talk, feed animals, scan, open · <b>E</b> rover (get out any time; at speed you tumble) · <b>C</b> cruise<br><b>In the air</b> (rover): <b>W/S</b> flip, <b>A/D</b> spin, <b>Shift+A/D</b> barrel roll<br><b>Tumbling</b> (thrown or bailed out): <b>WASD</b> steer and turn, <b>W/S</b> flip, hold <b>Space</b> to brace and land on your feet<br>
 <b>Tab</b> menu: inventory, missions, colony, research, stats (Tab again for the next page) · <b>I</b> inventory · <b>M</b> map<br><b>B</b> build · <b>X</b> recycle · <b>R</b> rotate<br>
-<b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>Esc</b> pause`;
+<b>Caps Lock</b> shift lock (the mouse looks around, aim at the centre) · <b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>Esc</b> pause`;
 $('#ctrl-list').innerHTML=CONTROLS;$('#p-ctrl').innerHTML=CONTROLS;
 $('#b-ctrl').onclick=()=>$('#ctrl-list').classList.toggle('hidden');
 // (home screen, expeditions list, world creation and settings live in menus.js)

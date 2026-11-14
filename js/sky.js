@@ -82,6 +82,7 @@ function updateEnv(dt,focus){
   moonDir(((time/132)%1)*TAU+1.3,-0.2,_v1);deimos.position.copy(camera.position).addScaledVector(_v1,1180);
   const f=focus||camera.position;
   sun.position.set(f.x+ENV.sunDir.x*250,f.y+ENV.sunDir.y*250,f.z+ENV.sunDir.z*250);sun.target.position.set(f.x,f.y,f.z);
+  if(typeof P!=='undefined'&&P.inside){sun.intensity=0;hemi.intensity=0.55;hemi.color.setRGB(1,0.93,0.84);hemi.groundColor.setRGB(0.4,0.33,0.28);renderer.toneMappingExposure=1.05} // indoor light only
   const nk=smooth(0.3,0.8,ENV.night+st*0.6);
   for(const n of nightMats)n.m.emissiveIntensity=n.base+n.k*nk;
 }
@@ -133,7 +134,8 @@ function updateWeatherFX(dt,focus){
         const toP=Math.atan2(focus.z-d.z,focus.x-d.x)+(Math.random()-0.5)*0.9,sp=3+Math.random()*4;d.vx=Math.cos(toP)*sp;d.vz=Math.sin(toP)*sp; // drift across your path
         d.life=0;d.max=45+Math.random()*60;d.size=(stormy?1.3:0.85)+Math.random()*0.7;d.alive=true;d.cleaned=new Set()}
       continue}
-    d.life+=dt;d.t+=dt;if(!guest){d.x+=d.vx*dt;d.z+=d.vz*dt;const w=Math.sin(d.t*0.3)*0.6;d.vx+=-d.vz*w*dt*0.2;d.vz+=d.vx*w*dt*0.2}
+    d.life+=dt;d.t+=dt;if(!guest&&S){const hb=nearestHabitat(d.x,d.z);if(hb){const dx=d.x-hb.x,dz=d.z-hb.z,dd=Math.hypot(dx,dz);if(dd<SAFE_R+40){const sp=Math.hypot(d.vx,d.vz)||3;d.vx=dx/dd*sp;d.vz=dz/dd*sp;if(dd<SAFE_R+15){d.x=hb.x+dx/dd*(SAFE_R+15);d.z=hb.z+dz/dd*(SAFE_R+15)}}}} // dust devils veer away from the base
+    if(!guest){d.x+=d.vx*dt;d.z+=d.vz*dt;const w=Math.sin(d.t*0.3)*0.6;d.vx+=-d.vz*w*dt*0.2;d.vz+=d.vx*w*dt*0.2}
     d.op=smooth(0,5,d.life)*(1-smooth(d.max-6,d.max,d.life));
     const gy=groundHeight(d.x,d.z),S_=d.size;d.pts.visible=true;d.pts.position.set(d.x,gy-1,d.z);d.pts.scale.set(S_,S_,S_);
     d.cloud.material.opacity=0.5*d.op*(0.6+0.4*ENV.day);d.funnel.material.uniforms.op.value=d.op;d.funnel.material.uniforms.t.value=d.t;

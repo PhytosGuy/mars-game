@@ -306,20 +306,22 @@ h3{color:var(--text)}.mnum{color:var(--accent);font-weight:900}
 /* ============ Touch controls ============ */
 #touchui{position:fixed;inset:0;pointer-events:none;z-index:5;display:none;user-select:none;-webkit-user-select:none}
 body.touch #touchui.on{display:block}
-#touchui .tbtn{position:absolute;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(16,14,14,.45);color:#fff;font:800 13px var(--fb);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;touch-action:none;-webkit-tap-highlight-color:transparent;backdrop-filter:blur(2px)}
-#touchui .tbtn.sm{width:46px;height:46px;font-size:11px}
-#touchui .tbtn.big{width:84px;height:84px;font-size:15px}
-#touchui .tbtn.on{background:rgba(255,138,61,.55);border-color:var(--accent)}
-#touchui .tbtn:active{transform:scale(.94)}
-#joy{position:absolute;width:128px;height:128px;margin:-64px 0 0 -64px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:rgba(16,14,14,.25);display:none}
-#joy i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.55)}
-#joyhint{position:absolute;left:28px;bottom:120px;width:120px;height:120px;border-radius:50%;border:2px dashed rgba(255,255,255,.18)}
+#touchui .tbtn{position:absolute;pointer-events:auto;width:68px;height:68px;border-radius:18px;border:2px solid rgba(255,255,255,.32);border-bottom-width:4px;background:rgba(72,72,72,.5);color:#f4f4f4;font:800 10px var(--fb);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;touch-action:none;-webkit-tap-highlight-color:transparent;box-shadow:inset 0 2px 0 rgba(255,255,255,.18),0 3px 8px rgba(0,0,0,.25)}
+#touchui .tbtn svg{width:46%;height:46%}#touchui .tbtn i{font-style:normal;opacity:.85;letter-spacing:.02em}
+#touchui .tbtn.sm{width:52px;height:52px;border-radius:14px;font-size:9px}#touchui .tbtn.sm svg{width:42%;height:42%}
+#touchui .tbtn.big{width:88px;height:88px;border-radius:22px;font-size:11px}
+#touchui .tbtn.on{background:rgba(255,138,61,.6);border-color:#ffc79a}
+#touchui .tbtn:active{transform:translateY(2px);border-bottom-width:2px}
+#joy,#joyhint{position:absolute;width:140px;height:140px;border-radius:30px;border:2px solid rgba(255,255,255,.3);background:rgba(72,72,72,.32)}#joy{margin:-70px 0 0 -70px;display:none}
+#joy b,#joyhint b{position:absolute;color:rgba(255,255,255,.55);font-size:15px;line-height:1}#joy b:nth-child(1),#joyhint b:nth-child(1){left:50%;top:8px;transform:translateX(-50%)}#joy b:nth-child(2),#joyhint b:nth-child(2){right:9px;top:50%;transform:translateY(-50%)}#joy b:nth-child(3),#joyhint b:nth-child(3){left:50%;bottom:8px;transform:translateX(-50%)}#joy b:nth-child(4),#joyhint b:nth-child(4){left:9px;top:50%;transform:translateY(-50%)}
+#joy i{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:16px;background:rgba(235,235,235,.75);border-bottom:4px solid rgba(150,150,150,.8)}
+#joyhint{left:30px;bottom:96px;opacity:.55}
 #touchaim{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid rgba(255,255,255,.75);display:none}
 body.touch #touchaim.on{display:block}
 body.touch .touchnote{display:none}
-body.touch #hotbar{bottom:8px}body.touch #hotbar .slot{width:44px;height:44px}body.touch #hotbar .slot img{width:32px;height:32px}body.touch .hbmore{height:44px}
+body.touch #hotbar{bottom:8px;left:calc(50% - 60px)}body.touch #hotbar .slot{width:40px;height:40px}body.touch #hotbar .slot img{width:28px;height:28px}body.touch .hbmore{height:40px;width:30px}
 body.touch #status,body.touch #radiofeed,body.touch #hanger{display:none}
-body.touch #chatbtn{bottom:auto;top:12px;right:222px}body.touch #clock{display:none}body.touch #journal{top:62px;right:12px;width:min(260px,40vw)}body.touch #top{width:min(420px,46vw)}
+body.touch #chatbtn{bottom:auto;top:16px;right:276px}body.touch #clock{display:none}body.touch #journal{top:76px;right:14px;width:min(250px,38vw)}body.touch #top{width:min(420px,46vw)}
 body.touch #cards{bottom:auto;top:70px;width:min(280px,46vw)}
 canvas#game{touch-action:none}
 .wl{width:min(820px,94vw)}
@@ -337,6 +339,12 @@ canvas#game{touch-action:none}
 .setwin{width:min(560px,94vw)}.srow{display:flex;align-items:center;gap:12px;margin:12px 0}.srow>span{width:150px;font-weight:700;font-size:14px}.srow .opt{flex:1}.srow input[type=range]{flex:1;accent-color:var(--accent)}.srow b{width:40px;text-align:right;font-size:13px}
 .vbar.col{margin-top:2px}.vbar.col span{width:auto;white-space:nowrap}.vbar.col em{font-style:normal;font-size:11px;color:var(--text);margin-left:6px;font-weight:700}
 #status{display:none!important}
+#journalov{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(10,7,5,.72);padding:16px}
+.jbook{width:min(820px,100%);height:min(88vh,900px);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:#f6eedd;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.jhead{display:flex;align-items:center;gap:8px;padding:14px 18px;background:#7a3b24;color:#fff4e6}.jhead b{display:block;font-size:18px}.jhead span{font-size:12px;opacity:.8}
+.jhead .btn{background:rgba(255,255,255,.18);color:#fff}.jhead .btn.primary{background:#ff8a3d;color:#1d0f06}
+#jtext,#mjtext{flex:1;width:100%;border:0;outline:none;resize:none;padding:22px 26px;font:17px/32px var(--fb);color:#3a2a20;background:#f6eedd repeating-linear-gradient(transparent 0 31px,rgba(122,59,36,.18) 31px 32px);background-attachment:local}
+.jpage{display:flex;flex-direction:column;gap:8px}#mjtext{min-height:52vh;border-radius:12px}
 #envfx{position:fixed;inset:0;pointer-events:none}#envfx i{position:absolute;inset:0;opacity:0;transition:opacity .5s}
 #envfx .dust{background:radial-gradient(ellipse at center,rgba(150,98,58,.22),rgba(92,56,30,.9))}
 #envfx .grit{background-image:repeating-linear-gradient(104deg,rgba(255,205,160,.16) 0 2px,transparent 2px 11px),repeating-linear-gradient(98deg,rgba(255,220,180,.1) 0 1px,transparent 1px 7px);animation:grit .3s linear infinite}
@@ -344,6 +352,24 @@ canvas#game{touch-action:none}
 #envfx .frost{background:radial-gradient(ellipse at center,transparent 38%,rgba(214,236,255,.55) 70%,rgba(240,250,255,.95))}
 #envfx .rad{background:radial-gradient(ellipse at center,transparent 35%,rgba(120,255,150,.32));animation:radp 1.1s ease-in-out infinite alternate}@keyframes radp{to{filter:brightness(1.5)}}
 .pbar b{width:56px}
+.homechip{position:absolute;top:18px;right:18px;display:flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-radius:22px;border:1px solid var(--line);background:rgba(20,16,15,.62);color:var(--text);font:700 14px var(--fb);cursor:pointer}
+.homechip:hover{border-color:var(--accent)}.homechip.round{top:auto;right:auto;left:18px;bottom:18px;padding:10px;border-radius:50%}
+.acwin{width:min(520px,94vw);max-height:90vh}.inrow{display:flex;gap:8px;align-items:center}.inrow input,#account .field input,#fr-q{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-size:15px}
+.inrow input:focus,#account .field input:focus,#fr-q:focus{outline:none;border-color:var(--accent)}.amsg{padding:8px 12px;border-radius:10px;background:rgba(255,138,61,.14);margin-bottom:10px;font-size:13px}
+.arow{margin-bottom:8px}.flist{display:flex;flex-direction:column;gap:6px;margin:8px 0}.frow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04)}
+.frow .dot{width:9px;height:9px;border-radius:50%;background:#6b625c}.frow .dot.on{background:#8fe39a;box-shadow:0 0 6px #8fe39a}.frow .dot.idle{background:#ffd25e}
+#tour{position:fixed;inset:0;z-index:30}#tourhole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(8,6,6,.62);border:2px solid var(--accent);pointer-events:none;transition:all .25s}
+#tour:has(#tourhole[style*='none']){background:rgba(8,6,6,.62)}
+#tourcard{position:fixed;padding:16px 18px;border-radius:14px;background:rgba(22,19,19,.97);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.5);transition:left .25s,top .25s}
+#tourcard h3{margin:4px 0 6px;font-size:18px;color:var(--text)}#tourcard p{margin:0 0 12px;font-size:14px;line-height:1.55;color:#e8e2dc}#tourcard b{color:var(--accent)}.tstep{font-size:11px;font-weight:800;color:var(--dim);letter-spacing:.06em}.tbtns{display:flex;gap:8px}
+#tourskip{position:fixed;right:18px;bottom:18px}
+#lockaim{position:absolute;left:50%;top:47.5%;width:14px;height:14px;margin:-7px 0 0 -7px;border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.5)}#lockaim::after{content:'';position:absolute;left:50%;top:50%;width:2px;height:2px;margin:-1px;background:#fff}
+#minimap{position:absolute;left:16px;top:14px;width:150px;height:150px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.4);background:#2a150d;box-shadow:0 4px 18px rgba(0,0,0,.45)}#minimap canvas{width:100%;height:100%;display:block}
+#mmlabel{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;font-weight:700;color:#f6f2ee}
+#vitals2{top:174px!important}#buffs{top:262px!important}#netinfo{top:300px!important}
+body.touch #minimap{width:118px;height:118px}body.touch #vitals2{top:140px!important}body.touch #buffs{top:226px!important}
+body.touch #chatbtn{top:16px;left:148px;right:auto}
+@media (max-height:500px){body.touch #minimap{width:92px;height:92px;top:10px;left:12px}body.touch #vitals2{top:108px!important;transform:scale(.85);transform-origin:0 0}body.touch #buffs{top:186px!important}body.touch #chatbtn{left:116px;top:12px}#joyhint{width:110px;height:110px;bottom:70px;left:22px;border-radius:24px}body.touch #mmlabel{bottom:12px;font-size:9px}}
 h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -364,8 +390,8 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <div id="status" class="collapsed"><div id="s-vital"></div><div id="s-main"></div><div id="s-more"></div></div>
   <button id="chatbtn" title="Radio chat (Enter)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg><span>Chat</span><kbd>Enter</kbd></button>
   <button id="hanger" class="hidden" title="Wardrobe"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9a3 3 0 1 1 4.2 2.75c-.75.35-1.2 1-1.2 1.8V15"/><path d="M16 15 3.5 23.2c-.9.6-.5 1.8.5 1.8h24c1 0 1.4-1.2.5-1.8Z"/></svg><span>Wardrobe</span></button>
-  <div id="hotbar"></div><svg id="reticle" width="46" height="46" viewBox="0 0 46 46" class="hidden"><circle cx="23" cy="23" r="17" stroke="rgba(0,0,0,.45)" stroke-width="4" fill="none"/><circle id="retfg" cx="23" cy="23" r="17" stroke="#bff8f2" stroke-width="2.5" fill="none" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 23 23)"/><path d="M23 8v7M23 31v7M8 23h7M31 23h7" stroke="#e9f6f2" stroke-width="1.6"/><circle cx="23" cy="23" r="1.6" fill="#e9f6f2"/></svg><div id="hblabel"></div><div id="pickfeed"></div>
-  <div id="vitals2"></div><div id="buffs"></div><svg id="stamwheel" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" stroke="rgba(0,0,0,.45)" stroke-width="6" fill="none"/><circle id="stamfg" cx="22" cy="22" r="17" stroke="#8fe39a" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
+  <div id="lockaim" class="hidden"></div><div id="hotbar"></div><svg id="reticle" width="46" height="46" viewBox="0 0 46 46" class="hidden"><circle cx="23" cy="23" r="17" stroke="rgba(0,0,0,.45)" stroke-width="4" fill="none"/><circle id="retfg" cx="23" cy="23" r="17" stroke="#bff8f2" stroke-width="2.5" fill="none" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 23 23)"/><path d="M23 8v7M23 31v7M8 23h7M31 23h7" stroke="#e9f6f2" stroke-width="1.6"/><circle cx="23" cy="23" r="1.6" fill="#e9f6f2"/></svg><div id="hblabel"></div><div id="pickfeed"></div>
+  <div id="minimap"><canvas id="mmc" width="300" height="300"></canvas><div id="mmlabel"></div></div><div id="vitals2"></div><div id="buffs"></div><svg id="stamwheel" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" stroke="rgba(0,0,0,.45)" stroke-width="6" fill="none"/><circle id="stamfg" cx="22" cy="22" r="17" stroke="#8fe39a" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
   <div id="radiofeed"></div>
   <div id="toasts"></div>
   <div id="cards"></div>
@@ -389,6 +415,8 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 </div></div>
 
 <div id="title" class="screen">
+  <button id="acctbtn" class="homechip" title="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Guest</span></button>
+  <button id="friendsbtn" class="homechip round" title="Friends"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c1-3.6 3.6-5.4 6.5-5.4s5.5 1.8 6.5 5.4"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c2.6.2 4.6 1.9 5.5 4.8"/></svg></button>
   <div class="tbox">
     <h1>Mars<span>Last Colony</span></h1>
     <div class="orn"><i></i></div>
@@ -465,6 +493,10 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   </div>
   <div id="pane-col" class="hidden"><div class="sec"><span id="col-title"></span> <span class="sub" id="col-sub"></span></div><div id="col-body"></div></div>
 </div></div>
+<div id="journalov" class="hidden"><div class="jbook"><div class="jhead"><div><b id="jtitle">Journal</b><span id="jmeta"></span></div><span style="flex:1"></span><button class="btn sm" id="jdate">Add today&#8217;s date</button><button class="btn sm primary" id="jclose">Close</button></div><textarea id="jtext" spellcheck="true" placeholder="Write anything here: plans, discoveries, notes to your crew. It saves with this expedition."></textarea></div></div>
+<div id="account" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Account</h2><button class="x" id="acc-x">✕</button></div><div id="acctbody"></div></div></div>
+<div id="friends" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Friends</h2><button class="x" id="fr-x">✕</button></div><div id="frbody"></div></div></div>
+<div id="tour" class="hidden"><div id="tourhole"></div><div id="tourcard"></div><button class="btn" id="tourskip">Skip tour</button></div>
 <div id="tip" class="hidden"></div><div id="cursorstack" class="hidden"></div>
 <div id="chatbox" class="hidden"><div id="chathist"></div><input id="chatin" maxlength="160" placeholder="Radio message… (Enter to send, Esc to cancel)" autocomplete="off"></div>
 <div id="quick" class="hidden"></div>
@@ -484,8 +516,8 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass});
-const V='3.8.1'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
-const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','menus','render','helpers','items','inventory-ui','mining','actions','comms','disasters','city','caves','world','aliens','dialogue','net','touch','main'];
+const V='3.9.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');
+const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','menus','render','helpers','items','inventory-ui','mining','actions','comms','disasters','city','caves','world','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});
 for(const f of FILES){

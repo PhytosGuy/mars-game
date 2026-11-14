@@ -24,6 +24,7 @@ When you change the scripts, bump `V` in `index.html` so returning players get t
 ## Controls
 WASD: walk/drive · Shift: sprint · Space: jump (hold in the air with a Thruster Pack) · walk into cliffs, modules, wrecks, ruins or boulders to climb (uses stamina) · right-drag or arrow keys: look around · Alt+scroll or +/−: zoom
 1–9, scroll or click the hotbar: pick an item · hold left mouse: use it (drill, Pulse Blaster, Arc Prod) · Q: drop one · I: inventory · F: interact, talk, feed animals, scan, open · E: get in or out of the rover (any time; bail out at speed and you tumble and take damage) · C: cruise · rover in the air: W/S flip, A/D spin, Shift+A/D barrel roll
+Caps Lock: shift lock (the mouse looks around and you aim at the centre crosshair) · thrown by a dust devil or a fast bail-out: steer with WASD, hold Space to brace
 Tab: open the menu on Inventory, Tab again for the next page (Shift+Tab goes back) · the ⋯ button at the end of the hotbar also opens it · B: build · X: recycle · R: rotate · M: map · Enter: radio chat · G: ping a spot · V: quick comms and wave · J: objectives · K: status · H: hide HUD · N: music · Esc: pause
 
 ## What's in the game
@@ -59,7 +60,17 @@ Tab: open the menu on Inventory, Tab again for the next page (Shift+Tab goes bac
 - **Chat:** press Enter or the Chat button for radio chat with your crew and co-op players. Messages appear as speech bubbles over whoever said them, with a history while typing.
 - **Co-op (up to 4 players):** press Esc, then **Invite friends**, and share the 5-letter code; friends use **Join a friend** on the title screen. The host is authoritative: every mine, build, craft, trade and pickup is validated on the host, and each guest's inventory lives in the host's save. World events, discoveries and creatures sync to everyone, and dropped connections reconnect automatically.
 - **Saves:** autosaved to browser storage, with a backup slot and automatic conversion of old saves.
+- **Accounts and friends:** the person icon (top right of the home screen) opens your profile: change your name and look, or sign up and sign in with email. The friends icon (bottom left) lets signed-in players search for friends by username, accept requests and see who's online. Expeditions → **Join a friend** lists friends who are playing, and joins them in one click.
+- **Minimap:** top left, turning with you, with your stats underneath.
+- **Habitat interior:** press F at the habitat door to go inside. There's a bunk (sleep through the night) and a desk with a journal that opens full screen when you walk up to it. You can write anything in it; it's saved with the world and is also on the Journal page of the Tab menu.
+- **Safe base:** hostile creatures, dust devils and meteor impacts stay away from your habitats.
+- **Onboarding:** a guided tour of the screen and controls the first time you land. Skip (bottom right) ends it, and Settings → Replay the tour shows it again.
+- **Touch controls:** a rounded block-style joystick and buttons, sized and spaced for phones.
+
+## Accounts setup (Supabase)
+Accounts are optional: without them the game works as before, with a local name and look. To switch them on, create a free Supabase project, run the SQL for the `profiles`, `friendships` and `presence` tables (all with Row Level Security), and put the project URL and the public anon/publishable key in `js/config.js`. Never put the service_role / secret key in this repo.
 
 ## External services
 - **unpkg.com:** serves Three.js r160 and PeerJS 1.5.4.
+- **Supabase (only when configured in `js/config.js`):** email sign-in, profiles, friend lists and online status. supabase-js 2.45.4 loads from cdn.jsdelivr.net.
 - **PeerJS public signalling server (0.peerjs.com):** used only to connect co-op players. Game data then flows peer-to-peer over WebRTC. Some strict corporate or school networks block WebRTC, and co-op won't connect there.

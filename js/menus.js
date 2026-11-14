@@ -57,6 +57,7 @@ function renderSettings(){
     `<div class="srow"><span>Look sensitivity</span>${sl('sens',0.3,2,0.05)}</div>`+
     `<div class="srow"><span>Guide arrow</span>${tog('guide',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Touch controls</span>${tog('touch',[['auto','Auto'],['on','On'],['off','Off']])}</div>`+
+    `<div class="srow"><span>Tutorial</span><button class="btn sm" id="tour-replay">Replay the tour</button></div>`+
     `<p class="sub" style="line-height:1.5">World options (difficulty, day cycle, weather, creatures) are chosen when you create an expedition.</p>`;
 }
 function openSettings(from){setFrom=from;renderSettings();$('#settings').classList.remove('hidden')}
@@ -64,7 +65,9 @@ function closeSettings(){$('#settings').classList.add('hidden');saveOpts()}
 $('#b-set').onclick=()=>{initAudio();openSettings('title')};
 $('#p-set').onclick=()=>openSettings('pause');
 $('#set-x').onclick=closeSettings;$('#set-done').onclick=closeSettings;
-$('#setbody').addEventListener('click',e=>{const b=e.target.closest('[data-o]');if(!b)return;const k=b.dataset.o,v=b.dataset.v;
+$('#setbody').addEventListener('click',e=>{
+  if(e.target.id==='tour-replay'){OPT.onboarded=false;saveOpts();closeSettings();if(game.state==='play'){if(game.paused)togglePause(false);startTour()}else toast('The tour will play when you next land');return}
+  const b=e.target.closest('[data-o]');if(!b)return;const k=b.dataset.o,v=b.dataset.v;
   if(k==='quality'){GFX.q=v;applyGfx()}
   else if(k==='paint'||k==='guide')OPT[k]=v==='true';
   else if(k==='touch'){OPT.touch=v;if(v==='off')document.body.classList.remove('touch');else if(v==='on'||matchMedia('(pointer:coarse)').matches)enableTouch()}

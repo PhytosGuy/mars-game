@@ -266,6 +266,7 @@ function crTick(dt){
         c.y=groundHeight(c.x,c.z);break}
     }
     c.x+=c.vx*dt;c.z+=c.vz*dt;
+    if(S_.kind==='hostile'&&c.y>groundHeight(c.x,c.z)-3){const hb=nearestHabitat(c.x,c.z);if(hb){const d=Math.hypot(c.x-hb.x,c.z-hb.z);if(d<SAFE_R){const k=SAFE_R/(d||1);c.x=hb.x+(c.x-hb.x)*k;c.z=hb.z+(c.z-hb.z)*k;c.target=null;c.vx*=-0.5;c.vz*=-0.5;if(c.state==='hunt'||c.state==='strike'||c.state==='charge')c.state='roam'}}} // the base is off limits
     if(c.sp==='tharrak'||c.sp==='rockback'||c.sp==='hopper'||c.sp==='strider'||c.sp==='mite'||c.sp==='ravager')c.y=floorAt(c.x,c.z,c.y+1);
     // bodies don't walk through modules or boulders (a charging ravager stuns itself on them)
     if(c.sp!=='wyrm'&&c.sp!=='lumari'&&c.y>groundHeight(c.x,c.z)-2){const rr=CR_RAD[c.sp]||0.5;let hit=false;

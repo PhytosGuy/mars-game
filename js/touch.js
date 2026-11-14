@@ -12,21 +12,30 @@ addEventListener('touchstart',enableTouch,{passive:true,capture:true});
 
 // ---- build the overlay ----
 const tui=document.createElement('div');tui.id='touchui';
-tui.innerHTML='<div id="joyhint"></div><div id="joy"><i></i></div><div id="touchaim"></div>';
+tui.innerHTML='<div id="joyhint"><b>&#9650;</b><b>&#9654;</b><b>&#9660;</b><b>&#9664;</b></div><div id="joy"><b>&#9650;</b><b>&#9654;</b><b>&#9660;</b><b>&#9664;</b><i></i></div><div id="touchaim"></div>';
 document.body.appendChild(tui);
-// [id, label, action, position, size]
+// [id, icon, action, position, size, caption] — rounded, blocky tiles with simple icons
+const TI={
+  jump:'<svg viewBox="0 0 24 24"><path d="M12 5l7 8h-4v6H9v-6H5z" fill="currentColor"/></svg>',
+  use:'<svg viewBox="0 0 24 24"><path d="M4 20l7-7M13 4l7 7-3 3-7-7z" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linejoin="round"/></svg>',
+  f:'<svg viewBox="0 0 24 24"><path d="M8 11V5.5a1.5 1.5 0 013 0V10m0-1V4.5a1.5 1.5 0 013 0V10m0-.5V6a1.5 1.5 0 013 0v7.5A6.5 6.5 0 0110.5 20 5.5 5.5 0 015 14.5V12a1.5 1.5 0 013 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+  run:'<svg viewBox="0 0 24 24"><circle cx="14" cy="4.5" r="2.2" fill="currentColor"/><path d="M9 21l2.5-6 3 2.5V21M6 12l3-4 4 1 2 3h3M11.5 15L9.5 9" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  car:'<svg viewBox="0 0 24 24"><path d="M3 14l2-5h14l2 5v3H3z" fill="currentColor"/><circle cx="7" cy="18" r="2.4" fill="currentColor"/><circle cx="17" cy="18" r="2.4" fill="currentColor"/></svg>',
+  menu:'<svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor"/></svg>',
+  map:'<svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M9 4v14M15 6v14" stroke="currentColor" stroke-width="2"/></svg>',
+  build:'<svg viewBox="0 0 24 24"><path d="M4 20l9-9M14 4l6 6-3 3-6-6z" stroke="currentColor" stroke-width="2.6" fill="none"/><path d="M11 7l6 6" stroke="currentColor" stroke-width="2"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>'};
 const TBTNS=[
-  ['t-jump','Jump','Space',{right:'18px',bottom:'92px'},'big'],
-  ['t-use','Use','use',{right:'112px',bottom:'74px'},'big'],
-  ['t-int','F','KeyF',{right:'110px',bottom:'170px'},''],
-  ['t-run','Run','sprint',{right:'24px',bottom:'196px'},''],
-  ['t-car','Rover','KeyE',{right:'186px',bottom:'160px'},'sm'],
-  ['t-menu','Menu','Tab',{right:'12px',top:'10px'},'sm'],
-  ['t-map','Map','KeyM',{right:'64px',top:'10px'},'sm'],
-  ['t-build','Build','KeyB',{right:'116px',top:'10px'},'sm'],
-  ['t-pause','❚❚','Escape',{right:'168px',top:'10px'},'sm'],
-];
-for(const[id,label,action,pos,size]of TBTNS){const b=document.createElement('button');b.className='tbtn '+size;b.id=id;b.textContent=label;Object.assign(b.style,pos);b.dataset.a=action;tui.appendChild(b);
+  ['t-jump',TI.jump,'Space',{right:'20px',bottom:'22px'},'big','Jump'],
+  ['t-use',TI.use,'use',{right:'124px',bottom:'22px'},'big','Use'],
+  ['t-int',TI.f,'KeyF',{right:'128px',bottom:'128px'},'','Interact'],
+  ['t-run',TI.run,'sprint',{right:'30px',bottom:'128px'},'','Run'],
+  ['t-car',TI.car,'KeyE',{right:'226px',bottom:'128px'},'','Rover'],
+  ['t-menu',TI.menu,'Tab',{right:'14px',top:'12px'},'sm','Menu'],
+  ['t-map',TI.map,'KeyM',{right:'78px',top:'12px'},'sm','Map'],
+  ['t-build',TI.build,'KeyB',{right:'142px',top:'12px'},'sm','Build'],
+  ['t-pause',TI.pause,'Escape',{right:'206px',top:'12px'},'sm','Pause'],
+];for(const[id,icon,action,pos,size,cap]of TBTNS){const b=document.createElement('button');b.className='tbtn '+size;b.id=id;b.innerHTML=icon+'<i>'+cap+'</i>';b.title=cap;Object.assign(b.style,pos);b.dataset.a=action;tui.appendChild(b);
   b.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();initAudio();touchPress(action,b,true)},{passive:false});
   b.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();touchPress(action,b,false)},{passive:false});
   b.addEventListener('touchcancel',()=>touchPress(action,b,false));
@@ -47,7 +56,7 @@ canvas.addEventListener('touchstart',e=>{
   e.preventDefault();initAudio();
   for(const t of e.changedTouches){
     if(game.state==='play'&&touch.joy.id===null&&t.clientX<innerWidth*0.42&&t.clientY>innerHeight*0.3){
-      const j=touch.joy;j.id=t.identifier;j.ox=t.clientX;j.oy=t.clientY;j.x=j.y=0;const el=$('#joy');el.style.left=j.ox+'px';el.style.top=j.oy+'px';el.style.display='block';el.firstChild.style.transform='';
+      const j=touch.joy;j.id=t.identifier;j.ox=t.clientX;j.oy=t.clientY;j.x=j.y=0;const el=$('#joy');el.style.left=j.ox+'px';el.style.top=j.oy+'px';el.style.display='block';$('#joy i').style.transform='';
     }else touch.looks.set(t.identifier,{x:t.clientX,y:t.clientY,sx:t.clientX,sy:t.clientY,t0:performance.now()});
   }
   if(touch.looks.size===2){const[a,b]=[...touch.looks.values()];touch.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:cam.zoom}}
@@ -56,7 +65,7 @@ canvas.addEventListener('touchmove',e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
     const j=touch.joy;
-    if(t.identifier===j.id){let dx=t.clientX-j.ox,dy=t.clientY-j.oy;const d=Math.hypot(dx,dy),R=52;if(d>R){dx*=R/d;dy*=R/d}j.x=dx/R;j.y=dy/R;$('#joy').firstChild.style.transform=`translate(${dx}px,${dy}px)`;continue}
+    if(t.identifier===j.id){let dx=t.clientX-j.ox,dy=t.clientY-j.oy;const d=Math.hypot(dx,dy),R=52;if(d>R){dx*=R/d;dy*=R/d}j.x=dx/R;j.y=dy/R;$('#joy i').style.transform=`translate(${dx}px,${dy}px)`;continue}
     const L=touch.looks.get(t.identifier);if(!L)continue;
     const dx=t.clientX-L.x,dy=t.clientY-L.y;L.x=t.clientX;L.y=t.clientY;
     if(touch.looks.size===1&&game.state==='play'){cam.yaw-=dx*0.0065*OPT.sens;cam.pitch=clamp(cam.pitch+dy*0.005*OPT.sens,-0.3,1.35);cam.lastDrag=now}
@@ -91,6 +100,6 @@ setInterval(()=>{
   const on=isTouchDevice()&&game.state==='play'&&!game.paused&&!invUI.open&&!game.wardrobe&&!game.typing&&!game.dialogue&&(!S||!S.over);
   tui.classList.toggle('on',on);$('#touchaim').classList.toggle('on',on);
   if(!on&&touch.joy.id!==null){touch.joy.id=null;touch.joy.x=touch.joy.y=0;$('#joy').style.display='none'}
-  if(on){const car=$('#t-car');car.textContent=P.mode==='rover'?'Exit':'Rover';$('#t-build').classList.toggle('on',!!build.active);$('#t-run').classList.toggle('on',!!keys.ShiftLeft)}
+  if(on){const car=$('#t-car');car.querySelector('i').textContent=P.mode==='rover'?'Exit':'Rover';$('#t-build').classList.toggle('on',!!build.active);$('#t-run').classList.toggle('on',!!keys.ShiftLeft)}
   if(touch.use)aimCenter();
 },120);

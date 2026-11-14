@@ -32,7 +32,8 @@ function updateInteraction(dt){
         if(holdF&&!busy){prog.clean+=dt;ring={p:prog.clean/1.2,l:'Brushing off dust…'};busy=true;if(prog.clean>=1.2){prog.clean=0;nb.dust=0;act({a:'clean',id:nb.id});toast('Solar array cleaned','good');beep(1000,0.06)}}else prog.clean=0}
     }
     if(Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<6){hints.push('<span class="key">E</span>Board rover');S.flags.nearRover=true}
-    if(nearAirlock()){const t=tod(),night=t>19.5||t<5.5;if(night)hints.push('<span class="key">F</span>Go inside and rest until morning');else if(!S.flags.habCheck)hints.push('<span class="key">F</span>Run a systems check')}
+    if(!P.inside&&nearAirlock())hints.push('<span class="key">F</span>Go inside the habitat');
+    if(typeof interiorInteract==='function')interiorInteract(hints);
   }
   if(S.samples.length){const lab=blds.find(b=>b.type==='lab'&&b.progress>=1&&Math.hypot(b.x-f.x,b.z-f.z)<BUILD.lab.r+10);
     if(lab){act({a:'lab',s:S.samples.map(x=>({id:x.id,type:x.type}))});toast(`${S.samples.length} sample(s) handed to the lab for analysis`,'good');S.samples=[]}}
@@ -47,7 +48,8 @@ function pressF(){
   if(typeof worldPressF==='function'&&worldPressF())return;
   const p=game.nearPOI;
   if(p&&S.scanned.has(p.id)&&POI[p.type].sample&&!S.sampled.has(p.id)){tryCollect(p);return}
-  if(P.mode==='foot'&&nearAirlock()){const t=tod();if((t>19.5||t<5.5)&&!net.role)rest();else{if(net.role&&(t>19.5||t<5.5))toast('Resting through the night isn’t available in co-op');habitatCheck()}}
+  if(P.inside){interiorPressF();return}
+  if(P.mode==='foot'&&nearAirlock()){enterHabitat();return}
 }
 function repair(b){
   act({a:'repairBld',id:b.id});

@@ -63,7 +63,7 @@ const lmMeshes=new Map();
 // collision circles in world space (from each model's local solids, plus a ruin's pylons)
 function lmSolids(g,L){const out=[],th=g.rotation.y,cs=Math.cos(th),sn=Math.sin(th),gy=g.position.y;
   for(const[lx,lz,r,h]of g.userData.solids||[])out.push({x:L.x+lx*cs+lz*sn,z:L.z-lx*sn+lz*cs,r,top:gy+h});
-  if(L.type==='ruin')for(const py of pylonsOf(L))out.push({x:py.x,z:py.z,r:0.55,top:groundHeight(py.x,py.z)+2.6});
+  if(L.type==='ruin')for(const py of pylonsOf(L))out.push({x:py.x,z:py.z,r:0.55,top:groundHeight(py.x,py.z)+2.6,pylon:true});
   return out}
 /* ---------- loot ---------- */
 const lootSpots=new Map();
@@ -141,12 +141,12 @@ function worldTick(dt){
       // stream meshes
       if(d<520&&!lmMeshes.has(L.id)){const g=LM_MAKERS[L.type](mulberry(L.seed));g.position.set(L.x,groundHeight(L.x,L.z)-(L.type==='wreck'?0.6:0.1),L.z);g.rotation.y=(L.seed%628)/100;scene.add(g);
         const extra=[];if(L.type==='ruin')for(const py of pylonsOf(L)){const m=mkPylon();m.position.set(py.x,groundHeight(py.x,py.z),py.z);m.userData.id=py.id;scene.add(m);extra.push(m)}
-        lmMeshes.set(L.id,{g,extra,L,solids:lmSolids(g,L)});for(const s of lootSpotsFor(L))addLootSpot(s);
+        lmMeshes.set(L.id,{g,extra,L,solids:lmSolids(g,L),fb:{g,x:L.x,z:L.z,y:g.position.y,rot:g.rotation.y,progress:1,type:'_lm'}});for(const s of lootSpotsFor(L))addLootSpot(s);
         if(L.type==='ruin')for(let k=0;k<3;k++){const a=k/3*TAU+1.6;const dd={id:`l${L.id}_${k}`,type:'alloy',x:L.x+Math.cos(a)*6,z:L.z+Math.sin(a)*6,max:3};addDepMesh(dd)}}
       else if(d>650&&lmMeshes.has(L.id)){const M=lmMeshes.get(L.id);scene.remove(M.g);for(const e of M.extra)scene.remove(e);lmMeshes.delete(L.id);for(const s of lootSpotsFor(L))removeLootSpot(s.id);for(let k=0;k<3;k++)removeDepMesh(`l${L.id}_${k}`)}
     }
     // region banners
-    const rg=regionAt(f.x,f.z);if(!curRegion||curRegion.id!==rg.id){const first=!(S.regions||(S.regions={}))[rg.id];S.regions[rg.id]=1;if(curRegion&&first&&!cave.active)banner(rg.name,'');curRegion=rg}
+    const rg=regionAt(f.x,f.z);if(!curRegion||curRegion.id!==rg.id){const first=!(S.regions||(S.regions={}))[rg.id];S.regions[rg.id]=1;if(curRegion&&first&&!cave.active&&!P.inside)banner(rg.name,'');curRegion=rg}
     for(const[id,s]of lootSpots){if(S.loot[id])removeLootSpot(id);else if(s.table==='shrine'){const lid=id.slice(1);s.g.visible=!!(S.shrines&&S.shrines[lid]>=3)}}
     syncCaches();crewContext();
   }
@@ -186,7 +186,7 @@ async function die(cause){
   act({a:'die',x:P.pos.x,y:P.pos.y,z:P.pos.z});
   fade(true,(DEATH[cause]||'Suit failure.')+' The crew brings you home…');await wait(1800);
   const hb=home(),a=hb.rot||0;P.mode='foot';astro.visible=true;P.pos.set(hb.x+Math.sin(a)*8.5,0,hb.z+Math.cos(a)*8.5);P.pos.y=groundHeight(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.lastG=undefined;
-  P.hp=maxHP()*0.7;P.o2=100;P.ragdoll=null;astro.rotation.set(0,0,0);P.buffs={};renderBuffs(true);P.bat=Math.max(P.bat,60);P.stam=100;game.camSnap=true;game.dead=false;refreshInvUI();onHotbarChange();
+  P.hp=maxHP()*0.7;P.o2=100;P.ragdoll=null;P.inside=false;if(INT.g)INT.g.visible=false;astro.rotation.set(0,0,0);P.buffs={};renderBuffs(true);P.bat=Math.max(P.bat,60);P.stam=100;game.camSnap=true;game.dead=false;refreshInvUI();onHotbarChange();
   fade(false);card('You made it back','Lost cache','Your backpack items were left where you fell. A marker shows the way: get back there and press F to recover them.','#ff9147');
 }
 ACT.die=(pid,a,predict)=>{

@@ -25,7 +25,7 @@ function serializeData(){
   delete s.radioLog;
   return{v:SAVE_VERSION,saved:Date.now(),site:S.site,mode:S.mode,S:s,dig:[...digMap].map(([k,v])=>[k,Math.round(v*100)/100]),mined:[...minedRocks],
     blds:blds.map(b=>({id:b.id,t:b.type,x:b.x,z:b.z,r:b.rot,p:b.progress,d:b.dust,on:b.on,f:b.fault})),
-    P:{x:pp.x,y:pp.y,z:pp.z,mode:P.mode,o2:P.o2,hp:P.hp,bat:P.bat,yaw:P.yaw,hot:P.hot},R:{x:R.pos.x,z:R.pos.z,yaw:R.yaw,bat:R.battery},cam:cam.yaw};
+    P:{...(P.inside&&P.outPos?{x:P.outPos.x,y:P.outPos.y,z:P.outPos.z}:{x:pp.x,y:pp.y,z:pp.z}),mode:P.mode,o2:P.o2,hp:P.hp,bat:P.bat,yaw:P.yaw,hot:P.hot},R:{x:R.pos.x,z:R.pos.z,yaw:R.yaw,bat:R.battery},cam:cam.yaw};
 }
 function saveGame(silent){
   if(!S||S.over||game.state!=='play'||net.role==='guest'||game.dead)return;
@@ -69,6 +69,7 @@ function loadFromData(data){
     if(!('mission' in d))S.mission=S.chapter<CHAPTERS.length&&mode!=='sandbox'?S.chapter:null;
     if(S.mission!==null&&!(Number.isInteger(S.mission)&&CHAPTERS[S.mission]))S.mission=null;
     if(S.mission!=null&&S.flags['mdone'+S.mission]){const nx=CHAPTERS.findIndex((_,j)=>!S.flags['mdone'+j]);S.mission=nx>=0?nx:null}
+    if(typeof S.journal!=='string')S.journal='';S.journal=S.journal.slice(0,20000);P.inside=false;if(INT.g)INT.g.visible=false;
     S.over=false;S.storm=S.storm&&typeof S.storm==='object'?S.storm:base.storm;
     bid=0;for(const b of data.blds)if(b&&BUILD[b.t]&&Number.isFinite(b.x)&&Number.isFinite(b.z))addBuilding(b.t,b.x,b.z,fin(b.r,0),fin(b.p,1,0,1),{id:b.id,dust:fin(b.d,0,0,1),on:b.on!==false,fault:b.f||null});
     if(!blds.some(b=>b.type==='habitat'))addBuilding('habitat',0,0,0,1);

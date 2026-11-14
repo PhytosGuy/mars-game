@@ -271,7 +271,7 @@ function updateGuide(dt){
   const gEl=$('#guide');gEl.classList.toggle('none',!text);gEl.className=(text?'':'none ')+cls;
   $('#g-arrow').style.display=showArrow?'':'none';
   if(showArrow)$('#g-arrow').style.transform=`rotate(${wrapA(cam.yaw-a)}rad)`;
-  setHTML('g-text',text);setTxt('g-dist',dist);
+  setHTML('g-text',text);setTxt('g-dist',dist);drawMinimap(dt);
   // stamina wheel beside the astronaut (only when it isn't full)
   const sw=$('#stamwheel');if(P.mode==='foot'&&P.stam<99.5&&!game.hudHidden){_swv.set(P.pos.x,P.pos.y+1.4,P.pos.z).project(camera);sw.style.left=((_swv.x*0.5+0.5)*innerWidth+46)+'px';sw.style.top=((-_swv.y*0.5+0.5)*innerHeight-22)+'px';
     sw.classList.add('show');const fg=$('#stamfg');fg.style.strokeDashoffset=106.8*(1-P.stam/100);fg.style.stroke=P.stam<25?'#ff6b5e':P.climbing?'#ffd25e':'#8fe39a'}else sw.classList.remove('show');
@@ -312,3 +312,40 @@ $('#wardrobe').addEventListener('click',e=>{
   if(e.target.closest('[data-close]'))closeWardrobe();
 });
 applyLook();
+/* ---------- minimap (top-left): heading-up, terrain around you plus everything nearby ---------- */
+const MM={R:170,N:64,cx:1e9,cz:1e9,off:null,t:0,show:110};
+function mmTerrain(cx,cz){
+  const N=MM.N,step=MM.R*2/N,hs=new Float32Array(N*N),cols=new Float32Array(N*N*3);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=cx-MM.R+(i+0.5)*step,z=cz-MM.R+(j+0.5)*step,k=j*N+i;sample(x,z,TS3);hs[k]=TS3.h;terrainColor(x,z,TS3,0.15,_col);cols[k*3]=_col.r;cols[k*3+1]=_col.g;cols[k*3+2]=_col.b}
+  const off=MM.off||(MM.off=document.createElement('canvas'));off.width=off.height=N;const x=off.getContext('2d'),img=x.createImageData(N,N);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,dx=hs[j*N+Math.min(N-1,i+1)]-hs[j*N+Math.max(0,i-1)],dz=hs[Math.min(N-1,j+1)*N+i]-hs[Math.max(0,j-1)*N+i],sh=clamp(1+(-dx-dz)*0.04,0.5,1.45);
+    img.data[k*4]=Math.pow(cols[k*3],1/2.2)*255*sh;img.data[k*4+1]=Math.pow(cols[k*3+1],1/2.2)*255*sh;img.data[k*4+2]=Math.pow(cols[k*3+2],1/2.2)*255*sh;img.data[k*4+3]=255}
+  x.putImageData(img,0,0);MM.cx=cx;MM.cz=cz;
+}
+function drawMinimap(dt){
+  const cv=$('#mmc');if(!cv||!S||game.hudHidden)return;if((MM.t-=dt)>0)return;MM.t=0.05;
+  const c=cv.getContext('2d'),W=cv.width,h=W/2,f=focusPos(),s=h/MM.show,cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw);
+  const toS=(x,z)=>{const dx=x-f.x,dz=z-f.z;return[h+(dx*cy-dz*sy)*s,h-(dx*sy+dz*cy)*s]};
+  c.setTransform(1,0,0,1,0,0);
+  const lbl=$('#mmlabel');
+  if(P.inside||cave.active){c.fillStyle=P.inside?'#3b2f28':'#1a110d';c.fillRect(0,0,W,W);lbl.textContent=P.inside?'Inside the habitat':`Underground · ${Math.round(cave.depth)} m`;
+    c.translate(h,h);c.rotate(wrapA(P.yaw-cam.yaw));c.fillStyle='#fff';c.beginPath();c.moveTo(0,-12);c.lineTo(8,9);c.lineTo(0,4);c.lineTo(-8,9);c.closePath();c.fill();return}
+  lbl.textContent='';
+  if(Math.hypot(f.x-MM.cx,f.z-MM.cz)>45)mmTerrain(f.x,f.z);
+  c.fillStyle='#2a150d';c.fillRect(0,0,W,W);
+  c.setTransform(cy*s,-sy*s,-sy*s,-cy*s,h,h);c.imageSmoothingEnabled=true;c.drawImage(MM.off,MM.cx-MM.R-f.x,MM.cz-MM.R-f.z,MM.R*2,MM.R*2);c.setTransform(1,0,0,1,0,0);
+  const dot=(x,z,r,col,stroke)=>{const[px,py]=toS(x,z);if(Math.hypot(px-h,py-h)>h-2)return;c.fillStyle=col;c.beginPath();c.arc(px,py,r,0,TAU);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=1.5;c.stroke()}};
+  c.strokeStyle='rgba(255,255,255,.12)';c.lineWidth=1;c.beginPath();c.arc(h,h,h*0.5,0,TAU);c.stroke();
+  for(const b of blds){const[px,py]=toS(b.x,b.z);if(Math.hypot(px-h,py-h)>h)continue;const r=Math.max(3,BUILD[b.type].r*s*0.8);c.fillStyle=b.type==='habitat'?'#ffffff':b.fault?'#ff6b5e':'rgba(255,255,255,.75)';c.fillRect(px-r/2,py-r/2,r,r)}
+  if(typeof meteors!=='undefined')for(const m of meteors){const[px,py]=toS(m.x,m.z);c.strokeStyle='#ff4a3d';c.lineWidth=2;c.beginPath();c.arc(px,py,7+Math.sin(now*12)*2,0,TAU);c.stroke()}
+  if(typeof devils!=='undefined')for(const d of devils)if(d.alive&&(d.op||0)>0.2)dot(d.x,d.z,devilReach(d)*s*0.5,'rgba(196,138,94,.45)');
+  for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))dot(p.x,p.z,3.2,POI[p.type].color,'#000');
+  if(typeof creatures!=='undefined')for(const cr of creatures.values())if(!cr.gone&&Math.abs(cr.x-f.x)<MM.show&&Math.abs(cr.z-f.z)<MM.show)dot(cr.x,cr.z,2.4,SPECIES[cr.sp].kind==='hostile'?'#ff5a4f':'#8fe39a');
+  if(typeof pings!=='undefined')for(const p of pings)dot(p.x,p.z,4,'#ffd25e');
+  if(P.mode==='foot')dot(R.pos.x,R.pos.z,4,'#ff8a3d','#000');
+  for(const rp of net.players.values()){const q=rp.t&&rp.t.p;if(q)dot(q[4]?q[5]:q[0],q[4]?q[7]:q[2],3.6,'#7fd3ff','#000')}
+  const g=game.guide;if(g&&g.x!==undefined&&OPT.guide!==false){let[px,py]=toS(g.x,g.z);const d=Math.hypot(px-h,py-h);if(d>h-8){px=h+(px-h)/d*(h-8);py=h+(py-h)/d*(h-8)}c.strokeStyle='#ff8a3d';c.lineWidth=2.5;c.beginPath();c.arc(px,py,6,0,TAU);c.stroke()}
+  // north marker on the rim, and you in the middle facing your way
+  {const[nx,ny]=toS(f.x,f.z-1000),d=Math.hypot(nx-h,ny-h),px=h+(nx-h)/d*(h-11),py=h+(ny-h)/d*(h-11);c.fillStyle='rgba(0,0,0,.55)';c.beginPath();c.arc(px,py,8,0,TAU);c.fill();c.fillStyle='#ff8a3d';c.font='800 11px Nunito Sans';c.textAlign='center';c.textBaseline='middle';c.fillText('N',px,py+0.5)}
+  c.save();c.translate(h,h);c.rotate(wrapA((P.mode==='rover'?R.yaw:P.yaw)-cam.yaw));c.fillStyle='#fff';c.strokeStyle='#000';c.lineWidth=1.5;c.beginPath();c.moveTo(0,-9);c.lineTo(6,7);c.lineTo(0,3);c.lineTo(-6,7);c.closePath();c.fill();c.stroke();c.restore();
+}
