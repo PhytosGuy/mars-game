@@ -63,6 +63,24 @@ function thumbWork(){const t0=performance.now();
     TH.url[k]=u;if(u)document.querySelectorAll(`img[data-th="${k}"]`).forEach(im=>{im.src=u})}
   if(TH.queue.length)setTimeout(thumbWork,16);else TH.busy=false}
 
+/* ---------- the colony's habitat as a hologram blueprint: see-through cyan panels with glowing edges, floating over a projector grid ---------- */
+const HOLO_FILL=new THREE.MeshBasicMaterial({color:0x37d6ff,transparent:true,opacity:0.11,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide});
+const HOLO_EDGE=new THREE.LineBasicMaterial({color:0x8ff0ff,transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending});
+const HOLO_WIRE=new THREE.LineBasicMaterial({color:0x5fe2ff,transparent:true,opacity:0.22,depthWrite:false,blending:THREE.AdditiveBlending});
+function holoize(m){const list=[];m.traverse(o=>{if(o.isMesh)list.push(o)});
+  for(const o of list){o.material=HOLO_FILL;o.castShadow=o.receiveShadow=false;const e=new THREE.EdgesGeometry(o.geometry,28);o.add(new THREE.LineSegments(e,HOLO_EDGE));
+    // smooth parts (the dome) have no sharp edges, so they get a light wireframe to read as a blueprint
+    if(e.attributes.position.count<40&&o.geometry.attributes.position.count>60)o.add(new THREE.LineSegments(new THREE.WireframeGeometry(o.geometry),HOLO_WIRE))}
+  m.traverse(o=>{if(o.isPoints||o.isSprite)o.visible=false});return m}
+function mkHoloBase(){const g=new THREE.Group(),add={transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide};
+  const grid=new THREE.PolarGridHelper(2,12,5,64,0x37d6ff,0x37d6ff);grid.material.transparent=true;grid.material.opacity=0.32;grid.material.depthWrite=false;g.add(grid);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(1.94,2.04,72),new THREE.MeshBasicMaterial({color:0x8ff0ff,opacity:0.8,...add}));ring.rotation.x=-Math.PI/2;g.add(ring);
+  const glowD=new THREE.Mesh(new THREE.CircleGeometry(2,48),new THREE.MeshBasicMaterial({color:0x37d6ff,opacity:0.08,...add}));glowD.rotation.x=-Math.PI/2;g.add(glowD);
+  // a scan line sweeps up and down through the model
+  const scan=new THREE.Mesh(new THREE.RingGeometry(0,1.75,48),new THREE.MeshBasicMaterial({color:0x8ff0ff,opacity:0.07,...add}));scan.rotation.x=-Math.PI/2;g.add(scan);
+  const scanE=new THREE.Mesh(new THREE.RingGeometry(1.7,1.75,48),new THREE.MeshBasicMaterial({color:0xbff8ff,opacity:0.6,...add}));scanE.rotation.x=-Math.PI/2;g.add(scanE);
+  g.userData={scan,scanE};return g}
+
 /* ---------- the turning model at the top of a page (drag to turn it) ---------- */
 const HERO={r:null,sc:null,cam:null,kind:null,model:null,on:false,yaw:0.6,spin:true,drag:null,extra:{}};
 function heroInit(){if(HERO.r)return true;const box=$('#hero3d');if(!box)return false;
@@ -74,23 +92,24 @@ function heroInit(){if(HERO.r)return true;const box=$('#hero3d');if(!box)return 
   const mars=new THREE.Mesh(new THREE.SphereGeometry(9,48,32),new THREE.MeshStandardMaterial({color:'#b5532a',roughness:0.95}));mars.position.set(0,-10.6,-2);sc.add(mars);
   const ground=new THREE.Group();const disc=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.6,0.16,48),new THREE.MeshStandardMaterial({color:'#8a4a30',roughness:0.95}));disc.position.y=-0.08;ground.add(disc);
   const rr=mulberry(9);for(let i=0;i<9;i++){const a=rr()*TAU,d=2.2+rr()*1.1,m=new THREE.Mesh(shared('ico',()=>new THREE.IcosahedronGeometry(1,0)),mat('#6e3a26',{flatShading:true}));m.scale.setScalar(0.08+rr()*0.14);m.position.set(Math.cos(a)*d,0.04,Math.sin(a)*d);ground.add(m)}
-  sc.add(ground);
+  sc.add(ground);const holo=mkHoloBase();sc.add(holo);
   const sv=[];const sr=mulberry(5);for(let i=0;i<220;i++){const a=sr()*TAU,e=sr()*1.2-0.1;sv.push(Math.cos(a)*40*Math.cos(e),Math.sin(e)*40,Math.sin(a)*40*Math.cos(e)-20)}
   const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));const stars=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.12,sizeAttenuation:true}));sc.add(stars);
-  HERO.extra={mars,ground,stars};HERO.sc=sc;HERO.cam=new THREE.PerspectiveCamera(30,2,0.1,120);
+  HERO.extra={mars,ground,stars,holo};HERO.sc=sc;HERO.cam=new THREE.PerspectiveCamera(30,2,0.1,120);
   box.addEventListener('pointerdown',e=>{HERO.drag={x:e.clientX,yaw:HERO.yaw};HERO.spin=false;box.setPointerCapture(e.pointerId)});
   box.addEventListener('pointermove',e=>{if(HERO.drag)HERO.yaw=HERO.drag.yaw+(e.clientX-HERO.drag.x)*0.012});
   const up=()=>{if(HERO.drag){HERO.drag=null;setTimeout(()=>{if(!HERO.drag)HERO.spin=true},2500)}};box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
   return true}
 function heroShow(kind){const box=$('#hero3d');if(!box)return;
+  $('#pane-col').classList.toggle('holo',kind==='hab');
   if(!kind){box.classList.add('hidden');return}
   if(!heroInit())return;box.classList.remove('hidden');
   if(HERO.kind!==kind){if(HERO.model)HERO.sc.remove(HERO.model);
     let m;try{m=noLights(kind==='sat'?mkSatellite():MAKERS.habitat())}catch(e){m=new THREE.Group()}
-    fitModel(m,kind==='sat'?2.3:2.6);if(kind==='hab'){const b=new THREE.Box3().setFromObject(m);m.position.y=-b.min.y}
+    fitModel(m,kind==='sat'?2.3:2.9);if(kind==='hab'){const b=new THREE.Box3().setFromObject(m);HERO.baseY=-b.min.y;HERO.topY=b.max.y-b.min.y;holoize(m)}
     HERO.model=m;HERO.sc.add(m);HERO.kind=kind;HERO.yaw=0.6;
-    $('#hero-cap').textContent=kind==='sat'?'Mars orbiter · relays your science to Earth':'Your habitat';
-    const {mars,ground,stars}=HERO.extra;mars.visible=stars.visible=kind==='sat';ground.visible=kind==='hab';box.dataset.kind=kind}
+    $('#hero-cap').textContent=kind==='sat'?'Mars orbiter · relays your science to Earth':'Habitat blueprint';
+    const {mars,ground,stars}=HERO.extra;mars.visible=stars.visible=kind==='sat';ground.visible=false;HERO.extra.holo.visible=kind==='hab';box.dataset.kind=kind;HERO.r.toneMapping=kind==='hab'?THREE.NoToneMapping:THREE.ACESFilmicToneMapping}
   if(!HERO.on){HERO.on=true;requestAnimationFrame(heroLoop)}}
 function heroLoop(){const box=$('#hero3d');
   if(!invUI.open||!box||box.classList.contains('hidden')){HERO.on=false;return}requestAnimationFrame(heroLoop);
@@ -99,7 +118,9 @@ function heroLoop(){const box=$('#hero3d');
   const t=performance.now()/1000;if(HERO.spin)HERO.yaw+=0.005;const m=HERO.model,sat=HERO.kind==='sat';
   m.rotation.y=HERO.yaw;
   if(sat){m.position.y=0.25+Math.sin(t*1.2)*0.08;m.rotation.z=Math.sin(t*0.7)*0.08;m.rotation.x=0.18;HERO.extra.mars.rotation.y=t*0.02;HERO.cam.position.set(0,0.75,4.6);HERO.cam.lookAt(0,0.15,0)}
-  else{HERO.extra.ground.rotation.y=HERO.yaw;HERO.cam.position.set(0,1.55,4.3);HERO.cam.lookAt(0,0.75,0)}
+  else{const hb=HERO.extra.holo,u=hb.userData,lift=0.32+Math.sin(t*1.3)*0.07;m.position.y=HERO.baseY+lift;hb.rotation.y=-t*0.15;
+    const sy=lift+(0.5+0.5*Math.sin(t*0.9))*HERO.topY;u.scan.position.y=u.scanE.position.y=sy;HOLO_FILL.opacity=0.1+0.025*Math.sin(t*11)*Math.sin(t*2.3);
+    HERO.cam.position.set(0,2.5,7.1);HERO.cam.lookAt(0,1.0,0)}
   HERO.r.render(HERO.sc,HERO.cam)}
 
 /* ---------- "Press Tab to see…": a short hint drops down under the compass now and then, for pages you haven't opened yet ---------- */
