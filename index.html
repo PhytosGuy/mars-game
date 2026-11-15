@@ -714,7 +714,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.7.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const V='4.7.1'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
 const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});

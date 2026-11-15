@@ -42,7 +42,7 @@ function renderColony(){
     h+=S.log.length?`<div class="log">${S.log.map(l=>`<div class="sub">Sol ${l.sol} · ${l.sub}</div><b>${l.title}</b><p>${l.body}</p>`).join('')}</div>`:'<p class="sub">No reports yet. Scan a point of interest to get started.</p>';
     const fs=(S.facts||[]).filter(i=>NASA_FACTS[i]);h+=`<h3>NASA facts collected · ${fs.length}/${NASA_FACTS.length}</h3>`+(fs.length?`<div class="log">${fs.map(i=>`<p>${esc(NASA_FACTS[i][1])}</p>`).join('')}</div>`:'<p class="sub">Mission Control shares real NASA observations over the radio as you explore.</p>');
   }else{
-    const facts=[['Sol length','24 h 37 min (24.66 h)','Drives the day–night cycle and solar power'],['Gravity','3.72 m/s² (38% of Earth)','Floaty jumps and rover physics'],
+    const facts=[['Sol length','24 h 39 min 35 s (24.66 h)','Drives the day–night cycle and solar power'],['Gravity','3.72 m/s² (38% of Earth)','Floaty jumps and rover physics'],
       ['Surface pressure','~610 Pa (0.6% of Earth)','Shown in the HUD; varies daily and with storms'],['Temperatures',`${SITE.temp[0]} °C to ${SITE.temp[1]} °C at this site`,'Based on rover weather stations such as Perseverance’s MEDA'],
       ['Surface radiation','~0.64 mSv/day (Curiosity RAD)','Tracked as your EVA dose'],['MOXIE','Made up to ~12 g O₂/hour on Perseverance','Oxygen Units are a scaled-up version'],
       ['Buried ice','Detected by MRO SHARAD radar at mid-latitudes','Ice signatures and Ice Drill placement'],['Perchlorates','Found by Phoenix (2008)','Salt crust science; water purification'],

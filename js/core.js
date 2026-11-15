@@ -41,7 +41,7 @@ function ridged(n,x,z){let s=0,a=1,f=1,t=0;for(let i=0;i<3;i++){s+=(1-Math.abs(n
 /* =========================================================
    CONSTANTS & LANDING SITES
    ========================================================= */
-const SOL_H=24.66;            // a sol = 24 h 37 min
+const SOL_H=24.66;            // a sol = 24 h 39 min 35 s
 const SOL_REAL=480;           // real seconds per sol
 const HPS=SOL_H/SOL_REAL;     // game hours per real second
 const G=3.721;                // Mars surface gravity m/s²
