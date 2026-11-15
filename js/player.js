@@ -93,6 +93,8 @@ const CR_RAD={tharrak:0.6,rockback:1.6,skitter:0.35,wyrm:1.2,stalker:0.6,hopper:
 function collideBodies(pos,rad,self){let hit=false;
   if(typeof creatures!=='undefined')for(const c of creatures.values()){const r=CR_RAD[c.sp];if(!r||(c.sp==='wyrm'&&!(c.emerge>0)))continue;
     if(pos.y>c.y+(c.h||1)*0.85||pos.y+1.8<c.y)continue;if(pushOut(pos,c.x,c.z,r+rad))hit=true}
+  if(self!=='rover'&&typeof staticLander!=='undefined'&&staticLander&&staticLander.visible&&!P.inside){const lp=staticLander.position;if(pos.y<lp.y+4.8&&pos.y>lp.y-1&&pushOut(pos,lp.x,lp.z,2.15+rad))hit=true}
+  if(self==='p'&&P.mode==='foot'&&!P.inside&&Math.abs(R.pos.y-pos.y)<2.4&&pushOut(pos,R.pos.x,R.pos.z,1.75+rad))hit=true;
   if(typeof net!=='undefined')for(const p of net.players.values()){const q=p.t&&p.t.p;if(!q)continue;
     if(q[4]){if(self!=='rover'&&pushOut(pos,p.rv.position.x,p.rv.position.z,2.2+rad))hit=true}
     else if(Math.abs(p.a.position.y-pos.y)<1.8&&pushOut(pos,p.a.position.x,p.a.position.z,0.42+rad))hit=true}
@@ -111,7 +113,7 @@ function animSuit(av,ph,amt,ground,climb,hop){
     u.armL.rotation.set(-0.5,0,0.65);u.armR.rotation.set(-0.3,0,-0.65);return 0}
   u.legL.rotation.x=s*A;u.legR.rotation.x=-s*A;                                   // hips swing in opposition
   kL.rotation.x=0.06+Math.max(0,-c)*1.15*amt;kR.rotation.x=0.06+Math.max(0,c)*1.15*amt; // knee bends on the forward swing
-  u.armL.rotation.set(-s*A*0.9,0,0.06);u.armR.rotation.set(s*A*0.9,0,-0.06);       // arms counter-swing
+  const ab=u.casual?0.11:0.2;u.armL.rotation.set(-s*A*0.9,0,ab);u.armR.rotation.set(s*A*0.9,0,-ab);       // arms counter-swing
   return Math.abs(c)*0.07*Math.min(1,amt)-0.035*Math.min(1,amt)}                  // bob: high mid-stride, low as feet land
 function updateWalker(dt,inp){
   if(inp.camTurn)cam.yaw+=inp.camTurn*dt*1.8;
@@ -336,6 +338,9 @@ const _cbq=new THREE.Quaternion();
 function camBlocked(x,y,z){
   if(y<groundHeight(x,z)+0.3)return true;
   if(typeof staticLander!=='undefined'&&staticLander&&staticLander.visible){const lp=staticLander.position;if(Math.hypot(x-lp.x,z-lp.z)<2.5&&y<lp.y+5)return true}
+  if(P.mode==='foot'&&Math.hypot(x-R.pos.x,z-R.pos.z)<1.9&&y<R.pos.y+2.7&&y>R.pos.y-0.5)return true;
+  if(typeof creatures!=='undefined')for(const c of creatures.values()){const r=CR_RAD[c.sp];if(!r||r<1||c.gone)continue;if(Math.hypot(x-c.x,z-c.z)<r+0.3&&y<c.y+(c.h||2)*1.05&&y>c.y-0.5)return true}
+  if(typeof net!=='undefined')for(const p of net.players.values()){if(!p.a)continue;const q=p.a.position;if(Math.hypot(x-q.x,z-q.z)<0.55&&y<q.y+2&&y>q.y-0.3)return true}
   for(const b of blds){const d=BUILD[b.type];if(d.solid===false||b.progress<0.3||Math.abs(b.x-x)>d.r+2||Math.abs(b.z-z)>d.r+2)continue;const h=fieldTop(b,x,z);if(h>-50&&y<b.y+h+0.15)return true}
   let hit=false;forRocks(x,z,0.5,k=>{if(!hit&&y<rockTopAt(k,Math.hypot(k.p.x-x,k.p.z-z))+0.15)hit=true});if(hit)return true;
   if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values())if(M.fb&&Math.abs(M.L.x-x)<60&&Math.abs(M.L.z-z)<60){const h=fieldTop(M.fb,x,z);if(h>-50&&y<M.fb.y+h+0.15)return true}

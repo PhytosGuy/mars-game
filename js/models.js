@@ -165,12 +165,12 @@ function buildFace(a,l){
     const ring=(rad,tube,m,y,sx=1.25,sz=0.72)=>{const t=new THREE.Mesh(shared('ring'+rad+'_'+tube,()=>new THREE.TorusGeometry(rad,tube,10,40)),m);t.rotation.x=Math.PI/2;t.scale.set(sx,sz,1);return ta(t,0,y,0)};
     const dk=mat('#1d1a1a',{roughness:0.6}),metalB=mat('#c9c3bb',{roughness:0.3,metalness:0.8}),M2=M.shirt2,top=l.top;
     panel(0.874,0.905,0,Math.PI,0.012,M.shirt);                                                // rolled hem all the way round
-    if(top==='tee'){ring(0.09,0.018,M2,1.495,1.1,0.85);panel(1.2,1.34,0,0.36,0.004,M2);panel(1.245,1.295,0,0.24,0.007,M.shirt)}
+    if(top==='tee'){ring(0.09,0.018,M2,1.495,1.1,0.85);panel(1.2,1.34,0,0.36,0.01,M2);panel(1.245,1.295,0,0.24,0.016,M.shirt)}
     else if(top==='hoodie'){const hood=new THREE.Mesh(shared('hood3',()=>new THREE.TorusGeometry(0.16,0.07,14,28)),M.shirt);hood.rotation.x=Math.PI/2+0.55;hood.scale.set(1.05,1,0.9);ta(hood,0,1.47,-0.08);
       panel(0.95,1.09,0,0.62,0.018,M.shirt);panel(1.08,1.095,0,0.6,0.02,M2);panel(0.874,0.92,0,Math.PI,0.016,M2);
       for(const s of[-1,1]){const cd=new THREE.Mesh(shared('cord2',()=>new THREE.CapsuleGeometry(0.006,0.11,4,6)),M2);ta(cd,s*0.045,1.37,bodyR(1.37)*0.72+0.012)}}
-    else if(top==='jacket'){panel(0.9,1.43,0,0.19,0.004,M2);for(const s of[-1,1]){panel(1.27,1.46,s*0.3,0.12,0.016,M.shirt);panel(0.93,1.44,s*0.2,0.012,0.01,dk);panel(0.98,1.03,s*0.62,0.14,0.012,M.shirt)}ring(0.095,0.024,M.shirt,1.48,1.15,0.9)}
-    else if(top==='flight'){panel(0.9,1.46,0,0.022,0.007,M2);ring(0.095,0.022,M.shirt,1.48,1.15,0.9);panel(0.95,1.0,0,Math.PI,0.012,M.pants);panel(1.27,1.33,-0.42,0.14,0.006,M2);
+    else if(top==='jacket'){panel(0.9,1.43,0,0.19,0.01,M2);for(const s of[-1,1]){panel(1.27,1.46,s*0.3,0.12,0.016,M.shirt);panel(0.93,1.44,s*0.2,0.012,0.016,dk);panel(0.98,1.03,s*0.62,0.14,0.012,M.shirt)}ring(0.095,0.024,M.shirt,1.48,1.15,0.9)}
+    else if(top==='flight'){panel(0.9,1.46,0,0.022,0.012,M2);ring(0.095,0.022,M.shirt,1.48,1.15,0.9);panel(0.95,1.0,0,Math.PI,0.012,M.pants);panel(1.27,1.33,-0.42,0.14,0.012,M2);
       const patch=new THREE.Mesh(shared('patch3',()=>new THREE.SphereGeometry(0.05,16,10,0,Math.PI*2,0,0.5)),mat('#2e5bd8'));patch.rotation.x=Math.PI/2;ta(patch,0.12,1.3,bodyR(1.3)*0.72-0.035)}
     // trousers: a rolled waistband with a belt and buckle
     ring(0.188,0.024,M.pants,0.9,1.0,0.82);ring(0.19,0.013,dk,0.9,1.02,0.84);const bk=new THREE.Mesh(shared('buckle',()=>rbox(0.05,0.035,0.014,0.006)),metalB);ta(bk,0,0.9,0.158);

@@ -215,7 +215,7 @@ function snapData(){return{t:'snap',time:S.time,res:S.res,battery:S.battery,cap:
   objDone:[...S.objDone],flags:S.flags,storm:S.storm,spe:S.spe,brownout:S.brownout,powerNet:S.powerNet,powerProd:S.powerProd,powerDemand:S.powerDemand,tier:S.tier||0,
   scanned:[...S.scanned],sampled:[...S.sampled],labQueue:S.labQueue.length,extraPOIs:S.extraPOIs||[],extraDeps:S.extraDeps||[],stowed:!!S.stowed,rep:S.rep,lang:S.lang,
   disaster:typeof disasterSnap==='function'?disasterSnap():null,over:S.over,storage:S.storage,
-  world:{landmarks:S.landmarks,loot:S.loot,pylons:S.pylons||{},shrines:S.shrines||{},caves:S.caves,knownCaves:S.knownCaves||{},driven:S.driven||{},met:S.met||{},depleted:S.depleted,lostCaches:S.lostCaches,
+  world:{pwp:S.pwp||[],landmarks:S.landmarks,loot:S.loot,pylons:S.pylons||{},shrines:S.shrines||{},caves:S.caves,knownCaves:S.knownCaves||{},driven:S.driven||{},met:S.met||{},depleted:S.depleted,lostCaches:S.lostCaches,
     explored:(net.snapN=(net.snapN||0)+1)%8===1?S.explored:null},
   blds:blds.map(b=>({id:b.id,t:b.type,x:b.x,z:b.z,r:b.rot,p:b.progress,f:b.fault,on:b.on,d:b.dust,pw:b.powered}))}}
 // shared discovery state: plain {key:value} maps, size-capped and type-checked before use
@@ -225,6 +225,7 @@ function applyWorldSnap(w){
   S.landmarks=plainMap(w.landmarks,4000,okFlags);S.caves=plainMap(w.caves,4000,okFlags);S.loot=plainMap(w.loot,8000,v=>okBool(v)||okNum(v));
   S.pylons=plainMap(w.pylons,4000,okBool);S.shrines=plainMap(w.shrines,2000,okNum);S.knownCaves=plainMap(w.knownCaves,4000,okBool);
   S.driven=plainMap(w.driven,2000,okNum);S.met=plainMap(w.met,16,okBool);S.depleted=plainMap(w.depleted,20000,okNum);
+  if(Array.isArray(w.pwp)){S.pwp=w.pwp.slice(0,40).filter(p=>p&&typeof p.id==='string'&&isNum(p.x)&&isNum(p.z)).map(p=>({id:str(p.id,24),x:p.x,z:p.z,name:str(p.name,24)||'Waypoint',who:str(p.who,20)||'Crewmate',by:str(p.by,40),col:/^#[0-9a-f]{6}$/i.test(p.col)?p.col:'#ffd34d'}));if(typeof syncPwp==='function')syncPwp()}
   if(Array.isArray(w.lostCaches)){S.lostCaches=w.lostCaches.slice(0,16).filter(c=>c&&typeof c.id==='string'&&isNum(c.x)&&isNum(c.y)&&isNum(c.z)&&Array.isArray(c.items));if(typeof syncCaches==='function')syncCaches()}
   if(w.explored){const e=plainMap(w.explored,60000,okBool);for(const k in e)S.explored[k]=1}
 }

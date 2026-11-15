@@ -102,6 +102,7 @@ function updateCompass(){
   items.push([hm.x,hm.z,'#ffffff','Base']);
   if(P.mode==='foot')items.push([R.pos.x,R.pos.z,'#ff9147','Rover']);
   if(S.waypoint)items.push([S.waypoint.x,S.waypoint.z,'#6fe0c8','Waypoint']);
+  for(const w of S.pwp||[])items.push([w.x,w.z,w.col,w.name]);
   for(const c of S.lostCaches)if(cacheMeshes.has(c.id))items.push([c.x,c.z,'#ff6b5e','Your body']);
   for(const b of blds)if(b.type==='beacon')items.push([b.x,b.z,'#ffb06a','']);
   for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))items.push([p.x,p.z,POI[p.type].color,'']);
@@ -342,7 +343,11 @@ function drawMinimap(dt){
   lbl.textContent='';
   if(Math.hypot(f.x-MM.cx,f.z-MM.cz)>45)mmTerrain(f.x,f.z);
   c.fillStyle='#2a150d';c.fillRect(0,0,W,W);
-  c.setTransform(cy*s,-sy*s,-sy*s,-cy*s,h,h);c.imageSmoothingEnabled=true;c.drawImage(MM.off,MM.cx-MM.R-f.x,MM.cz-MM.R-f.z,MM.R*2,MM.R*2);c.setTransform(1,0,0,1,0,0);
+  c.setTransform(cy*s,-sy*s,-sy*s,-cy*s,h,h);c.imageSmoothingEnabled=true;c.drawImage(MM.off,MM.cx-MM.R-f.x,MM.cz-MM.R-f.z,MM.R*2,MM.R*2);
+  // gridlines every 50 m (brighter every 250 m), turning with the map
+  {const G=50,R0=MM.show*1.5;c.lineWidth=1/s;for(let gx=Math.ceil((f.x-R0)/G)*G;gx<f.x+R0;gx+=G){c.strokeStyle=gx%250===0?'rgba(255,255,255,.22)':'rgba(255,255,255,.09)';c.beginPath();c.moveTo(gx-f.x,-R0);c.lineTo(gx-f.x,R0);c.stroke()}
+    for(let gz=Math.ceil((f.z-R0)/G)*G;gz<f.z+R0;gz+=G){c.strokeStyle=gz%250===0?'rgba(255,255,255,.22)':'rgba(255,255,255,.09)';c.beginPath();c.moveTo(-R0,gz-f.z);c.lineTo(R0,gz-f.z);c.stroke()}}
+  c.setTransform(1,0,0,1,0,0);
   const dot=(x,z,r,col,stroke)=>{const[px,py]=toS(x,z);if(!mmIn(px,py,h,2))return;c.fillStyle=col;c.beginPath();c.arc(px,py,r,0,TAU);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=1.5;c.stroke()}};
   c.strokeStyle='rgba(255,255,255,.12)';c.lineWidth=1;c.beginPath();c.arc(h,h,h*0.5,0,TAU);c.stroke();
   for(const b of blds){const[px,py]=toS(b.x,b.z);if(!mmIn(px,py,h,0))continue;const r=Math.max(3,BUILD[b.type].r*s*0.8);c.fillStyle=b.type==='habitat'?'#ffffff':b.fault?'#ff6b5e':'rgba(255,255,255,.75)';c.fillRect(px-r/2,py-r/2,r,r)}
@@ -351,6 +356,7 @@ function drawMinimap(dt){
   for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))dot(p.x,p.z,3.2,POI[p.type].color,'#000');
   if(typeof creatures!=='undefined')for(const cr of creatures.values())if(!cr.gone&&Math.abs(cr.x-f.x)<MM.show&&Math.abs(cr.z-f.z)<MM.show)dot(cr.x,cr.z,2.4,SPECIES[cr.sp].kind==='hostile'?'#ff5a4f':'#8fe39a');
   if(typeof pings!=='undefined')for(const p of pings)dot(p.x,p.z,4,'#ffd25e');
+  for(const w of S.pwp||[]){const[px,py]=mmEdge(...toS(w.x,w.z),h,7);c.save();c.translate(px,py);c.rotate(Math.PI/4);c.fillStyle=w.col;c.fillRect(-4.5,-4.5,9,9);c.strokeStyle='#000';c.lineWidth=1.5;c.strokeRect(-4.5,-4.5,9,9);c.restore()}
   for(const lc of S.lostCaches)if(cacheMeshes.has(lc.id)){const[px,py]=mmEdge(...toS(lc.x,lc.z),h,7);c.strokeStyle='#ff6b5e';c.lineWidth=3;c.beginPath();c.moveTo(px-5,py-5);c.lineTo(px+5,py+5);c.moveTo(px+5,py-5);c.lineTo(px-5,py+5);c.stroke()}
   if(P.mode==='foot')dot(R.pos.x,R.pos.z,4,'#ff8a3d','#000');
   for(const rp of net.players.values()){const q=rp.t&&rp.t.p;if(!q)continue;const[px,py]=mmEdge(...toS(q[4]?q[5]:q[0],q[4]?q[7]:q[2]),h,14),im=rp.lookS&&pfpImage(rp.lookS);
@@ -371,3 +377,15 @@ function renderCrew(force){
     return`<div class="crew${hp<30?' low':''}">${pfpImg(l)}<div class="cinfo"><b>${esc(p.name||'Crewmate')}${p.t.in?' <small>· in the habitat</small>':''}</b><span class="cb hp"><i style="width:${hp}%"></i></span><span class="cb o2"><i style="width:${o2}%"></i></span></div></div>`}).join('');
   el.classList.toggle('hidden',!list.length)}
 $('#hudfold').addEventListener('click',()=>{document.body.classList.toggle('hudmin')});
+
+/* ---------- coordinates under the minimap: Mars latitude/longitude, local grid and elevation ---------- */
+// real landing-site coordinates (centre of each site), and roughly how high or low the ground there sits (MOLA, metres)
+const SITE_GEO={jezero:{lat:18.44,lon:77.45,elev:-2600},utopia:{lat:46.7,lon:117.5,elev:-4100},gale:{lat:-5.4,lon:137.8,elev:-4500},tharsis:{lat:-8.4,lon:240.9,elev:6500},elysium:{lat:4.5,lon:135.6,elev:-2600}};
+const MARS_M_PER_DEG=3389500*Math.PI/180;        // Mars' mean radius 3,389.5 km
+function marsCoords(x,z){const g=SITE_GEO[S&&S.site]||SITE_GEO.jezero,lat=g.lat+(-z)/MARS_M_PER_DEG,lon=g.lon+x/(MARS_M_PER_DEG*Math.cos(g.lat*Math.PI/180));
+  return{lat,lon:((lon%360)+360)%360,east:Math.round(x),north:Math.round(-z),elev:Math.round(g.elev+groundHeight(x,z))}}
+const fmtLat=v=>`${Math.abs(v).toFixed(4)}°${v>=0?'N':'S'}`,fmtLon=v=>`${(v>180?360-v:v).toFixed(4)}°${v>180?'W':'E'}`;
+function updateCoords(){const el=$('#mmcoord');if(!el||!S)return;const f=focusPos();
+  if(P.inside){el.textContent='Inside the habitat';return}const c=marsCoords(f.x,f.z);
+  el.innerHTML=`<b>${fmtLat(c.lat)} ${fmtLon(c.lon)}</b><span>E ${c.east>=0?'+':''}${c.east} · N ${c.north>=0?'+':''}${c.north} · ${c.elev.toLocaleString()} m</span>`}
+setInterval(()=>{if(game.state==='play')updateCoords()},250);

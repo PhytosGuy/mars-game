@@ -77,9 +77,10 @@ function drawMap(){
   const f=focusPos();
   if(!mapC0||Math.hypot(mapC0.x-f.x,mapC0.z-f.z)>250||mapC0.ice!==!!S.flags.iceFound){mapC0={x:f.x,z:f.z,ice:!!S.flags.iceFound};renderMapTerrain()}
   const c=mctx;c.imageSmoothingEnabled=true;c.drawImage(mapOff,0,0,720,720);
-  c.strokeStyle='rgba(255,255,255,0.08)';c.lineWidth=1;
-  for(let g=Math.ceil((mapC0.x-MAP_R)/500)*500;g<mapC0.x+MAP_R;g+=500){const[x]=w2m(g,0);c.beginPath();c.moveTo(x,0);c.lineTo(x,720);c.stroke()}
-  for(let g=Math.ceil((mapC0.z-MAP_R)/500)*500;g<mapC0.z+MAP_R;g+=500){const[,y]=w2m(0,g);c.beginPath();c.moveTo(0,y);c.lineTo(720,y);c.stroke()}
+  // gridlines every 100 m, labelled every 500 m (east and north of the landing site)
+  c.lineWidth=1;c.font='600 10px Nunito Sans';c.fillStyle='rgba(255,255,255,.6)';
+  for(let g=Math.ceil((mapC0.x-MAP_R)/100)*100;g<mapC0.x+MAP_R;g+=100){const[x]=w2m(g,0),major=g%500===0;c.strokeStyle=major?'rgba(255,255,255,.2)':'rgba(255,255,255,.07)';c.beginPath();c.moveTo(x,0);c.lineTo(x,720);c.stroke();if(major){c.textAlign='center';c.fillText(`E${g>=0?'+':''}${g}`,x,712)}}
+  for(let g=Math.ceil((mapC0.z-MAP_R)/100)*100;g<mapC0.z+MAP_R;g+=100){const[,y]=w2m(0,g),major=g%500===0;c.strokeStyle=major?'rgba(255,255,255,.2)':'rgba(255,255,255,.07)';c.beginPath();c.moveTo(0,y);c.lineTo(720,y);c.stroke();if(major){c.textAlign='left';c.fillText(`N${-g>=0?'+':''}${-g}`,4,y-3)}}
   for(const b of blds){const[x,y]=w2m(b.x,b.z);c.fillStyle=b.type==='beacon'?'#ffb06a':b.fault?'#ff4a3d':'#fff';const s=b.type==='habitat'?6:b.type==='beacon'?3:3.5;
     if(b.type==='beacon'){c.beginPath();c.moveTo(x,y-5);c.lineTo(x+4,y+3);c.lineTo(x-4,y+3);c.fill()}else c.fillRect(x-s/2,y-s/2,s,s)}
   for(const p of poisNear(mapC0.x,mapC0.z,MAP_R*1.42)){if(!S.discovered.has(p.id))continue;const[x,y]=w2m(p.x,p.z);c.save();c.translate(x,y);c.rotate(Math.PI/4);
@@ -98,15 +99,31 @@ function drawMap(){
   for(const p of pings){const[x,y]=w2m(p.x,p.z);c.strokeStyle='#ffd25e';c.lineWidth=2;c.beginPath();c.arc(x,y,7,0,TAU);c.stroke()}
   for(const rp of net.players.values()){if(!rp.a)continue;const[x,y]=w2m(rp.a.position.x,rp.a.position.z),im=rp.lookS&&pfpImage(rp.lookS);c.save();c.beginPath();c.arc(x,y,14,0,TAU);c.fillStyle='#8fe3ff';c.fill();if(im&&im.complete&&im.naturalWidth){c.clip();c.drawImage(im,x-13,y-13,26,26)}c.restore();c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.arc(x,y,14,0,TAU);c.stroke();c.fillStyle='#cfefff';c.fillText(rp.name||'',x,y-19)}
   c.textAlign='left';
+  c.font='700 11px Nunito Sans';c.textAlign='center';for(const w of S.pwp||[]){const[x,y]=w2m(w.x,w.z);c.save();c.translate(x,y);c.rotate(Math.PI/4);c.fillStyle=w.col;c.fillRect(-6,-6,12,12);c.strokeStyle='#000';c.lineWidth=1.5;c.strokeRect(-6,-6,12,12);c.restore();
+    c.fillStyle='rgba(0,0,0,.55)';const tw=c.measureText(w.name).width+8;c.fillRect(x-tw/2,y-25,tw,14);c.fillStyle='#fff';c.fillText(w.name,x,y-14)}c.textAlign='left';
   if(S.waypoint){const[x,y]=w2m(S.waypoint.x,S.waypoint.z);c.strokeStyle='#5fe3c9';c.lineWidth=2.5;c.beginPath();c.arc(x,y,9,0,TAU);c.stroke();c.beginPath();c.arc(x,y,2,0,TAU);c.stroke()}
   {const[x,y]=w2m(R.pos.x,R.pos.z);c.fillStyle='#ff8a3d';c.beginPath();c.arc(x,y,5,0,TAU);c.fill()}
   {const[x,y]=w2m(f.x,f.z),yaw=P.mode==='foot'?P.yaw:R.yaw;c.save();c.translate(x,y);c.rotate(-yaw+Math.PI);c.fillStyle='#fff';c.strokeStyle='#000';c.lineWidth=1.5;
     c.beginPath();c.moveTo(0,-9);c.lineTo(6,7);c.lineTo(0,3);c.lineTo(-6,7);c.closePath();c.fill();c.stroke();c.restore()}
+  // grid labels on top, so they're readable over unexplored ground too
+  c.font='700 10px Nunito Sans';c.fillStyle='rgba(255,255,255,.75)';
+  for(let g=Math.ceil((mapC0.x-MAP_R)/500)*500;g<mapC0.x+MAP_R;g+=500){const[x]=w2m(g,0);c.textAlign='center';c.fillText(`E${g>=0?'+':''}${g}`,x,684)}
+  for(let g=Math.ceil((mapC0.z-MAP_R)/500)*500;g<mapC0.z+MAP_R;g+=500){const[,y]=w2m(0,g);c.textAlign='left';c.fillText(`N${-g>=0?'+':''}${-g}`,4,y-3)}c.textAlign='left';
   c.fillStyle='rgba(0,0,0,.45)';c.fillRect(10,690,130,20);c.fillStyle='#fff';c.fillRect(20,700,72,3);c.font='11px Nunito Sans';c.fillText('500 m',98,705);
   c.fillText('N ↑',690,24);
-  $('#maplegend').innerHTML='<span>▲ You</span><span style="color:#ff8a3d">● Rover</span><span>■ Modules</span><span style="color:#5fe3c9">◆ Points of interest</span><span style="color:#f0d9a8">● Landmarks (? = unvisited)</span><span style="color:#d9a066">⬭ Caves</span><span style="color:#ff6b5e">✕ Lost gear</span><span style="color:#8fe3ff">● Crew</span><span style="opacity:.7">Dark = unexplored</span><span style="color:#5fe3c9">◎ Waypoint</span>'+(S.flags.iceFound?'<span style="color:#8fd8ff">Blue: ice-rich ground</span>':'');
+  $('#maplegend').innerHTML='<span style="color:#ffd34d">◆ Public waypoints</span><span>▲ You</span><span style="color:#ff8a3d">● Rover</span><span>■ Modules</span><span style="color:#5fe3c9">◆ Points of interest</span><span style="color:#f0d9a8">● Landmarks (? = unvisited)</span><span style="color:#d9a066">⬭ Caves</span><span style="color:#ff6b5e">✕ Lost gear</span><span style="color:#8fe3ff">● Crew</span><span style="opacity:.7">Dark = unexplored</span><span style="color:#5fe3c9">◎ Waypoint</span>'+(S.flags.iceFound?'<span style="color:#8fd8ff">Blue: ice-rich ground</span>':'');
 }
 function mapEvt(e){const r=mapC.getBoundingClientRect();return{x:mapC0.x-MAP_R+(e.clientX-r.left)/r.width*2*MAP_R,z:mapC0.z-MAP_R+(e.clientY-r.top)/r.height*2*MAP_R}}
-mapC.addEventListener('click',e=>{S.waypoint=mapEvt(e);drawMap();toast('Waypoint set: it shows on your compass','good')});
+let wpMode='me',wpAt=null;
+$('#wpmode').addEventListener('click',e=>{const b=e.target.closest('[data-wpm]');if(!b)return;wpMode=b.dataset.wpm;document.querySelectorAll('#wpmode button').forEach(x=>x.classList.toggle('on',x===b));
+  $('#maphint').textContent=wpMode==='pub'?'Click: add a public waypoint everyone can see · Click yours again to remove it':'Click: set your waypoint · Right-click: clear'});
+mapC.addEventListener('click',e=>{const p=mapEvt(e),r=mapC.getBoundingClientRect(),k=2*MAP_R/r.width;
+  if(wpMode==='pub'){const hit=(S.pwp||[]).find(w=>Math.hypot(w.x-p.x,w.z-p.z)<14*k);
+    if(hit){if(hit.by===myPid()||net.role!=='guest'){act({a:'pwpDel',id:hit.id});toast('Public waypoint removed');setTimeout(drawMap,100)}else toast(`“${hit.name}” was placed by ${hit.who}`);return}
+    wpAt=p;$('#wpname').classList.remove('hidden');const i=$('#wpn-in');i.value='';i.focus();return}
+  S.waypoint=p;drawMap();toast('Waypoint set: it shows on your compass','good')});
+function addPublicWp(){const n=$('#wpn-in').value.trim().slice(0,24);if(!wpAt)return;act({a:'pwpAdd',x:wpAt.x,z:wpAt.z,name:n||'Waypoint',who:net.name||'Crewmate'});wpAt=null;$('#wpname').classList.add('hidden');toast('Public waypoint added: everyone in the colony can see it','good');setTimeout(drawMap,150)}
+$('#wpn-ok').addEventListener('click',addPublicWp);$('#wpn-x').addEventListener('click',()=>{wpAt=null;$('#wpname').classList.add('hidden')});
+$('#wpn-in').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')addPublicWp();if(e.key==='Escape'){wpAt=null;$('#wpname').classList.add('hidden')}});
 mapC.addEventListener('contextmenu',e=>{e.preventDefault();S.waypoint=null;drawMap()});
 $('#mapov').addEventListener('click',e=>{if(e.target.id==='mapov'||e.target.closest('[data-close]'))closePanels()});

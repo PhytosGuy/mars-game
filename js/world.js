@@ -236,3 +236,19 @@ function worldPressF(){
   return false;
 }
 function clearWorld(){for(const M of lmMeshes.values()){scene.remove(M.g);for(const e of M.extra)scene.remove(e)}lmMeshes.clear();for(const id of[...lootSpots.keys()])removeLootSpot(id);for(const m of cacheMeshes.values())scene.remove(m);cacheMeshes.clear();lmMemo.clear();curRegion=null}
+
+/* ---------- public waypoints: named markers everyone in the colony can see ---------- */
+const PWP_COLS=['#ffd34d','#7fe8ff','#ff8fd0','#9fe07a','#b28cff','#ff9147'];
+const myPid=()=>net.role==='guest'?net.token:ME;
+ACT.pwpAdd=(pid,a,predict)=>{if(!isNum(a.x)||!isNum(a.z))return false;if(predict)return true;S.pwp=S.pwp||[];if(S.pwp.length>=40)S.pwp.shift();
+  const by=pid||ME,h=strHash(String(by));S.pwp.push({id:'w'+Date.now().toString(36)+Math.floor(Math.random()*1e4),x:clamp(a.x,-1e6,1e6),z:clamp(a.z,-1e6,1e6),name:str(a.name,24)||'Waypoint',who:str(a.who,20)||'Crewmate',by:String(by),col:PWP_COLS[Math.abs(h)%PWP_COLS.length]});
+  syncPwp();if(net.role==='host')net.snapDirty=true;return true};
+ACT.pwpDel=(pid,a,predict)=>{S.pwp=S.pwp||[];const i=S.pwp.findIndex(w=>w.id===a.id);if(i<0)return false;const by=pid||ME;if(S.pwp[i].by!==String(by)&&by!==ME)return false;if(predict)return true;
+  S.pwp.splice(i,1);syncPwp();if(net.role==='host')net.snapDirty=true;return true};
+// a tall beam of light at each public waypoint, in its colour
+const pwpMeshes=new Map();
+function syncPwp(){const ids=new Set((S&&S.pwp||[]).map(w=>w.id));for(const[id,m]of pwpMeshes)if(!ids.has(id)){scene.remove(m);pwpMeshes.delete(id)}
+  for(const w of S&&S.pwp||[]){if(pwpMeshes.has(w.id))continue;const g=new THREE.Group(),y=groundHeight(w.x,w.z);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,60,8,1,true),new THREE.MeshBasicMaterial({color:w.col,transparent:true,opacity:0.32,blending:THREE.AdditiveBlending,depthWrite:false}));beam.position.y=30;g.add(beam);
+    const gem=new THREE.Mesh(shared('oct',()=>new THREE.OctahedronGeometry(1,0)),glow(w.col,1.4));gem.scale.setScalar(0.5);gem.position.y=1.6;g.add(gem);g.userData.gem=gem;g.position.set(w.x,y,w.z);scene.add(g);pwpMeshes.set(w.id,g)}}
+setInterval(()=>{if(game.state==='play'&&S){syncPwp();for(const g of pwpMeshes.values())g.userData.gem.rotation.y+=0.12}},100);

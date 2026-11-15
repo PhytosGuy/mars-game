@@ -85,7 +85,7 @@ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.1;
 const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.3,2400);
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.12,2400);
 scene.fog=new THREE.Fog(0xc08060,80,560);
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
 

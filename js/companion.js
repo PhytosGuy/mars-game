@@ -47,6 +47,8 @@ function updatePip(dt){
   if(P.inside)target.y=Math.min(target.y,INT.y+2.6);
   // fly there smoothly, bobbing
   const k=damp(PIP.task?3.5:2.2,dt);PIP.pos.lerp(target,k);const fl=floorAt(PIP.pos.x,PIP.pos.z,PIP.pos.y);if(!P.inside&&PIP.pos.y<fl+0.8)PIP.pos.y=fl+0.8;
+  if(P.inside){const dx=PIP.pos.x-INT.x,dz=PIP.pos.z-INT.z,d=Math.hypot(dx,dz),lim=ROOM.r-0.7;if(d>lim){PIP.pos.x=INT.x+dx/d*lim;PIP.pos.z=INT.z+dz/d*lim}}
+  else{let up=0;while(up<12&&camBlocked(PIP.pos.x,PIP.pos.y-0.3,PIP.pos.z)){PIP.pos.y+=0.5;up++}}   // rise over modules, rocks and the rover
   g.position.copy(PIP.pos);g.position.y+=Math.sin(now*3.1)*0.04;
   const look=PIP.task==='mine'?vac.target:PIP.task==='fetch'&&!PIP.carry&&PIP.pk?_pc.set(PIP.pk.x,PIP.pk.y,PIP.pk.z):_pc.set(P.pos.x,P.pos.y+1.6,P.pos.z);
   g.rotation.y=lerpA(g.rotation.y,Math.atan2(look.x-PIP.pos.x,look.z-PIP.pos.z),damp(4,dt));g.rotation.z=Math.sin(now*1.3)*0.08;
