@@ -426,7 +426,12 @@ body.touch #chatbtn{top:16px;left:148px;right:auto}
 .lhandle{position:absolute;left:8px;width:58px;height:28px;border-radius:9px;background:linear-gradient(#e8ecf0,#9aa3ad);border-bottom:4px solid #5a626e;box-shadow:0 4px 10px rgba(0,0,0,.5)}
 .lever span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.1em;color:#9fb0c0}
 #l-skip{position:absolute;right:16px;top:16px;pointer-events:auto}
-#landui .lever{position:absolute;right:20px;bottom:24px}#landui .llook{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.6)}
+#landui .lever{position:absolute;right:20px;bottom:24px}
+#landui .lflash{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,244,220,.96),rgba(255,150,60,.9) 40%,rgba(140,40,12,.8) 80%)}
+#landui .lstats{position:absolute;right:104px;bottom:16px;display:grid;grid-template-columns:repeat(3,auto);gap:4px 14px;padding:8px 12px;border-radius:14px;background:rgba(14,18,24,.78);border:1px solid rgba(255,255,255,.14)}
+#landui .lstats span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#9fb0c0}#landui .lstats b{font:800 15px/1.15 var(--fb);font-variant-numeric:tabular-nums;color:#fff}
+#landui .lstats b.good{color:#7fe6a0}#landui .lstats b.warn{color:#ffd34d}#landui .lstats b.bad{color:#ff6a4d}
+@media (max-width:760px){#landui .lstats{right:78px;bottom:12px;padding:8px 10px;gap:4px 10px;grid-template-columns:repeat(2,auto)}#landui .lstats b{font-size:13px}}#landui .llook{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.6)}
 #landui .lsteps{margin-top:8px}kbd{display:inline-block;padding:1px 6px;margin-left:6px;border-radius:5px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25);font:700 11px var(--fb)}
 @media (max-width:760px){#landui .ltop{top:10px;left:10px;padding:8px 10px}#landui .ltop p{display:none}#landui .lever{height:150px;right:12px;bottom:14px}#landui .llook{display:none}}
 /* windows that change the scene live sit at the side, so you can watch the change */
@@ -653,7 +658,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.2.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const V='4.3.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
 const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','net','touch','config','account','missionlab','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});

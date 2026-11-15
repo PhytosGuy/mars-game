@@ -41,7 +41,7 @@ function buildCockpit(){
   const glass=add(new THREE.Mesh(new THREE.PlaneGeometry(1.86,0.94),new THREE.MeshBasicMaterial({color:'#9fc3ff',transparent:true,opacity:0.05,depthWrite:false})));glass.position.set(0,0.2,-1.11);
   const plasma=add(new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.3),new THREE.MeshBasicMaterial({color:'#ff7a2e',transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false})));plasma.position.set(0,0.2,-1.25);
   // dashboard under the window, angled toward you
-  const dash=new THREE.Group();dash.position.set(0,-0.4,-0.8);dash.rotation.x=0.55;g.add(dash);
+  const dash=new THREE.Group();dash.position.set(0,-0.42,-0.76);dash.rotation.x=0.8;g.add(dash);   // tilted up toward you
   add(bx(1.95,0.08,0.7,panel,0,0,0),dash);add(bx(1.95,0.05,0.04,lite('#5fe8ff'),0,0.045,0.33),dash).material.emissiveIntensity=0.5;
   add(bx(2.0,0.6,0.06,hull,0,-0.66,-1.06));
   const screens=[];
@@ -107,7 +107,7 @@ function startLanding(){
 function landUI(on){
   let el=$('#landui');
   if(!el){el=document.createElement('div');el.id='landui';el.className='hidden';
-    el.innerHTML=`<div class="ltop"><div class="lph" id="l-ph"></div><h3 id="l-title"></h3><p id="l-body"></p><div class="lsteps" id="l-steps"></div></div>
+    el.innerHTML=`<div class="lflash" id="l-flash"></div><div class="lstats" id="l-stats"></div><div class="ltop"><div class="lph" id="l-ph"></div><h3 id="l-title"></h3><p id="l-body"></p><div class="lsteps" id="l-steps"></div></div>
       <div class="lever" id="l-lever" title="Throttle: drag, or use W/S or the arrow keys"><div class="ltrack"><i id="l-fill"></i></div><div class="lhandle" id="l-handle"></div><span>THROTTLE</span></div>
       <button class="btn sm" id="l-skip">Skip landing <kbd>Space</kbd></button><div class="llook">Drag to look around the cockpit</div>`;
     document.body.appendChild(el);
@@ -133,11 +133,12 @@ const _lv=new THREE.Vector3(),_lt=new THREE.Vector3();
 function landingUpdate(dt){
   if(!LAND.on)return;LAND.t+=dt;LAND.frame++;S.time+=dt*HPS*0.3;const gy=game.introGY,ck=LAND.ck;
   const ph=LAND_PHASES[LAND.phase];
-  if(ph.id==='orbit'){LAND.h=LAND_PHASES[1].h[0];LAND.v=-3500;LAND.shake=0.1;game.orbitView=true;orbitUpdate(dt,ck);
-    if(LAND.t>=ph.t){LAND.phase++;LAND.t=0;game.orbitView=false;orbitLeave(ck);fade(true,'');setTimeout(()=>fade(false),350);renderLandPhase();beep(240,0.3,'sawtooth',0.06)}}
+  if(ph.id==='orbit'){const f=LAND.t/ph.t;LAND.h=LAND_PHASES[1].h[0];LAND.v=-3500;LAND.shake=0.1+smooth(0.6,1,f)*1.6;game.orbitView=true;orbitUpdate(dt,ck);$('#l-flash').style.opacity=smooth(0.72,1,f);
+    if(f>0.6&&LAND.frame%8===0)sfx(0.5,120+f*80,0.5,0.04*f,'lowpass');
+    if(LAND.t>=ph.t){LAND.phase++;LAND.t=0;game.orbitView=false;orbitLeave(ck);renderLandPhase();beep(240,0.3,'sawtooth',0.06)}}
   else if(ph.id!=='powered'){ // automatic phases follow a scripted path
     const f=clamp(LAND.t/ph.t,0,1);LAND.h=lerp(ph.h[0],ph.h[1],f);LAND.v=ph.id==='entry'?-150+f*40:ph.id==='chute'?-80+f*30:-45;
-    LAND.shake=ph.id==='entry'?1.4:ph.id==='chute'&&f<0.15?2.6:0.35;
+    LAND.shake=ph.id==='entry'?1.4:ph.id==='chute'&&f<0.15?2.6:0.35;if(ph.id==='entry')$('#l-flash').style.opacity=1-smooth(0,2.2,LAND.t);   // the glow fades as you break through
     if(LAND.t>=ph.t){LAND.phase++;LAND.t=0;if(LAND_PHASES[LAND.phase].id==='powered'){LAND.v=-32;LAND.h=260}renderLandPhase();beep(LAND.phase===2?300:520,0.18,'sine',0.08)}
   }else if(!LAND.touch){
     if(LAND.keys.up)LAND.thr=clamp(LAND.thr+dt*0.9,0,1);if(LAND.keys.down)LAND.thr=clamp(LAND.thr-dt*0.9,0,1);
@@ -148,7 +149,7 @@ function landingUpdate(dt){
       const v=LAND.touch.v,grade=v<1.5?['Perfect landing!','Barely a bump. Mission Control is cheering.']:v<3?['Good landing','Solid touchdown, well within the lander’s limits.']:v<6?['Hard landing','The legs absorbed it, but you felt that one.']:['Crash landing!','The lander survived, just. Check your suit.'];
       $('#l-title').textContent=grade[0];$('#l-body').textContent=`${grade[1]} Touchdown speed: ${v.toFixed(1)} m/s. Fuel left: ${Math.round(LAND.fuel)}%.`;$('#l-lever').classList.remove('live')}
   }else if(LAND.touch.skipped)finishLanding();
-  else if(LAND.t>8.2+1.6)finishLanding();
+  else if(LAND.t>EXIT_T+1.6)finishLanding();
   if(!LAND.on)return;                                            // the landing just finished this frame
   const pid=LAND_PHASES[LAND.phase].id,powered=pid==='powered'&&!LAND.touch;
   // lander, flame, parachute
@@ -167,6 +168,7 @@ function landingUpdate(dt){
   ck.warn.forEach((w,i)=>{w.material.emissiveIntensity=(-LAND.v>6&&powered&&LAND.h<80&&i%3===0)?(Math.sin(LAND.t*12)>0?2.2:0.2):(LAND.fuel<15&&i%3===1?1.6:0.3)});
   if(!game.orbitView){updateEnv(dt,camera.position);updateWeatherFX(dt,camera.position);updateLanders(dt)}
   landScreens(gy);
+  if(LAND.frame%3===0)landStatsHTML(pid);
   $('#l-fill').style.height=(LAND.thr*100)+'%';$('#l-handle').style.bottom=`calc(${LAND.thr*100}% - 14px)`;
 }
 // draw the two dashboard screens: chase camera every frame, LIDAR every other frame, text 10 times a second
@@ -202,23 +204,36 @@ function drawLandText(gy){
     rows.forEach(([k,v],i)=>{x.fillStyle='#8fb3d9';x.fillText(k,12,30+i*32);x.fillStyle=k==='V/SPD'&&pid==='powered'?(vs>6?'#ff6a4d':vs>3?'#ffd34d':'#7fffa0'):'#ffffff';x.fillText(v,96,30+i*32)});
     x.fillStyle='#ffb35c';x.font='bold 16px monospace';x.fillText('CHASE CAM',400,24);ck.ovT.t.needsUpdate=true}}
 // the walk out, in the cockpit's own frame: turn round, stand up, the hatch opens, through it and down the stairs
+// the walk out, in the cockpit's own frame: turn round and stand up, the hatch opens, step to the threshold,
+// pause to take in the view, walk down the ten stairs one step at a time, and step onto Mars
+const EXIT_T=11.2;
 function landExit(t){
-  const ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x),e=new THREE.Vector3();let yaw,pitch=-0.05,door=0;
+  const ss=x=>x<=0?0:x>=1?1:x*x*(3-2*x),e=new THREE.Vector3();let yaw=0,pitch=-0.05,door=0;
   if(t<0)return{eye:e.set(0,0.08,0.28),yaw:0,pitch:-0.2,door:0,level:-0.36*(1-ss((t+1.6)/1.6))};
-  if(!LAND.exitShown){LAND.exitShown=true;$('#l-title').textContent='Welcome to Mars';$('#l-body').textContent='Unbuckling, turning round to the hatch and heading outside: your first steps on another planet.';$('#l-lever').style.display='none'}
-  const turn=ss(t/1.6),stand=ss((t-0.4)/1.2);yaw=turn*Math.PI;e.set(0,lerp(0.08,0.62,stand),0.28);
-  door=ss((t-1.7)/1.0);if(t>1.7&&!LAND.hiss){LAND.hiss=true;SFX.hiss()}
-  const walk=ss((t-2.9)/1.1);e.z=lerp(0.28,1.35,walk);
-  const st=clamp((t-4.0)/3.4,0,1);if(walk>0)e.z=lerp(0.28,1.95,walk);if(st>0){e.z=lerp(1.95,5.0,st);e.y=lerp(0.62,-1.32,ss(st))+Math.sin(st*20)*0.03;pitch=-0.32*Math.sin(st*Math.PI)-0.05}
-  if(t>7.4)pitch=lerp(pitch,0,ss((t-7.4)/0.6));
+  if(!LAND.exitShown){LAND.exitShown=true;$('#l-title').textContent='Touchdown';$('#l-body').textContent='Unbuckling and turning round to the hatch…';$('#l-lever').style.display='none';$('#l-stats').style.display='none'}
+  // 0–1.6 s: turn round and stand up
+  const turn=ss(t/1.6),stand=ss((t-0.3)/1.3);yaw=turn*Math.PI;e.set(0,lerp(0.08,0.62,stand),0.28);pitch=lerp(-0.2,-0.02,stand);
+  // 1.6–2.8 s: the hatch slides open
+  door=ss((t-1.6)/1.2);if(t>1.6&&!LAND.hiss){LAND.hiss=true;SFX.hiss()}
+  // 2.8–4.0 s: walk to the threshold, a gentle bob with each step
+  const w1=clamp((t-2.8)/1.2,0,1);if(w1>0){e.z=lerp(0.28,1.8,ss(w1));e.y+=Math.abs(Math.sin(w1*Math.PI*3))*0.025}
+  // 4.0–5.8 s: stop in the hatch and look out over Mars
+  if(t>=4.0&&!LAND.viewMsg){LAND.viewMsg=true;$('#l-title').textContent='Welcome to Mars';$('#l-body').textContent='Your first look at your new home. Time to head down the stairs.'}
+  const look=clamp((t-4.0)/1.8,0,1);if(look>0&&look<1){yaw+=Math.sin(look*Math.PI*2)*0.38*Math.sin(look*Math.PI);pitch=0.05*Math.sin(look*Math.PI)}
+  // 5.8–9.6 s: down the ten stairs, one step at a time
+  const st=clamp((t-5.8)/3.8,0,1);if(st>0){const s10=st*10,k=Math.floor(Math.min(s10,9.999)),f=ss(s10-k),steps=Math.min(10,k+f);
+    e.z=lerp(1.95,5.0,steps/10);e.y=0.62-0.2*steps-Math.sin(f*Math.PI)*0.02;pitch=-0.72*Math.sin(Math.min(1,st*1.6)*Math.PI*0.5)*(1-ss((st-0.7)/0.3))-0.06;yaw=Math.PI+Math.sin(st*Math.PI*2)*0.04}
+  // 9.6–11.2 s: step onto the ground and walk a few paces, looking up at the horizon
+  const w2=clamp((t-9.6)/1.6,0,1);if(w2>0){e.z=lerp(5.0,6.6,ss(w2));e.y=-1.38+Math.abs(Math.sin(w2*Math.PI*2.5))*0.03;pitch=lerp(-0.04,0.02,ss(w2));yaw=Math.PI}
   return{eye:e,yaw,pitch,door,level:0}}
 function finishLanding(){
-  if(!LAND.on)return;LAND.on=false;game.landing=false;landUI(false);const ck=LAND.ck;if(game.orbitView)orbitLeave(ck);
+  if(!LAND.on)return;$('#l-flash').style.opacity=0;LAND.on=false;game.landing=false;landUI(false);const ck=LAND.ck;if(game.orbitView)orbitLeave(ck);
   staticLander.visible=true;staticLander.position.y=game.introGY;staticLander.userData.flame.visible=false;
-  const v=LAND.touch?LAND.touch.v:1,walked=!!(LAND.touch&&!LAND.touch.skipped),foot=new THREE.Vector3(0,-2.9,5.0);if(walked)ck.g.localToWorld(foot);
+  const v=LAND.touch?LAND.touch.v:1,walked=!!(LAND.touch&&!LAND.touch.skipped),foot=new THREE.Vector3(0,-2.9,6.6),eyeP=camera.position.clone(),eyeQ=camera.quaternion.clone();if(walked)ck.g.localToWorld(foot);
   scene.remove(ck.g);staticLander.remove(ck.chute);staticLander.traverse(o=>o.layers.set(0));camera.layers.disable(CK_LAYER);ck.rtL.dispose();ck.rtT.dispose();LAND.ck=null;
-  S.stats.landing=Math.round(v*10)/10;game.introT=99;introUpdate(0);LAND.exitShown=false;LAND.hiss=false;LAND.shown=false;game.orbitView=false;$('#l-lever').style.display='';
-  if(walked){const yw=landHead()+Math.PI;P.pos.set(foot.x,groundHeight(foot.x,foot.z),foot.z);P.yaw=yw;cam.yaw=yw+Math.PI*0.62;cam.pitch=0.22;P.lastG=undefined;game.camSnap=true;astro.rotation.set(0,yw,0,'YXZ')}
+  S.stats.landing=Math.round(v*10)/10;game.introT=99;introUpdate(0);LAND.exitShown=false;LAND.hiss=false;LAND.viewMsg=false;LAND.shown=false;game.orbitView=false;$('#l-lever').style.display='';$('#l-stats').style.display='';
+  if(walked){const yw=landHead()+Math.PI;P.pos.set(foot.x,groundHeight(foot.x,foot.z),foot.z);P.yaw=yw;cam.yaw=yw+1.75;cam.pitch=0.2;cam.zoom=0.9;P.lastG=undefined;game.camSnap=true;astro.rotation.set(0,yw,0,'YXZ');
+    game.camBlend={p:eyeP,q:eyeQ,t:0,dur:1.6}}   // glide from your eyes out to the usual camera
   if(v>=3&&!(LAND.touch&&LAND.touch.skipped)){const dmg=Math.round(clamp((v-3)*6,4,35));P.hp=Math.max(10,P.hp-dmg);toast(`Hard landing: suit integrity -${dmg}`,'warn')}
 }
 
@@ -242,3 +257,10 @@ function orbitEnter(ck){orbitBuild();ORB.alt=900;ORB.scene.add(ck.g)}
 function orbitLeave(ck){if(ck&&ck.g.parent!==scene)scene.add(ck.g)}
 function orbitUpdate(dt,ck){const f=clamp(LAND.t/LAND_PHASES[0].t,0,1);ORB.sky.position.copy(ck.g.position);ORB.alt=lerp(900,160,f*f);ORB.planet.rotation.y+=dt*0.035;ORB.planet.rotation.z=0.3;
   ck.plasma.material.opacity=f>0.8?(f-0.8)*2.5:0}
+
+// the same flight numbers as the screen, in the corner of your view
+function landStatsHTML(pid){const vs=pid==='orbit'?0:-LAND.v,cls=pid==='powered'?(vs>6?'bad':vs>3?'warn':'good'):'';
+  const rows=[['Altitude',pid==='orbit'?Math.round(ORB.alt*0.6)+' km':Math.round(LAND.h)+' m'],['Vertical speed',`<b class="${cls}">${vs.toFixed(1)} m/s</b>`],
+    ['Speed',pid==='orbit'?'12,600 km/h':pid==='entry'?Math.round(20000-LAND.t*4000)+' km/h':pid==='chute'?Math.round(1500-LAND.t*330)+' km/h':Math.round(vs*3.6)+' km/h'],
+    ['Thrust',Math.round((pid==='powered'?LAND.thr:0)*100)+' %'],['Fuel',Math.round(LAND.fuel)+' %'],['Mass',Math.round(LAND_DRY+LAND_PROP*LAND.fuel/100).toLocaleString()+' kg']];
+  $('#l-stats').innerHTML=rows.map(([k,v])=>`<div><span>${k}</span>${String(v).startsWith('<b')?v:`<b>${v}</b>`}</div>`).join('')}

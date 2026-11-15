@@ -156,35 +156,33 @@ function buildFace(a,l){
   if(l.hat==='beanie'){const h=ha(shell(0.285,0,1.25,M.hat),0,Y,0);h.scale.set(1,1.12,1);ha(new THREE.Mesh(shared('rim',()=>new THREE.TorusGeometry(0.27,0.03,6,20)),M.hat),0,Y+0.09,0).rotation.x=Math.PI/2}
   else if(l.hat==='cap'){ha(shell(0.282,0,1.2,M.hat),0,Y,0).scale.set(1,1.1,1);ha(B(0.3,0.025,0.2,M.hat),0,Y+0.12,0.3).rotation.x=0.15}
   else if(l.hat==='headset'){ha(new THREE.Mesh(shared('hband',()=>new THREE.TorusGeometry(0.27,0.02,6,18,Math.PI)),frame),0,Y+0.02,0);for(const s of[-1,1])ha(S(0.06,frame,8,6),s*0.26,Y,0)}
-  // everyday clothes: collar, hem, seams, pockets and details for each style (body is shaped by bodyLathe)
-  {const T_=U.topG,ta=(m,x,y,z)=>{m.position.set(x,y,z);T_.add(m);return m},B=(w,h,d,m)=>new THREE.Mesh(shared('fb'+w+'_'+h+'_'+d,()=>new THREE.BoxGeometry(w,h,d)),m);
-    const fz=y=>bodyR(y)*0.72+0.006,ring=(rad,tube,m,y,sx=1.25,sz=0.72)=>{const t=new THREE.Mesh(shared('ring'+rad+'_'+tube,()=>new THREE.TorusGeometry(rad,tube,6,28)),m);t.rotation.x=Math.PI/2;t.scale.set(sx,sz,1);return ta(t,0,y,0)};
+  // everyday clothes: details are curved panels that hug the body (children of the shaped torso), so they blend in
+  {if(!U.cdeco){U.cdeco=new THREE.Group();U.ctorso.add(U.cdeco)}const D_=U.cdeco;while(D_.children.length)D_.remove(D_.children[0]);
+    const T_=U.topG,ta=(m,x,y,z)=>{m.position.set(x,y,z);T_.add(m);return m};
+    // a smooth panel following the torso between heights y0..y1, centred on angle a (0 = front) and wa wide, raised by `off`
+    const panel=(y0,y1,a,wa,off,m)=>{const key=`bp${y0}_${y1}_${a}_${wa}_${off}`;const g=shared(key,()=>{const pts=[];for(let i=0;i<=10;i++){const y=lerp(y0,y1,i/10),edge=Math.sin(i/10*Math.PI);pts.push(new THREE.Vector2(bodyR(y)+off*(0.35+0.65*Math.pow(edge,0.3)),y))}
+        return new THREE.LatheGeometry(pts,Math.max(6,Math.round(wa*24)),a-wa,wa*2)});const p=new THREE.Mesh(g,m);D_.add(p);return p};
+    const ring=(rad,tube,m,y,sx=1.25,sz=0.72)=>{const t=new THREE.Mesh(shared('ring'+rad+'_'+tube,()=>new THREE.TorusGeometry(rad,tube,10,40)),m);t.rotation.x=Math.PI/2;t.scale.set(sx,sz,1);return ta(t,0,y,0)};
     const dk=mat('#1d1a1a',{roughness:0.6}),metalB=mat('#c9c3bb',{roughness:0.3,metalness:0.8}),M2=M.shirt2,top=l.top;
-    ring(0.2,0.013,M.shirt,0.885);                                                     // shirt hem
-    if(top==='tee'){ring(0.092,0.016,M2,1.49,1.1,0.85);const pr=new THREE.Mesh(shared('print',()=>new THREE.CircleGeometry(0.055,20)),M2);ta(pr,0.0,1.28,fz(1.28));
-      const pr2=new THREE.Mesh(shared('print2',()=>new THREE.RingGeometry(0.06,0.07,24)),M.shirt);ta(pr2,0,1.28,fz(1.28)+0.002);ta(B(0.18,0.012,0.004,M.shirt),0,1.28,fz(1.28)+0.003).rotation.z=0.35}
-    else if(top==='hoodie'){const hood=new THREE.Mesh(shared('hood2',()=>new THREE.TorusGeometry(0.16,0.065,10,20)),M.shirt);hood.rotation.x=Math.PI/2+0.55;ta(hood,0,1.47,-0.08);
-      ta(B(0.3,0.13,0.024,M.shirt),0,1.0,fz(1.0)).scale.set(1,1,1);ta(B(0.3,0.012,0.026,M2),0,1.066,fz(1.0)+0.002);
-      for(const s of[-1,1]){ta(new THREE.Mesh(shared('cord',()=>new THREE.CylinderGeometry(0.006,0.006,0.13,5)),M2),s*0.045,1.38,fz(1.38)+0.01);ta(new THREE.Mesh(shared('aglet',()=>new THREE.SphereGeometry(0.011,6,5)),M2),s*0.045,1.31,fz(1.31)+0.012)}
-      ring(0.2,0.02,M2,0.89)}
-    else if(top==='jacket'){ta(B(0.13,0.5,0.01,M2),0,1.17,fz(1.17)+0.002);for(const s of[-1,1]){const lp=ta(B(0.06,0.2,0.012,M.shirt),s*0.075,1.36,fz(1.36)+0.008);lp.rotation.z=s*0.35;ta(B(0.012,0.48,0.012,dk),s*0.068,1.13,fz(1.13)+0.008);
-        ta(B(0.08,0.012,0.012,dk),s*0.15,1.0,fz(1.0)+0.004).rotation.y=s*0.6}ring(0.095,0.022,M.shirt,1.48,1.15,0.9)}
-    else if(top==='flight'){ta(B(0.012,0.56,0.01,M2),0,1.16,fz(1.16)+0.002);ring(0.095,0.02,M.shirt,1.48,1.15,0.9);
-      const patch=new THREE.Mesh(shared('patch2',()=>new THREE.CircleGeometry(0.045,20)),mat('#2e5bd8'));ta(patch,0.11,1.3,fz(1.3)+0.006);ta(new THREE.Mesh(shared('patchR',()=>new THREE.RingGeometry(0.045,0.052,24)),M2),0.11,1.3,fz(1.3)+0.007);
-      ta(B(0.11,0.035,0.006,M2),-0.11,1.31,fz(1.31)+0.004);ta(B(0.13,0.016,0.012,M.pants),0,0.97,fz(0.97)+0.006)}
-    // trousers or shorts: waistband, belt and buckle, fly seam, pockets
-    ring(0.188,0.022,M.pants,0.9,1.0,0.82);ring(0.19,0.012,dk,0.9,1.02,0.84);ta(B(0.05,0.035,0.012,metalB),0,0.9,0.158);
-    ta(B(0.008,0.1,0.008,dk),0.02,0.82,0.135);for(const s of[-1,1])ta(B(0.07,0.008,0.008,dk),s*0.11,0.86,0.12).rotation.z=-s*0.6;
-    // sleeves: short sleeves show the forearm; long sleeves get cuffs
-    const shortSl=top==='tee';
-    for(const cl of U.armCl){if(shortSl){const fore=new THREE.Mesh(shared('fore',()=>new THREE.CapsuleGeometry(0.083,0.2,6,12)),M.skin);fore.position.set(0,-0.38,0);cl.add(fore);
-        const hem=new THREE.Mesh(shared('slhem',()=>new THREE.TorusGeometry(0.086,0.013,6,18)),M.shirt);hem.rotation.x=Math.PI/2;hem.position.set(0,-0.25,0);cl.add(hem)}
-      else{const cuff=new THREE.Mesh(shared('cuff',()=>new THREE.TorusGeometry(0.08,0.017,6,18)),top==='hoodie'?M2:M.shirt);cuff.rotation.x=Math.PI/2;cuff.position.set(0,-0.47,0);cl.add(cuff)}}
-    // shoes: soles, laces, toe caps; trouser hems or shorts' hems
-    for(const cl of U.legCl){const sole=new THREE.Mesh(shared('sole',()=>new THREE.BoxGeometry(0.25,0.035,0.4)),mat('#f4f1ea',{roughness:0.7}));sole.position.set(0,-0.37,0.05);cl.add(sole);
-      for(let i=0;i<3;i++){const lc=new THREE.Mesh(shared('lace',()=>new THREE.BoxGeometry(0.09,0.01,0.012)),M2);lc.position.set(0,-0.232+i*0.004,0.1+i*0.04);lc.rotation.x=-0.4;cl.add(lc)}
-      const toe=new THREE.Mesh(shared('toe',()=>new THREE.SphereGeometry(0.1,10,8,0,Math.PI*2,0,Math.PI/2)),mat('#f4f1ea',{roughness:0.7}));toe.scale.set(1.15,0.5,0.9);toe.position.set(0,-0.35,0.17);cl.add(toe);
-      const hm=new THREE.Mesh(shared('pantHem',()=>new THREE.TorusGeometry(0.095,0.015,6,18)),M.pants);hm.rotation.x=Math.PI/2;
+    panel(0.874,0.905,0,Math.PI,0.012,M.shirt);                                                // rolled hem all the way round
+    if(top==='tee'){ring(0.09,0.018,M2,1.495,1.1,0.85);panel(1.2,1.34,0,0.36,0.004,M2);panel(1.245,1.295,0,0.24,0.007,M.shirt)}
+    else if(top==='hoodie'){const hood=new THREE.Mesh(shared('hood3',()=>new THREE.TorusGeometry(0.16,0.07,14,28)),M.shirt);hood.rotation.x=Math.PI/2+0.55;hood.scale.set(1.05,1,0.9);ta(hood,0,1.47,-0.08);
+      panel(0.95,1.09,0,0.62,0.018,M.shirt);panel(1.08,1.095,0,0.6,0.02,M2);panel(0.874,0.92,0,Math.PI,0.016,M2);
+      for(const s of[-1,1]){const cd=new THREE.Mesh(shared('cord2',()=>new THREE.CapsuleGeometry(0.006,0.11,4,6)),M2);ta(cd,s*0.045,1.37,bodyR(1.37)*0.72+0.012)}}
+    else if(top==='jacket'){panel(0.9,1.43,0,0.19,0.004,M2);for(const s of[-1,1]){panel(1.27,1.46,s*0.3,0.12,0.016,M.shirt);panel(0.93,1.44,s*0.2,0.012,0.01,dk);panel(0.98,1.03,s*0.62,0.14,0.012,M.shirt)}ring(0.095,0.024,M.shirt,1.48,1.15,0.9)}
+    else if(top==='flight'){panel(0.9,1.46,0,0.022,0.007,M2);ring(0.095,0.022,M.shirt,1.48,1.15,0.9);panel(0.95,1.0,0,Math.PI,0.012,M.pants);panel(1.27,1.33,-0.42,0.14,0.006,M2);
+      const patch=new THREE.Mesh(shared('patch3',()=>new THREE.SphereGeometry(0.05,16,10,0,Math.PI*2,0,0.5)),mat('#2e5bd8'));patch.rotation.x=Math.PI/2;ta(patch,0.12,1.3,bodyR(1.3)*0.72-0.035)}
+    // trousers: a rolled waistband with a belt and buckle
+    ring(0.188,0.024,M.pants,0.9,1.0,0.82);ring(0.19,0.013,dk,0.9,1.02,0.84);const bk=new THREE.Mesh(shared('buckle',()=>rbox(0.05,0.035,0.014,0.006)),metalB);ta(bk,0,0.9,0.158);
+    // sleeves: short sleeves show the forearm; long sleeves get rolled cuffs
+    for(const cl of U.armCl){if(top==='tee'){const fore=new THREE.Mesh(shared('fore',()=>new THREE.CapsuleGeometry(0.083,0.2,8,16)),M.skin);fore.position.set(0,-0.38,0);cl.add(fore);
+        const hem=new THREE.Mesh(shared('slhem2',()=>new THREE.TorusGeometry(0.087,0.016,10,24)),M.shirt);hem.rotation.x=Math.PI/2;hem.position.set(0,-0.25,0);cl.add(hem)}
+      else{const cuff=new THREE.Mesh(shared('cuff2',()=>new THREE.TorusGeometry(0.08,0.02,10,24)),top==='hoodie'?M2:M.shirt);cuff.rotation.x=Math.PI/2;cuff.position.set(0,-0.47,0);cl.add(cuff)}}
+    // shoes: rounded soles and toe caps; trouser or shorts hems
+    for(const cl of U.legCl){const sole=new THREE.Mesh(shared('sole2',()=>rbox(0.25,0.04,0.41,0.018)),mat('#f4f1ea',{roughness:0.7}));sole.position.set(0,-0.37,0.05);cl.add(sole);
+      const toe=new THREE.Mesh(shared('toe2',()=>new THREE.SphereGeometry(0.1,16,10,0,Math.PI*2,0,Math.PI/2)),mat('#f4f1ea',{roughness:0.7}));toe.scale.set(1.15,0.5,0.9);toe.position.set(0,-0.35,0.17);cl.add(toe);
+      const lace=new THREE.Mesh(shared('lace2',()=>new THREE.CapsuleGeometry(0.008,0.07,4,6)),M2);lace.rotation.z=Math.PI/2;lace.position.set(0,-0.226,0.12);cl.add(lace);
+      const hm=new THREE.Mesh(shared('pantHem2',()=>new THREE.TorusGeometry(0.095,0.018,10,24)),M.pants);hm.rotation.x=Math.PI/2;
       if(U.shorts||l.bottoms==='shorts'){hm.position.set(0,0.06,0);hm.scale.set(1.12,1.12,1)}else hm.position.set(0,-0.2,0);cl.add(hm)}}
 }
 /* ---------- hair: real-looking hair built from tapered locks and curls ----------
@@ -212,44 +210,39 @@ function placeOn(geo,p,n,flow,sink=0.012){_hy.copy(flow).addScaledVector(n,-flow
 function hairCap(Y,r0=0.258){const g=new THREE.SphereGeometry(1,44,30),pos=g.attributes.position;
   for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i),th=Math.acos(clamp(y,-1,1)),ph=Math.atan2(x,z);const hm=hairMax(ph),k=th<=hm?r0:th<=hm+0.3?lerp(r0,0.243,(th-hm)/0.3):0.243;
     pos.setXYZ(i,x*k,Y+y*k*1.08,z*k)}g.computeVertexNormals();return g}
+// Hair as one smooth, sculpted shape per style: a shell over the scalp that thickens, sweeps, curls or falls
+// (a smooth hairline that tapers into the skin, no layered pieces), plus a few rounded extras (ponytail, bun, braids).
+const HAIR_STYLE={buzz:{t:0.005},short:{t:0.026,top:0.03,hl:0.07},side:{t:0.028,top:0.02,hl:0.1,side:0.04},long:{t:0.03,top:0.015,hl:0.09,hang:0.46},
+  ponytail:{t:0.013,top:0.006},bun:{t:0.013,top:0.006},curly:{t:0.038,top:0.025,hl:0.05,curl:0.024},mohawk:{t:0.004,ridge:0.13},braids:{t:0.012,top:0.006},afro:{afro:1}};
 function hairGeometry(style,Y,hatOn){
-  return shared('hair2_'+style+(hatOn?'_hat':''),()=>{
-    const parts=[],r=mulberry(style.length*977+(hatOn?7:0)),V=(x,y,z)=>new THREE.Vector3(x,y,z);
-    const scalpLocks=(n,len,rad,bend,flowFn,minTh=0.12,lenJ=0.35)=>{for(let i=0;i<n;i++){
-      const ph=r()*TAU,th=minTh+r()*(hairMax(ph)-minTh-0.05);if(hatOn&&th<1.15)continue;const{p,n:nn}=scalp(th,ph,Y);
-      parts.push(placeOn(lockGeo(len*(1-lenJ/2+r()*lenJ),rad*(0.8+r()*0.4),bend,0),p,nn,flowFn(p,nn,th,ph)))}};
-    const back=()=>V(0,-0.3,-1),toward=t=>p=>t.clone().sub(p);
-    // a neat row of locks along the hairline (fringe, or hair pulled back from the face)
-    const hairline=(n,len,rad,bend,flowFn)=>{for(let i=0;i<n;i++){const ph=-1.25+2.5*i/(n-1)+(r()-0.5)*0.05,th=hairMax(ph)-0.1-r()*0.05;if(hatOn&&th<1.15)continue;const{p,n:nn}=scalp(th,ph,Y);
-      parts.push(placeOn(lockGeo(len*(0.85+r()*0.3),rad,bend,0,8,1.6),p,nn,flowFn(p,nn,th,ph)))}};
-    if(style!=='afro')parts.push(hairCap(Y,style==='buzz'||style==='mohawk'?0.254:0.259));
-    switch(style){
-      case'buzz':break;
-      case'short':scalpLocks(120,0.14,0.026,1.5,(p,n,th)=>th<0.5&&p.z>0?V(0,0.5,1):back());hairline(22,0.08,0.026,0.6,()=>V(0,-1,0.6));break;
-      case'side':scalpLocks(130,0.19,0.027,1.4,(p,n,th,ph)=>V(1,-0.12,-0.15+(p.z>0.12?0.6:0)));hairline(22,0.15,0.026,0.9,()=>V(1,-0.45,0.2));break;
-      case'long':scalpLocks(110,0.2,0.027,1.4,back);hairline(24,0.11,0.026,0.5,(p)=>V(p.x*2,-1,0.5));
-        for(let i=0;i<64;i++){const ph=Math.PI*0.3+(i/64)*Math.PI*1.4+(r()-0.5)*0.08,th=1.2+r()*0.45,{p,n}=scalp(th,ph,Y,-0.002);
-          const g=lockGeo(0.36+r()*0.16,0.034,-0.06,0,10,2.2);parts.push(placeOn(g,p,n,V(0,-1,0)))}break;
-      case'ponytail':{const tie=V(0,Y+0.06,-0.27);scalpLocks(110,0.17,0.026,1.45,toward(tie));hairline(24,0.16,0.026,1.4,toward(tie));
-        for(let i=0;i<22;i++){const g=lockGeo(0.3+r()*0.12,0.03,-0.25-r()*0.2,0.04*(r()-0.5));const m=new THREE.Matrix4().makeRotationX(Math.PI*0.86+(r()-0.5)*0.35).multiply(new THREE.Matrix4().makeRotationZ((r()-0.5)*0.35)).multiply(new THREE.Matrix4().makeRotationY(r()*Math.PI));m.setPosition(tie.x+(r()-0.5)*0.03,tie.y,tie.z-0.02);g.applyMatrix4(m);parts.push(g)}break}
-      case'bun':{const at=V(0,Y+0.25,-0.12);scalpLocks(110,0.17,0.026,1.45,toward(at));hairline(24,0.16,0.026,1.4,toward(at));
-        for(let i=0;i<4;i++){const t=new THREE.TorusGeometry(0.065-i*0.008,0.034,8,18);t.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.PI/2+(r()-0.5)*0.7,r()*3,(r()-0.5)*0.7)));t.translate(at.x,at.y+0.02+i*0.018,at.z);parts.push(t)}break}
-      case'curly':for(let i=0;i<190;i++){const ph=r()*TAU,th=0.05+r()*(hairMax(ph)-0.1);if(hatOn&&th<1.15)continue;const{p,n}=scalp(th,ph,Y,0.018);
-          const t=new THREE.TorusGeometry(0.026+r()*0.012,0.012,5,10);t.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(r()*3,r()*3,r()*3)));t.translate(p.x,p.y,p.z);parts.push(t)}break;
-      case'afro':{const g=new THREE.SphereGeometry(1,56,40),pos=g.attributes.position,nz=makeNoise(41);
-        for(let k=0;k<pos.count;k++){const x=pos.getX(k),y=pos.getY(k),z=pos.getZ(k),b=1+0.07*nz(x*7+z*3,y*7-z*2)+0.04*nz(x*15,y*15+z*9);let sx=0.36,sy=0.33,sz=0.35;
-          if(z>0.45&&y<0.42){const f=clamp((z-0.45)/0.3,0,1)*clamp((0.42-y)/0.3,0,1);sz*=1-0.42*f;sy*=1-0.1*f}                 // leave room for the face
-          if(hatOn&&y>0.2)sy*=0.75;pos.setXYZ(k,x*sx*b,Y+0.07+y*sy*b,z*sz*b-0.03)}
-        g.computeVertexNormals();parts.push(g,hairCap(Y,0.262));break}
-      case'mohawk':for(let i=0;i<10;i++){const th=-0.75+i*0.19,{p,n}=scalp(Math.abs(th),th<0?0:Math.PI,Y);const h=0.1+0.1*Math.sin((i+1)/11*Math.PI);
-          const c=new THREE.ConeGeometry(0.04,h,6);c.translate(0,h/2,0);const dir=n.clone().add(V(0,0,-0.45)).normalize();c.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(V(0,1,0),dir));c.translate(p.x-n.x*0.01,p.y-n.y*0.01,p.z-n.z*0.01);parts.push(c)}break;
-      case'braids':{for(const s of[-1,1]){const root=V(s*0.19,Y-0.04,-0.12);scalpLocks(24,0.15,0.034,1.3,toward(root));scalpLocks(30,0.15,0.026,1.45,toward(root));
-          for(let i=0;i<9;i++){const e=new THREE.SphereGeometry(0.042-i*0.0015,8,6);e.scale(1,1.35,0.85);e.applyMatrix4(new THREE.Matrix4().makeRotationZ((i%2?0.5:-0.5)));e.translate(root.x+s*0.01*i,root.y-0.05*i,root.z-0.02*i);parts.push(e)}
-          const tuft=lockGeo(0.07,0.03,0,0);tuft.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI));tuft.translate(root.x+s*0.09,root.y-0.46,root.z-0.18);parts.push(tuft)}break}
-    }
-    const geo=typeof mergeGeometries==='function'?mergeGeometries(parts,false):null;   // one mesh for the whole hairstyle
-    return geo||parts[0]})}
-
+  return shared('hair3_'+style+(hatOn?'_hat':''),()=>{
+    const H=HAIR_STYLE[style]||{t:0.02},parts=[],nz=makeNoise(31),ss=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+    const g=new THREE.SphereGeometry(1,96,72),pos=g.attributes.position;
+    for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i),th=Math.acos(clamp(y,-1,1)),ph=Math.atan2(x,z),front=Math.max(0,Math.cos(ph));
+      let hm=hairMax(ph)+(H.hl||0)*ss(0.3,1,front);if(hatOn)hm=Math.max(hm,0);
+      let inside=ss(hm+0.07,hm-0.05,th);                                                   // 1 = hair, 0 = bare skin, smooth in between
+      let t=(H.t||0)+(H.top||0)*Math.max(0,y)+(H.side||0)*Math.max(0,x)*ss(-0.4,0.6,y);
+      if(H.curl)t+=H.curl*(0.45+0.55*nz(x*8+z*3.1,y*8-z*2.7))*ss(-0.2,0.5,y+0.4);
+      if(H.ridge)t+=H.ridge*Math.exp(-(x*x)/0.0085)*ss(1.75,0.55,th)*(0.85+0.15*nz(z*18,y*18));
+      t*=0.3+0.7*ss(hm,hm-0.28,th);                                                    // thinner towards the hairline, so the edge is soft
+      if(H.afro)t=0.11+0.05*nz(x*6+z*2,y*6-z*3)+0.025*nz(x*15,y*15+z*9);
+      let r=0.252+t,px=x*r,py=Y+y*r*1.08,pz=z*r;
+      if(H.afro){const fy=z>0.45&&y<0.42?1-0.45*ss(0.45,0.75,z)*ss(0.42,0.12,y):1;px*=1.25;pz*=1.22*fy;py=Y+0.07+y*r*1.15*fy;inside=th<hm+0.25||z<0.2?1:inside}
+      // long hair falls from the hairline down the back and sides as one smooth curtain
+      if(H.hang){const back=ss(0.38,-0.15,Math.cos(ph)),k=ss(1.15,Math.PI*0.95,th)*back;
+        if(k>0){const fall=(th-1.15)/(Math.PI-1.15),hr=0.27+0.035*Math.sin(fall*Math.PI);px=lerp(px,Math.sin(ph)*hr,k);pz=lerp(pz,Math.cos(ph)*hr-0.02,k);py=lerp(py,Y+0.04-fall*H.hang,k);inside=Math.max(inside,ss(0.0,0.25,k)*back)}}
+      if(hatOn)t=Math.min(t,0.02);
+      // bare skin: tuck the shell just under the scalp so the edge melts into the head
+      const hx=x*0.243,hy=Y+y*0.243*1.08,hz=z*0.243;pos.setXYZ(i,lerp(hx,px,inside),lerp(hy,py,inside),lerp(hz,pz,inside))}
+    g.computeVertexNormals();parts.push(g);
+    if(style==='ponytail'){const tie=new THREE.Vector3(0,Y+0.07,-0.265);
+      const tail=new THREE.LatheGeometry([[0.001,0],[0.05,0.015],[0.078,0.07],[0.082,0.16],[0.068,0.28],[0.045,0.38],[0.018,0.44],[0.001,0.46]].map(([r,y])=>new THREE.Vector2(r,y)),24);
+      tail.rotateX(-2.62);tail.translate(tie.x,tie.y,tie.z);parts.push(tail);const band=new THREE.TorusGeometry(0.045,0.016,10,24);band.rotateX(-2.62+Math.PI/2);band.translate(tie.x,tie.y-0.015,tie.z-0.01);parts.push(band)}
+    if(style==='bun'){const b=new THREE.SphereGeometry(0.105,28,20);b.scale(1,0.85,1);b.translate(0,Y+0.27,-0.1);parts.push(b);const tw=new THREE.TorusGeometry(0.09,0.03,12,32);tw.rotateX(Math.PI/2+0.3);tw.translate(0,Y+0.235,-0.11);parts.push(tw)}
+    if(style==='braids')for(const s of[-1,1]){const root=new THREE.Vector3(s*0.19,Y-0.03,-0.12);
+      for(let i=0;i<11;i++){const e=new THREE.SphereGeometry(0.044-i*0.0018,14,10);e.scale(1,1.4,0.85);e.rotateZ(i%2?0.45:-0.45);e.translate(root.x+s*0.008*i,root.y-0.045*i,root.z-0.018*i);parts.push(e)}
+      const tip=new THREE.SphereGeometry(0.03,12,8);tip.scale(1,1.6,1);tip.translate(root.x+s*0.09,root.y-0.52,root.z-0.2);parts.push(tip)}
+    const geo=typeof mergeGeometries==='function'&&parts.length>1?mergeGeometries(parts,false):null;return geo||parts[0]})}
 const FACE_KEYS=['eyes','brows','nose','mouth','freckles','blush','glasses','facial','hairStyle','hat','top','bottoms'];
 function setOutfit(a,cas){const U=a.userData,M=U.mats;U.casual=!!cas;for(const m of U.suitParts)m.visible=!cas;for(const m of U.casParts)m.visible=!!cas;
   for(const m of U.upper)m.material=cas?M.shirt:M.suit;for(const m of U.lower)m.material=cas?M.pants:M.suit;

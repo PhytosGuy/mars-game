@@ -102,9 +102,11 @@ function collideBodies(pos,rad,self){let hit=false;
     for(const s of M.solids||[])if(s.pylon&&pos.y<s.top-0.4&&pushOut(pos,s.x,s.z,s.r+rad))hit=true}
   return hit}
 /* ---------- the suit's walk cycle (you and your crewmates) ---------- */
-function animSuit(av,ph,amt,ground,climb){
+function animSuit(av,ph,amt,ground,climb,hop){
   const u=av.userData,s=Math.sin(ph),c=Math.cos(ph),A=0.6*amt,kL=u.legL.userData.knee,kR=u.legR.userData.knee;
   if(climb){u.legL.rotation.x=-0.6+s*0.5;u.legR.rotation.x=-0.6-s*0.5;kL.rotation.x=0.9-s*0.4;kR.rotation.x=0.9+s*0.4;u.armL.rotation.set(-2.6+s*0.6,0,0);u.armR.rotation.set(-2.6-s*0.6,0,0);return 0}
+  if(!ground&&hop){const k=0.2;u.legL.rotation.x=lerp(u.legL.rotation.x,-0.42*hop,k);u.legR.rotation.x=lerp(u.legR.rotation.x,0.32*hop,k);   // a low-gravity bound: one leg reaching forward
+    kL.rotation.x=lerp(kL.rotation.x,hop>0?0.55:0.25,k);kR.rotation.x=lerp(kR.rotation.x,hop>0?0.25:0.55,k);u.armL.rotation.set(0.35*hop,0,0.22);u.armR.rotation.set(-0.35*hop,0,-0.22);return 0}
   if(!ground){u.legL.rotation.x=lerp(u.legL.rotation.x,-0.45,0.15);u.legR.rotation.x=lerp(u.legR.rotation.x,0.3,0.15);kL.rotation.x=lerp(kL.rotation.x,0.75,0.15);kR.rotation.x=lerp(kR.rotation.x,0.4,0.15);
     u.armL.rotation.set(-0.5,0,0.65);u.armR.rotation.set(-0.3,0,-0.65);return 0}
   u.legL.rotation.x=s*A;u.legR.rotation.x=-s*A;                                   // hips swing in opposition
@@ -130,9 +132,10 @@ function updateWalker(dt,inp){
     if(P.climbing){P.climbing=false;if(steep)P.vel.y=Math.min(P.vel.y,0)}
     if(P.onGround){const k=damp(ml>0.1?6:4,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)}   // low gravity means less grip: you slide a little
     else if(ml>0.1){const k=damp(1.1,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)} // air control: steer, keep momentum
-    if(P.onGround&&inp.jump&&!game.dead){P.vel.y=Math.max(P.vel.y,0)+(buffOn('jump')?8:4.4);if(ml>0.1){P.vel.x+=mx*spd*0.5;P.vel.z+=mz*spd*0.5}P.onGround=false;jumped=true;P.jetLock=true}   // a leap: up and forward
+    if(P.onGround&&inp.jump&&!game.dead){P.vel.y=Math.max(P.vel.y,0)+(buffOn('jump')?8:4.4);if(ml>0.1){P.vel.x+=mx*spd*0.5;P.vel.z+=mz*spd*0.5}P.onGround=false;jumped=true;P.jetLock=true;P.hopping=false}   // a leap: up and forward
     // running on Mars turns into a bounding lope, like the Apollo astronauts' moon hops
-    if(P.onGround&&sprint&&!jumped&&!P.inside){P.hopT=(P.hopT||0)+dt;if(P.hopT>0.48){P.hopT=0;P.vel.y=2.1;P.onGround=false;jumped=true}}else if(!sprint)P.hopT=0;
+    // low gravity: walking turns into gentle hops and running into long bounds, like the Apollo astronauts on the Moon
+    if(P.onGround&&ml>0.3&&!jumped&&!P.inside&&!game.dead){P.hopT=(P.hopT||0)+dt;if(P.hopT>(sprint?0.5:0.62)){P.hopT=0;P.vel.y=sprint?2.3:1.55;P.onGround=false;jumped=true;P.hopping=true;P.hopSide=-(P.hopSide||1)}}else if(ml<=0.3)P.hopT=0;
     if(!inp.jump)P.jetLock=false;
     // thruster pack: hold Space in mid-air
     P.jet=false;if(!P.onGround&&inp.jump&&!P.jetLock&&S.ups&&S.ups.u_jets&&P.bat>0){P.vel.y=Math.min(P.vel.y+7.8*dt,5);P.bat=Math.max(0,P.bat-dt*7*batMult());P.jet=true;if(Math.random()<0.7)emitSparks(_v1.set(P.pos.x-Math.sin(P.yaw)*0.4,P.pos.y+0.9,P.pos.z-Math.cos(P.yaw)*0.4),2,'#ffb070')}
@@ -161,7 +164,7 @@ function updateWalker(dt,inp){
   // walk cycle: stride lengthens with speed so the feet don't skate
   P.walkAmt=lerp(P.walkAmt||0,P.climbing?1:clamp(hs/4.6,0,1.25),damp(8,dt));
   P.phase+=P.climbing?dt*5:hs*dt*TAU/(1.5+hs*0.18);
-  const u=astro.userData,bob=animSuit(astro,P.phase,P.walkAmt,P.onGround,P.climbing);
+  const u=astro.userData,bob=animSuit(astro,P.phase,P.walkAmt,P.onGround,P.climbing,P.hopping?P.hopSide:0);
   // the head turns toward where the camera is looking (straight ahead if you're looking back at yourself)
   {let hy=wrapA(cam.yaw-P.yaw);hy=Math.abs(hy)>2.2?0:clamp(hy,-1.1,1.1);const hp=P.climbing?-0.35:clamp((cam.pitch-0.3)*0.6,-0.5,0.5);
    u.head.rotation.y=lerpA(u.head.rotation.y,hy,damp(7,dt));u.head.rotation.x=lerp(u.head.rotation.x,hp,damp(7,dt))}
@@ -329,8 +332,10 @@ function updateRagdoll(dt,inp){
   P.o2-=dt*100/240*o2Mult()*o2Diff()*(typeof coldFactor==='function'?coldFactor():1);if(P.o2<=0&&!game.dead)die('oxygen');
   if(rest&&r.up>0.7){P.ragdoll=null;P.onGround=true;P.lastG=undefined;P.vel.set(0,0,0);astro.rotation.set(0,P.yaw,0,'YXZ')}
 }
+const _cbq=new THREE.Quaternion();
 function camBlocked(x,y,z){
   if(y<groundHeight(x,z)+0.3)return true;
+  if(typeof staticLander!=='undefined'&&staticLander&&staticLander.visible){const lp=staticLander.position;if(Math.hypot(x-lp.x,z-lp.z)<2.5&&y<lp.y+5)return true}
   for(const b of blds){const d=BUILD[b.type];if(d.solid===false||b.progress<0.3||Math.abs(b.x-x)>d.r+2||Math.abs(b.z-z)>d.r+2)continue;const h=fieldTop(b,x,z);if(h>-50&&y<b.y+h+0.15)return true}
   let hit=false;forRocks(x,z,0.5,k=>{if(!hit&&y<rockTopAt(k,Math.hypot(k.p.x-x,k.p.z-z))+0.15)hit=true});if(hit)return true;
   if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values())if(M.fb&&Math.abs(M.L.x-x)<60&&Math.abs(M.L.z-z)<60){const h=fieldTop(M.fb,x,z);if(h>-50&&y<M.fb.y+h+0.15)return true}
@@ -355,6 +360,7 @@ function updateCamera(dt){
   if(P.mode==='foot')astro.visible=camera.position.distanceTo(cam.target)>0.9; // don't render the suit from inside the helmet
   const base=clamp(+OPT.fov||60,50,100),dyn=OPT.fovAuto!==false,fov=base+(dyn?(rv?Math.min(14,Math.abs(R.speed)*0.7):P.mode==='foot'&&Math.hypot(P.vel.x,P.vel.z)>6.5?5:0):0);
   if(Math.abs(camera.fov-fov)>0.05){camera.fov=lerp(camera.fov,fov,damp(3,dt));camera.updateProjectionMatrix()}
+  if(game.camBlend){const b=game.camBlend;b.t+=dt;const k=clamp(b.t/b.dur,0,1),e=k*k*(3-2*k);camera.position.lerpVectors(b.p,camera.position,e);_cbq.copy(camera.quaternion);camera.quaternion.slerpQuaternions(b.q,_cbq,e);if(k>=1)game.camBlend=null}
 }
 /* ---------- food and water: you need to eat and drink (the colony's supplies keep you going) ---------- */
 function tickNeeds(dt){
