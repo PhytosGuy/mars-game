@@ -18,6 +18,7 @@ function windowTex(){
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t}
 function buildInterior(){
   if(INT.g){scene.remove(INT.g)}
+  ROOM.r=[7.5,9.5,11.5][clamp((S&&S.habLv)||1,1,3)-1];ROOM.h=ROOM.wall+ROOM.r*ROOM.s;          // the dome grows as you expand your home
   const b=interiorBase(),g=new THREE.Group();g.position.set(b.x,b.y,b.z);Object.assign(INT,{x:b.x,y:b.y,z:b.z,props:[],spin:[]});
   const R=ROOM.r,W=ROOM.wall,S_=ROOM.s,TAU_=Math.PI*2,DOOR=Math.PI/2;                 // the door faces +z
   const HC=habCols(),panel=mat('#e3e7ec',{roughness:0.5,metalness:0.15,flatShading:true,side:THREE.BackSide}),
@@ -80,6 +81,14 @@ function buildInterior(){
   // the way out: an airlock door in the front of the wall
   const door=new THREE.Group();door.position.set(0,0,R-0.12);door.add(bx(1.9,2.6,0.12,steel,0,1.3,0.04));door.add(bx(0.66,2.2,0.08,white,-0.34,1.12,-0.04));door.add(bx(0.66,2.2,0.08,white,0.34,1.12,-0.04));
   door.add(bx(0.02,2.2,0.09,dark,0,1.12,-0.05));door.add(bx(1.5,0.06,0.1,cyan,0,2.32,-0.06));door.add(sp(0.06,glow('#8fe39a',2),0.82,1.15,-0.1,8,6));g.add(door);INT.door={x:0,z:R-1.0};
+  INT.galley={x:0,z:-5.6};
+  // home expansions: a grow bay and spare bunks (level 2), a water recycler and workbench (level 3)
+  const lv=(S&&S.habLv)||1;INT.bench=null;
+  if(lv>=2){for(let i=0;i<5;i++){const a=Math.PI*0.62+i*0.2,x=Math.sin(a)*(R-1.3),z=Math.cos(a)*(R-1.3);const rk=new THREE.Group();rk.position.set(x,0,z);rk.rotation.y=a;rk.add(bx(0.5,1.7,1.0,white,0,0.85,0));
+      for(let s=0;s<3;s++){rk.add(bx(0.46,0.03,0.95,new THREE.MeshStandardMaterial({color:'#ff6ad5',emissive:'#ff6ad5',emissiveIntensity:1.1}),0,0.55+s*0.5,0));for(let k=0;k<3;k++)rk.add(sp(0.13,mat('#4fbf6a',{roughness:0.8}),0.02,0.42+s*0.5,-0.3+k*0.3,8,6))}g.add(rk);INT.props.push({x,z,w:0.4,d:0.4})}
+    const b2=new THREE.Group();const a2=-Math.PI*0.42,bx2=Math.sin(a2)*(R-1.6),bz2=Math.cos(a2)*(R-1.6);b2.position.set(bx2,0,bz2);b2.rotation.y=a2;b2.add(bx(2.4,0.42,1.2,white,0,0.3,0));b2.add(bx(2.2,0.2,1.1,mat('#dfe6ee'),0,0.6,0));b2.add(bx(1.3,0.1,1.12,soft,0.4,0.72,0));g.add(b2);INT.props.push({x:bx2,z:bz2,w:0.9,d:0.9})}
+  if(lv>=3){const a3=Math.PI*1.12,x3=Math.sin(a3)*(R-1.4),z3=Math.cos(a3)*(R-1.4);const tank=new THREE.Group();tank.position.set(x3,0,z3);tank.add(cy(0.6,0.6,1.8,20,steel,0,0.9,0));tank.add(cy(0.62,0.62,0.12,20,cyan,0,1.2,0));tank.add(cy(0.5,0.5,0.7,20,new THREE.MeshStandardMaterial({color:'#6fb6ff',transparent:true,opacity:0.55}),0,0.6,0));g.add(tank);INT.props.push({x:x3,z:z3,w:0.6,d:0.6});
+    const a4=Math.PI*1.38,x4=Math.sin(a4)*(R-1.4),z4=Math.cos(a4)*(R-1.4);const wb=new THREE.Group();wb.position.set(x4,0,z4);wb.rotation.y=a4+Math.PI;wb.add(bx(2.0,0.08,0.8,white,0,0.9,0));wb.add(bx(1.9,0.85,0.7,dark,0,0.45,0));wb.add(bx(0.4,0.3,0.3,steel,-0.6,1.1,0));wb.add(bx(0.6,0.04,0.3,amber,0.4,0.95,0));g.add(wb);INT.props.push({x:x4,z:z4,w:0.9,d:0.9});INT.bench={x:x4*0.85,z:z4*0.85}}
   buildAirlock(g);
   g.traverse(o=>{if(o.isMesh){o.castShadow=false}});
   g.visible=!!P.inside;scene.add(g);INT.g=g;
@@ -93,7 +102,7 @@ function enterHabitat(){
     INT.g.visible=true;setOutfit(astro,true);if(!S.flags.habCheck)habitatCheck();fade(false)},350)})},450);
 }
 function exitHabitat(){
-  if(!P.inside||game.cine)return;closeJournal();fade(true,'');
+  if(!P.inside||game.cine)return;closeJournal();$('#habcol').classList.add('hidden');if(typeof closeCreator==='function')closeCreator();fade(true,'');
   setTimeout(()=>{fade(false);airlockRun('out',()=>{fade(true,'Opening the outer hatch…');SFX.hiss();setTimeout(()=>{P.inside=false;INT.g.visible=false;setOutfit(astro,false);const o=P.outPos||airlockPos(home());P.pos.set(o.x,groundHeight(o.x,o.z),o.z);P.vel.set(0,0,0);P.lastG=undefined;P.onGround=true;cam.zoom=1;game.camSnap=true;fade(false)},450)})},350);
 }
 /* ---------- the airlock: a short, skippable sequence each way ---------- */
@@ -109,7 +118,7 @@ function buildAirlock(g){
   for(const[x,z]of[[-1.2,-1.2],[1.2,-1.2],[-1.2,1.2],[1.2,1.2]])a.add(cy(0.07,0.1,0.18,10,jet,x,2.8,z));
   const L=new THREE.PointLight(0xe8f4ff,14,9,1.6);L.position.set(0,2.6,0);a.add(L);
   INT.al={g:a,red,green,jet}}
-function airlockUI(on){let el=$('#alov');if(!el){el=document.createElement('div');el.id='alov';el.className='hidden';el.innerHTML='<div class="alcard"><div class="alstep" id="al-step"></div><h3 id="al-t"></h3><p id="al-b"></p><div class="algauge"><i id="al-g"></i></div><div class="alrow"><span id="al-p"></span><button class="btn sm" id="al-skip">Skip</button></div></div>';document.body.appendChild(el);
+function airlockUI(on){let el=$('#alov');if(!el){el=document.createElement('div');el.id='alov';el.className='hidden';el.innerHTML='<div class="alcard"><div class="alstep" id="al-step"></div><h3 id="al-t"></h3><p id="al-b"></p><div class="algauge"><i id="al-g"></i></div><div class="alrow"><span id="al-p"></span><button class="btn sm" id="al-skip">Skip <kbd>Space</kbd></button></div></div>';document.body.appendChild(el);
     el.querySelector('#al-skip').onclick=()=>{if(game.cine)game.cine.skip()}}el.classList.toggle('hidden',!on)}
 addEventListener('keydown',e=>{if(game.cine&&(e.key===' '||e.key==='Enter'||e.key==='Escape')){e.preventDefault();e.stopImmediatePropagation();game.cine.skip()}},true);
 function airlockRun(dir,done){
@@ -153,6 +162,8 @@ function interiorInteract(hints){
   if(dDesk<1.7){if(!INT.nearDesk){INT.nearDesk=true;openJournal()}hints.unshift('<span class="key">F</span>Open your journal')}else if(dDesk>2.6)INT.nearDesk=false;
   if(dBed<2.2){const t=tod(),night=t>19.5||t<5.5;hints.unshift(night?'<span class="key">F</span>Sleep until morning':'<span class="key">F</span>Rest (you can only sleep through the night)')}
   if(dDoor<1.5)hints.unshift('<span class="key">F</span>Go outside');
+  if(Math.hypot(lx-INT.galley.x,lz-INT.galley.z)<1.6)hints.unshift('<span class="key">F</span>Eat and drink (uses colony food and water)');
+  if(INT.bench&&Math.hypot(lx-INT.bench.x,lz-INT.bench.z)<1.8)hints.unshift('<span class="key">F</span>Workbench: craft fabricator items at home');
   const dW=Math.hypot(lx-INT.wardrobe.x,lz-INT.wardrobe.z);if(dW<1.5){if(!INT.nearW){INT.nearW=true;openCreator()}hints.unshift('<span class="key">F</span>Change your look')}else if(dW>2.4)INT.nearW=false;
   if(Math.hypot(lx,lz-0.4)<2.0)hints.unshift('<span class="key">F</span>Open the holo-map');
   if(Math.hypot(lx-INT.panel.x,lz-INT.panel.z)<1.2)hints.unshift('<span class="key">F</span>Room colours');
@@ -164,6 +175,8 @@ function interiorPressF(){
   if(Math.hypot(lx-INT.door.x,lz-INT.door.z)<1.5){exitHabitat();return true}
   if(Math.hypot(lx-INT.desk.x,lz-INT.desk.z)<1.7){openJournal();return true}
   if(Math.hypot(lx-INT.bed.x,lz-INT.bed.z)<2.2){trySleep();return true}
+  if(Math.hypot(lx-INT.galley.x,lz-INT.galley.z)<1.6){eatMeal();return true}
+  if(INT.bench&&Math.hypot(lx-INT.bench.x,lz-INT.bench.z)<1.8){openMenu('inv');invUI.tab='craft';refreshInvUI();return true}
   if(Math.hypot(lx-INT.wardrobe.x,lz-INT.wardrobe.z)<1.5){openCreator();return true}
   if(Math.hypot(lx-INT.panel.x,lz-INT.panel.z)<1.2){openHabCols();return true}
   if(Math.hypot(lx,lz-0.4)<2.0){togglePanel('mapov');return true}
@@ -230,6 +243,17 @@ const HAB_DEF={floor:'#2f343c',stripe:'#5fe8ff',trim:'#ffb35c'};
 const HAB_OPTS=[['floor','Floor',['#2f343c','#4a4f58','#6b5a4a','#8a6a4a','#c9c3bb','#1f3a4a','#3a2f4a','#2f4a3a']],['stripe','Light strips',['#5fe8ff','#7fe6a0','#ff8fd0','#b28cff','#ffd34d','#ffffff','#ff6a4d','#4f86f7']],['trim','Trim lights',['#ffb35c','#ff6a4d','#5fe8ff','#ffd34d','#7fe6a0','#ff8fd0','#ffffff','#b28cff']]];
 function habCols(){const c={...HAB_DEF};const h=typeof S!=='undefined'&&S&&S.habCol;if(h&&typeof h==='object')for(const k in HAB_DEF)if(typeof h[k]==='string'&&/^#[0-9a-f]{6}$/i.test(h[k]))c[k]=h[k];return c}
 function applyHabCols(){if(!INT.mats)return;const c=habCols();INT.mats.floor.color.set(c.floor);for(const k of['stripe','trim']){INT.mats[k].color.set(c[k]);INT.mats[k].emissive.set(c[k])}if(INT.mats.screen)INT.mats.screen.emissive.set(c.stripe)}
-function openHabCols(){const c=habCols();$('#habcolbody').innerHTML=HAB_OPTS.map(([k,l,v])=>`<div class="crrow"><div class="sub">${l}</div><div class="sw">${v.map(x=>`<button data-hc="${k}" data-v="${x}" style="background:${x}" class="${c[k]===x?'on':''}"></button>`).join('')}</div></div>`).join('')+'<p class="sub">The walls stay white so the dome stays bright.</p>';$('#habcol').classList.remove('hidden')}
+function openHabCols(){const c=habCols();$('#habcolbody').innerHTML=HAB_OPTS.map(([k,l,v])=>`<div class="crrow"><div class="sub">${l}</div><div class="sw">${v.map(x=>`<button data-hc="${k}" data-v="${x}" style="background:${x}" class="${c[k]===x?'on':''}"></button>`).join('')}</div></div>`).join('')+'<p class="sub">The walls stay white so the dome stays bright.</p>'+habExpandHTML();$('#habcol').classList.remove('hidden')}
 $('#habcol').addEventListener('click',e=>{const b=e.target.closest('[data-hc]');if(b){S.habCol={...habCols(),[b.dataset.hc]:b.dataset.v};applyHabCols();openHabCols();if(net.role==='host')net.snapDirty=true;return}
+  if(e.target.id==='hc-expand'){habExpand();return}
   if(e.target.id==='hc-reset'){S.habCol={...HAB_DEF};applyHabCols();openHabCols();return}if(e.target.id==='hc-x'||e.target.id==='hc-done'||e.target.id==='habcol')$('#habcol').classList.add('hidden')});
+
+/* ---------- eating, and expanding your home ---------- */
+function eatMeal(){if(S.mode!=='sandbox'&&(S.res.food<0.6||S.res.water<2)){toast('The colony is out of food or water: grow more in a greenhouse or drill for ice','bad');return}
+  if(S.mode!=='sandbox'){S.res.food-=0.6;S.res.water-=2}P.food=100;P.water=100;toast('You eat a hot meal and drink your fill','good');sfx(0.3,600,1,0.06,'bandpass')}
+const HAB_LV=[null,null,{cost:{brick:20,plate:10,glass:6},gain:'A bigger dome, a hydroponic grow bay (+2.4 kg food per sol) and spare bunks'},{cost:{brick:30,tiplate:6,glass:10,circuit:4},gain:'An even bigger dome, a water recycler (+12 L water per sol) and a workbench for fabricator crafting at home'}];
+function habExpandHTML(){const lv=S.habLv||1;if(lv>=3)return'<div class="sec">Your home</div><p class="sub">Fully expanded: grow bay, water recycler and workbench.</p>';const nx=HAB_LV[lv+1],cost=Object.entries(nx.cost).map(([k,n])=>`${n} ${ITEMS[k].name}`).join(', ');
+  return`<div class="sec">Expand your home (level ${lv} → ${lv+1})</div><p class="sub">${nx.gain}.<br>Costs ${cost} (from your pack and colony storage).</p><button class="btn primary" id="hc-expand">Expand the habitat</button>`}
+function habExpand(){const lv=S.habLv||1;if(lv>=3)return;const nx=HAB_LV[lv+1];
+  if(S.mode!=='sandbox'){if(!haveAll(ME,nx.cost,true)){toast('Missing: '+missingText(ME,nx.cost,true),'warn');return}payAll(ME,nx.cost,true)}
+  S.habLv=lv+1;buildInterior();applyHabCols();INT.g.visible=!!P.inside;fade(true,'Expanding the habitat…');setTimeout(()=>fade(false),700);toast(`Habitat expanded to level ${S.habLv}!`,'good');openHabCols();if(net.role==='host')net.snapDirty=true}

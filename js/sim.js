@@ -36,23 +36,24 @@ function simTick(h){
   // resources (per game hour)
   let o2=0,water=0,food=0,mat=0;
   const habOK=blds.some(b=>b.type==='habitat'&&b.progress>=1&&b.powered);
-  for(const b of cons){if(!b.powered)continue;
+  for(const b of cons){if(!b.powered||(b.buried||0)>0.5)continue;          // buried by a storm: dig it out first
     if(b.type==='moxie')o2+=0.25*(s.research.has('moxie2')?1.8:1);
-    else if(b.type==='drill')water+=1.6;
-    else if(b.type==='greenhouse'&&s.res.water>0){water-=0.3;food+=0.2*(hasRole('Botanist')?1.15:1)}
-    else if(b.type==='regolith')mat+=2.2;
+    else if(b.type==='drill')water+=1.6*(tech('ice')?1.25:1);
+    else if(b.type==='greenhouse'&&s.res.water>0){water-=0.3;food+=0.2*(hasRole('Botanist')?1.15:1)*(tech('perchlorate')?1.15:1);if(tech('organics'))o2+=0.03}
+    else if(b.type==='regolith')mat+=2.2*(tech('clay')?1.25:1);
     else if(b.type==='atmo'){o2+=2;water+=2}
     else if(b.type==='dome')food+=1.2;
     else if(b.type==='tower')food+=0.9;
   }
+  if(habOK&&(s.habLv||1)>=2)food+=0.1;if(habOK&&(s.habLv||1)>=3)water+=0.5;   // the expanded habitat's grow bay and water recycler
   o2-=0.034*s.crew*(habOK?1:1.6);
-  water-=0.162*s.crew*(s.research.has('recycling')?0.5:1);
+  water-=0.162*s.crew*(s.research.has('recycling')?0.5:1)*(tech('sediment')?0.9:1);
   food-=0.073*s.crew;
   for(const b of blds)if(b.fault&&b.fault.kind==='leak'){if(b.fault.res==='o2')o2-=b.fault.rate;else water-=b.fault.rate}
   s.res.o2=Math.max(0,s.res.o2+o2*h);s.res.water=Math.max(0,s.res.water+water*h);s.res.food=Math.max(0,s.res.food+food*h);s.brickAcc=(s.brickAcc||0)+mat*h*0.5;while(s.brickAcc>=1){s.brickAcc-=1;slotsAdd(S.storage,'brick',1)}
   s.rates={o2,water,food,mat};
   // dust
-  const dk=(s.research.has('dustcoat')?0.4:1)*(1+storm*8)*0.06/SOL_H;
+  const dk=(s.research.has('dustcoat')?0.4:1)*(tech('dust')?0.7:1)*(1+storm*8)*0.06/SOL_H;
   for(const b of blds)if(b.type==='solar')b.dust=Math.min(1,b.dust+dk*h);
   // lab analysis
   const labs=blds.filter(b=>b.type==='lab'&&b.progress>=1&&b.powered).length;
@@ -61,7 +62,7 @@ function simTick(h){
   if(o2>=0&&water>=0&&food>=0&&!s.brownout){s.sustain+=h;if(s.sustain>=SOL_H&&!s.flags.sustained){s.flags.sustained=true}}else s.sustain=0;
   // radiation (Curiosity RAD measured ~0.64 mSv/day at the surface)
   if(cave.active){}
-  else if(P.mode==='foot'&&!nearHab(P.pos,9))s.dose+=h*(0.026+(s.spe.active?6:0));
+  else if(P.mode==='foot'&&!nearHab(P.pos,9))s.dose+=h*(0.026+(s.spe.active?6:0))*(tech('lavatube')?0.75:1);
   else if(P.mode==='rover'&&s.spe.active)s.dose+=h*1.2;
   simEvents(h);cityTick(h);
   // failure
@@ -80,7 +81,7 @@ function simEvents(h){
   }else{
     const el=s.time-s.storm.start,d=s.storm.dur;
     s.storm.level=smooth(0,1.5,el)*(1-smooth(d-1.5,d,el))*s.storm.int;
-    if(el>d){s.storm.active=false;s.storm.level=0;s.nextStorm=s.time+wxGap(SOL_H*(1.3+Math.random()*2.2));s.flags.stormWarned=false;toast('The dust storm has passed. Check your solar panels.','good')}
+    if(el>d){s.storm.active=false;if(typeof stormAftermath==='function')stormAftermath(s.storm.int);s.storm.level=0;s.nextStorm=s.time+wxGap(SOL_H*(1.3+Math.random()*2.2));s.flags.stormWarned=false;toast('The dust storm has passed. Check your solar panels.','good')}
   }
   // supply landers
   if(s.time>=s.nextSupply){

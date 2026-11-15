@@ -24,8 +24,8 @@ function serializeData(){
   const s={...S,research:[...S.research],scanned:[...S.scanned],sampled:[...S.sampled],discovered:[...S.discovered],objDone:[...S.objDone]};
   delete s.radioLog;
   return{v:SAVE_VERSION,saved:Date.now(),site:S.site,mode:S.mode,S:s,dig:[...digMap].map(([k,v])=>[k,Math.round(v*100)/100]),mined:[...minedRocks],
-    blds:blds.map(b=>({id:b.id,t:b.type,x:b.x,z:b.z,r:b.rot,p:b.progress,d:b.dust,on:b.on,f:b.fault})),
-    P:{...(P.inside&&P.outPos?{x:P.outPos.x,y:P.outPos.y,z:P.outPos.z}:{x:pp.x,y:pp.y,z:pp.z}),mode:P.mode,o2:P.o2,hp:P.hp,bat:P.bat,yaw:P.yaw,hot:P.hot},R:{x:R.pos.x,z:R.pos.z,yaw:R.yaw,bat:R.battery},cam:cam.yaw};
+    blds:blds.map(b=>({id:b.id,t:b.type,x:b.x,z:b.z,r:b.rot,p:b.progress,d:b.dust,on:b.on,f:b.fault,bu:b.buried||0})),
+    P:{...(P.inside&&P.outPos?{x:P.outPos.x,y:P.outPos.y,z:P.outPos.z}:{x:pp.x,y:pp.y,z:pp.z}),mode:P.mode,o2:P.o2,hp:P.hp,bat:P.bat,food:P.food,water:P.water,yaw:P.yaw,hot:P.hot},R:{x:R.pos.x,z:R.pos.z,yaw:R.yaw,bat:R.battery},cam:cam.yaw};
 }
 function saveGame(silent){
   if(!S||S.over||game.state!=='play'||net.role==='guest'||game.dead)return;
@@ -71,10 +71,10 @@ function loadFromData(data){
     if(S.mission!=null&&S.flags['mdone'+S.mission]){const nx=CHAPTERS.findIndex((_,j)=>!S.flags['mdone'+j]);S.mission=nx>=0?nx:null}
     if(typeof S.journal!=='string')S.journal='';S.journal=S.journal.slice(0,20000);P.inside=false;if(INT.g)INT.g.visible=false;
     S.over=false;S.storm=S.storm&&typeof S.storm==='object'?S.storm:base.storm;
-    bid=0;for(const b of data.blds)if(b&&BUILD[b.t]&&Number.isFinite(b.x)&&Number.isFinite(b.z))addBuilding(b.t,b.x,b.z,fin(b.r,0),fin(b.p,1,0,1),{id:b.id,dust:fin(b.d,0,0,1),on:b.on!==false,fault:b.f||null});
+    bid=0;for(const b of data.blds)if(b&&BUILD[b.t]&&Number.isFinite(b.x)&&Number.isFinite(b.z))addBuilding(b.t,b.x,b.z,fin(b.r,0),fin(b.p,1,0,1),{id:b.id,dust:fin(b.d,0,0,1),on:b.on!==false,fault:b.f||null,buried:fin(b.bu,0,0,1)});
     if(!blds.some(b=>b.type==='habitat'))addBuilding('habitat',0,0,0,1);
     spawnStaticLander();
-    const p=data.P;P.mode=p.mode==='rover'?'rover':'foot';P.o2=fin(p.o2,100,0,100);P.hp=fin(p.hp,100,1,200);P.bat=fin(p.bat,100,0,100);P.yaw=fin(p.yaw,0);P.hot=fin(p.hot,0,0,8)|0;
+    const p=data.P;P.mode=p.mode==='rover'?'rover':'foot';P.o2=fin(p.o2,100,0,100);P.hp=fin(p.hp,100,1,200);P.bat=fin(p.bat,100,0,100);P.food=fin(p.food,100,0,100);P.water=fin(p.water,100,0,100);P.yaw=fin(p.yaw,0);P.hot=fin(p.hot,0,0,8)|0;
     P.pos.set(p.x,0,p.z);P.pos.y=Number.isFinite(p.y)?p.y:groundHeight(p.x,p.z);P.vel.set(0,0,0);P.lastG=undefined;
     const r=data.R||{};R.pos.set(fin(r.x,-6),0,fin(r.z,17));R.pos.y=groundHeight(R.pos.x,R.pos.z);R.yaw=fin(r.yaw,0);R.battery=fin(r.bat,100,0,175);R.speed=0;R.visY=R.pos.y;R.lastG=R.pos.y;
     cam.yaw=fin(data.cam,0);

@@ -6,7 +6,7 @@
 let now=0;
 const astro=mkAstronaut();astro.visible=false;scene.add(astro);
 const rover=mkRover();rover.visible=false;rover.rotation.order='YXZ';scene.add(rover);
-const P={mode:'foot',pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,onGround:true,o2:100,phase:0,hp:100,bat:100,stam:100,stamT:0,climbing:false,hot:0};
+const P={mode:'foot',pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,onGround:true,o2:100,phase:0,hp:100,bat:100,stam:100,food:100,water:100,stamT:0,climbing:false,hot:0};
 const R={pos:new THREE.Vector3(),yaw:0,speed:0,steer:0,vy:0,vx:0,vz:0,wp:0,wr:0,wy:0,upside:false,upT:0,airRot:0,battery:100,maxBat:100,pitch:0,roll:0,cruise:false,cruiseV:0,air:false,wheel:0,lastG:0,visY:0};
 const cam={yaw:0,pitch:0.32,zoom:1,lastDrag:-10,target:new THREE.Vector3()};
 const focusPos=()=>P.mode==='foot'?P.pos:R.pos;
@@ -139,7 +139,7 @@ function updateWalker(dt,inp){
     P.vel.y-=G*dt;                                   // gravity always pulls
     if(sprint&&!buffOn('stam')){P.stam=Math.max(0,P.stam-dt*9);P.stamT=0}
   }
-  if(!climb&&!sprint){P.stamT+=dt;if(P.stamT>0.8)P.stam=Math.min(100,P.stam+dt*(P.onGround?30:8))}
+  if(!climb&&!sprint){P.stamT+=dt;if(P.stamT>0.8)P.stam=Math.min(100,P.stam+dt*(P.onGround?30:8)*(P.food<20||P.water<20?0.45:1))}   // hungry or thirsty: you tire quickly
   // environment pushes you around: storm wind, quakes
   if(typeof envPush==='function')envPush(P,dt);
   P.pos.x+=P.vel.x*dt;P.pos.z+=P.vel.z*dt;P.pos.y+=P.vel.y*dt;
@@ -356,3 +356,9 @@ function updateCamera(dt){
   const base=clamp(+OPT.fov||60,50,100),dyn=OPT.fovAuto!==false,fov=base+(dyn?(rv?Math.min(14,Math.abs(R.speed)*0.7):P.mode==='foot'&&Math.hypot(P.vel.x,P.vel.z)>6.5?5:0):0);
   if(Math.abs(camera.fov-fov)>0.05){camera.fov=lerp(camera.fov,fov,damp(3,dt));camera.updateProjectionMatrix()}
 }
+/* ---------- food and water: you need to eat and drink (the colony's supplies keep you going) ---------- */
+function tickNeeds(dt){
+  if(!S||S.mode==='sandbox'||game.dead||game.state!=='play')return;
+  const sol=SOL_REAL||1200;P.water=Math.max(0,P.water-dt*100/(sol*2.0));P.food=Math.max(0,P.food-dt*100/(sol*3.0));
+  if(P.water<=0||P.food<=0){hurt(dt*0.6,P.water<=0?'thirst':'hunger');if(now-(game.needT||-99)>25){game.needT=now;toast(P.water<=0?'You’re dehydrated: drink at the habitat galley or use a Water Pouch':'You’re starving: eat at the habitat galley or use a Ration Pack','bad')}}
+  else if((P.water<20||P.food<20)&&now-(game.needT||-99)>60){game.needT=now;toast(`You’re getting ${P.water<20?'thirsty':'hungry'}: eat and drink at the habitat galley`,'warn')}}

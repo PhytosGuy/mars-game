@@ -28,6 +28,8 @@ const ITEMS={
   o2can:{name:'Oxygen Canister',stack:8,icon:'canister',c:'#7fd3ff',c2:'#2b5f8a',use:'o2',desc:'Use to refill 50% suit oxygen.'},
   cell:{name:'Power Cell',stack:8,icon:'cell',c:'#ffd34d',c2:'#3a3532',use:'battery',desc:'Use to recharge 60% suit battery. Lumari value these highly.'},
   patch:{name:'Suit Patch Kit',stack:8,icon:'kit',c:'#ff8fb1',c2:'#ffffff',use:'heal',desc:'Use to repair 40% suit integrity.'},
+  ration:{name:'Ration Pack',stack:8,icon:'kit',c:'#c9a227',c2:'#5d4a2a',use:'eat',desc:'Freeze-dried colony food. Use to fill your food meter by 60%.'},
+  waterpouch:{name:'Water Pouch',stack:8,icon:'vial',c:'#6fb6ff',c2:'#ffffff',use:'drink',desc:'Recycled water. Use to fill your water meter by 60%.'},
   flare:{name:'Flare',stack:16,icon:'flare',c:'#ff6a4d',c2:'#ffd34d',use:'flare',desc:'Throw a bright flare. Lights caves and scares off Stalkers and Skitters.'},
   lamp:{name:'Field Lamp',stack:8,icon:'lamp',c:'#fff1c2',c2:'#5d5753',use:'lamp',desc:'Place a lasting light on the ground.'},
   // boosts dropped by creatures (use for a timed effect)
@@ -59,6 +61,8 @@ const RECIPES=[
   {id:'glass',out:['glass',1],in:{silica:2},st:'base'},
   {id:'circuit',out:['circuit',1],in:{plate:1,glass:1},st:'base'},
   {id:'tiplate',out:['tiplate',1],in:{titanium:2},st:'fab'},
+  {id:'ration',out:['ration',2],in:{},colony:{food:1.2},st:'base'},
+  {id:'waterpouch',out:['waterpouch',2],in:{},colony:{water:4},st:'base'},
   {id:'flare',out:['flare',3],in:{silica:1,regolith:2},st:'suit'},
   {id:'o2can',out:['o2can',1],in:{plate:1},colony:{o2:3},st:'base'},
   {id:'cell',out:['cell',2],in:{plate:1,circuit:1},st:'base'},
@@ -117,7 +121,7 @@ function haveAll(pid,costs,useStore){const inv=invOf(pid);for(const id in costs)
 function payAll(pid,costs,useStore){const inv=invOf(pid);for(const id in costs){let left=slotsTake(inv,id,costs[id]);if(left>0&&useStore)slotsTake(S.storage,id,left)}}
 function missingText(pid,costs,useStore){const inv=invOf(pid),m=[];for(const id in costs){const have=slotsCount(inv,id)+(useStore?slotsCount(S.storage,id):0);if(have<costs[id])m.push(`${costs[id]-have} ${ITEMS[id].name}`)}return m.join(', ')}
 // give items to a player; overflow goes to colony storage near base, otherwise drops at their feet
-function giveItem(pid,id,n,meta){
+function giveItem(pid,id,n,meta){if((id==='nickel'||id==='fragment')&&typeof unlockTech==='function')unlockTech('meteoric');
   const inv=invOf(pid);if(!inv)return 0;let left=slotsAdd(inv,id,n,meta,0);
   if(left>0&&nearBase(pid))left=slotsAdd(S.storage,id,left,meta);
   if(left>0){const p=posOf(pid);spawnPickup(id,left,meta,p.x,(p.y||0)+1,p.z)}
@@ -164,7 +168,7 @@ function applyAct(pid,a,predict){
       const times=clamp(Math.floor(a.n||1),1,64);let done=0;
       for(let k=0;k<times;k++){const sb=S.mode==='sandbox';const useSto=nearBase(pid);
         if(!sb&&!haveAll(pid,r.in,useSto)){if(!done)return fail('Missing: '+missingText(pid,r.in,useSto));break}
-        if(r.colony&&!sb){let ok=true;for(const k2 in r.colony)if((S.res[k2]||0)<r.colony[k2])ok=false;if(!ok){if(!done)return fail('The colony is low on oxygen');break}for(const k2 in r.colony)S.res[k2]-=r.colony[k2]}
+        if(r.colony&&!sb){let ok=true;for(const k2 in r.colony)if((S.res[k2]||0)<r.colony[k2])ok=false;if(!ok){if(!done)return fail('The colony is low on '+Object.keys(r.colony).map(k=>k==='o2'?'oxygen':k).join(' and '));break}for(const k2 in r.colony)S.res[k2]-=r.colony[k2]}
         if(!sb)payAll(pid,r.in,useSto);
         if(!slotsFree(inv,r.out[0],r.out[1])&&!predict){const p=posOf(pid);spawnPickup(r.out[0],r.out[1],null,p.x,(p.y||0)+1,p.z)}else slotsAdd(inv,r.out[0],r.out[1]);
         done++;}
@@ -196,6 +200,8 @@ function playerUps(pid){if(!pid||pid===ME){S.ups=S.ups||{};return S.ups}const g=
 function useEffect(id,a){
   const d=ITEMS[id];
   switch(d.use){
+    case'eat':P.food=Math.min(100,P.food+60);toast('That hit the spot','good');break;
+    case'drink':P.water=Math.min(100,P.water+60);toast('Refreshing','good');break;
     case'o2':P.o2=Math.min(100,P.o2+50);toast('Suit oxygen refilled','good');sfx(0.5,2400,0.8,0.05,'bandpass',0,600);break;
     case'battery':P.bat=Math.min(100,P.bat+60);toast('Suit battery recharged','good');beep(880,0.08);beep(1320,0.1,'sine',0.05,0.08);break;
     case'heal':P.hp=Math.min(maxHP(),P.hp+40);toast('Suit integrity repaired','good');break;
@@ -217,9 +223,9 @@ let buffSig='';
 function renderBuffs(force){const el=$('#buffs');if(!el)return;const list=P.buffs?Object.keys(P.buffs).filter(k=>P.buffs[k]>0):[];
   const sig=list.map(k=>k+Math.ceil(P.buffs[k])).join();if(!force&&sig===buffSig)return;buffSig=sig;
   el.innerHTML=list.map(k=>{const s=Math.ceil(P.buffs[k]);return`<div class="bf${s<=8?' low':''}" style="--bc:${BUFFS[k].col}"><img src="${iconURL(BUFFS[k].item)}" alt="">${BUFFS[k].name} ${s}s</div>`}).join('')}
-const maxHP=()=>100+((S.ups&&S.ups.u_armor)?50:0);
+const maxHP=()=>100+((S.ups&&S.ups.u_armor)?50:0)+(typeof tech==='function'&&tech('basalt')?15:0);
 const o2Mult=()=>(S.ups&&S.ups.u_tank)?1/1.6:1;
-const batMult=()=>(S.ups&&S.ups.u_battery)?1/1.6:1;
+const batMult=()=>((S.ups&&S.ups.u_battery)?1/1.6:1)*(typeof tech==='function'&&tech('crystal')?0.8:1);
 
 /* ---------- world pickups (dropped items) ---------- */
 const pickups=new Map();let pickN=1;

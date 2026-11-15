@@ -67,6 +67,18 @@ Tab: open the menu on Inventory, Tab again for the next page (Shift+Tab goes bac
 - **Onboarding:** a guided tour of the screen and controls the first time you land. Skip (bottom right) ends it, and Settings → Replay the tour shows it again.
 - **Touch controls:** a rounded block-style joystick and buttons, sized and spaced for phones.
 
+## New in 4.2
+- **Landing:** starts in orbit above Mars, then you ride down in a detailed cockpit with a big window and two live screens: a LIDAR terrain scan and a chase camera with flight statistics. After touchdown you turn round, the hatch opens and you walk down the lander's own stairs (the same lander that stays at your base). Space skips every sequence.
+- **Pip, your robot companion:** fetches nearby items, helps you drill (35% faster), lights the way and warns you about danger.
+- **Deep caves:** depth zones as you descend, and caves deeper than 30 m hide a glowing crystal vault with rare rewards.
+- **Survival needs:** food and water meters (eat at the habitat galley, or carry Ration Packs and Water Pouches). Expand your habitat twice: a bigger dome with a grow bay, spare bunks, a water recycler and a workbench.
+- **Lasting disasters:** storms bury remote equipment (dig it out with F) and uncover new ore; quakes can seal cave entrances with rubble. Storms now roll in as a visible wall of dust; dust devils are gentler and dust-orange.
+- **Aliens remember you:** reputation tiers (Hostile to Kin), memories of gifts, harm and past meetings, translations once you know half their words, and consequences: allies give gifts, cheaper trades, storm warnings and protection; hostile species throw stones.
+- **Discoveries become technology:** scanning and analysing on Mars unlocks practical upgrades (better crops, water, materials, dust shields, armour, radiation shielding, batteries, faster drills, faster language learning).
+- **Mission Lab science:** launch windows from JPL planetary elements; Hohmann transfer time, phase angle, Δv and C3 calculated from Kepler's laws; ✓ marks calculated or NASA values, ≈ marks game estimates; sources listed.
+- **Phones and slow devices:** smaller, contextual touch buttons, and Auto/High/Medium/Low graphics with automatic resolution and shadow scaling.
+- **Supabase:** run `supabase-security-fix.sql` to lock friendship records (only the recipient can accept, and nobody can change who sent or received a request).
+
 ## New in 4.0
 - **Landing sequence:** your first landing is flown from the lander’s window. Entry, parachute and heat-shield release are automatic (like a real Mars landing); you fly the powered descent with a throttle lever (drag it, or W/S / arrow keys). Touch down under 3 m/s.
 - **Airlock:** entering or leaving the habitat runs a short airlock cycle (pressure gauge, dust shower, suit on/off). Inside you wear your everyday clothes.

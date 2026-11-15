@@ -29,6 +29,7 @@ function renderColony(){
       h+=`<tr><td>${d.name}</td><td>${list.length}</td><td>${d.power?d.power+' kW':(t==='solar'?'+2.5 kW peak':t==='reactor'?'+10 kW':'–')}</td><td>${st}</td><td>${d.power>0&&t!=='habitat'?`<span class="tog ${off?'off':''}" data-toggle="${t}">${off?'OFF':'ON'}</span>`:''}</td></tr>`}
     h+=`</table></div></div>`;
   }else if(colTab==='research'){
+    h+=`<div class="sec">From your discoveries</div><p class="sub" style="text-transform:none;letter-spacing:0;font-size:13px">Exploring and doing science on Mars unlocks practical technology on its own.</p><div class="rgrid">${Object.entries(DISCO_TECH).map(([k,T])=>`<div class="rcard ${tech(k)?'done':''}"><div class="sub">Discovery</div><h4>${T.name}</h4><p>${T.effect}</p>${tech(k)?'<span class="pos" style="font-size:12px;font-weight:600">✓ In use</span>':`<span class="sub" style="text-transform:none">🔍 Unlock by ${T.from}</span>`}</div>`).join('')}</div><div class="sec">Research projects</div>`;
     h+=`<p class="sub" style="text-transform:none;letter-spacing:0;font-size:13px">Research points: <b style="color:#c69bff">${Math.floor(S.res.rp)}</b>. Earn them by scanning points of interest and analysing samples in a lab.</p><div class="rgrid">`;
     for(const r of RESEARCH){const done=S.research.has(r.id),ok=!r.req||r.req();
       h+=`<div class="rcard ${done?'done':''}"><div class="sub">${r.branch}</div><h4>${r.name}</h4><p>${r.desc}</p>`+

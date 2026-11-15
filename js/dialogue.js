@@ -25,6 +25,7 @@ const comprehension=sp=>Math.round((S.lang[sp]||[]).length/WORDS.length*100);
 const hasDecoder=()=>slotsCount(S.inv,'decoder')>0;
 function lineHTML(sp,words){return words.map(w=>{const k=knows(sp,w);return`<span class="gw${k?' known':''}">${glyph(sp,w)}<i>${k?esc(w):hasDecoder()?esc(w)+'?':'···'}</i></span>`}).join('')}
 function learnWords(sp,n,specific){
+  if(typeof tech==='function'&&tech('xeno')&&!specific)n+=1;
   S.lang[sp]=S.lang[sp]||[];const before=S.lang[sp].length;
   const pool=specific?specific.filter(w=>WORDS.includes(w)&&!knows(sp,w)):WORDS.filter(w=>!knows(sp,w)).sort(()=>Math.random()-0.5);
   const add=pool.slice(0,n);if(!add.length)return 0;act({a:'learn',sp,w:add});
@@ -37,11 +38,11 @@ function talkTarget(pid,id){const c=creatures.get(id);const p=posOf(pid);if(!c||
 ACT.greet=(pid,a,predict)=>{const c=talkTarget(pid,a.id);if(!c)return false;if(predict)return true;S.greeted=S.greeted||{};if(S.greeted[c.id]!==solNum()){S.greeted[c.id]=solNum();S.rep[c.sp]=Math.min(100,(S.rep[c.sp]||0)+3)}c.waveBack=2;c.pulse=2;return true};
 ACT.gift=(pid,a,predict)=>{const c=talkTarget(pid,a.id);if(!c)return false;const inv=invOf(pid),s=inv[a.slot];if(!s||ITEMS[s.id].dur)return false;
   const item=s.id;s.n--;if(s.n<=0)inv[a.slot]=null;if(predict)return true;
-  const sc=(GIFT_PREF[c.sp]||{})[item]??1;S.rep[c.sp]=clamp((S.rep[c.sp]||0)+sc,-100,100);
+  const sc=(GIFT_PREF[c.sp]||{})[item]??1;S.rep[c.sp]=clamp((S.rep[c.sp]||0)+sc,-100,100);const mm=amem(c.sp);mm.gifts[item]=(mm.gifts[item]||0)+1;if(sc<0)mm.bad=(mm.bad||0)+1;
   S.gifts=S.gifts||{};const back=sc>=5&&!S.gifts[c.sp+item];if(back){S.gifts[c.sp+item]=1;giveItem(pid,c.sp==='lumari'?'crystal':'tablet',1)}
   if(pid!==ME&&pid)netInvDirty(pid);return{sc,back}};
 ACT.trade=(pid,a,predict,local,fail)=>{const c=talkTarget(pid,a.id);if(!c)return false;const o=(TRADES[c.sp]||[])[a.i];if(!o)return false;if((S.rep[c.sp]||0)<15)return fail('They don’t trust you enough to trade');
-  if(!haveAll(pid,o.give,false))return fail('You don’t have: '+missingText(pid,o.give,false));payAll(pid,o.give,false);if(predict)return true;
+  const give=tradeCost(c.sp,o.give);if(!haveAll(pid,give,false))return fail('You don’t have: '+missingText(pid,give,false));payAll(pid,give,false);if(predict)return true;
   for(const id in o.get)giveItem(pid,id,o.get[id]);S.rep[c.sp]=Math.min(100,(S.rep[c.sp]||0)+1);return true};
 function hiddenPlaceNear(x,z){let best=null,bd=1e9;
   for(const L of landmarksNear(x,z,1500)){const st=S.landmarks[L.id];if(st&&st.seen)continue;const d=Math.hypot(L.x-x,L.z-z);if(d<bd){bd=d;best={x:L.x,z:L.z,id:L.id,kind:LM_INFO[L.type].label,lm:true}}}
@@ -60,10 +61,11 @@ function alienInteract(hints){if(game.dialogue)return null;const c=nearestTalker
 function alienPressF(){if(game.dialogue)return true;const c=nearestTalker();if(!c||c.fear>0||(S.rep[c.sp]||0)<-20)return false;openDialogue(c);return true}
 function openDialogue(c){
   game.dialogue=c;dlg.c=c;dlg.mode='main';c.talking=true;S.met=S.met||{};
-  const first=!S.met[c.sp];S.met[c.sp]=true;
+  const first=!S.met[c.sp];S.met[c.sp]=true;if(first&&typeof unlockTech==='function')unlockTech('xeno');const mm=amem(c.sp),gap=mm.lastSol!=null?solNum()-mm.lastSol:0;mm.meets++;dlg.mem=memoryLine(c.sp,gap,first);mm.lastSol=solNum();
   if(first){card(`First contact: ${SPECIES[c.sp].name}`,'New species',SPECIES[c.sp].desc+' Their language is unknown, but every exchange teaches you a little. Glyph Tablets and the Xeno Decoder help.',SP_TALK[c.sp].color);SFX.radio();
     crewSay('Planetary Scientist',`First contact with the ${SPECIES[c.sp].name}! Be patient. Learn their words, and offer things they value.`)}
   const rep=S.rep[c.sp]||0;say(rep>=30?['greet','friend','star']:rep>=10?['greet','star','you']:['star','you','near'],'greet');
+  if((S.rep[c.sp]||0)>=60&&mm.giftSol!==solNum()){mm.giftSol=solNum();const g=c.sp==='lumari'?{cell:1,resonite:1}:{titanium:2,crystal:1};for(const id in g)giveItem(ME,id,g[id]);dlg.mem+=` As one of their kin, they press a gift into your hands: ${Object.entries(g).map(([k,n])=>n+' '+ITEMS[k].name).join(' and ')}.`}
   $('#dlg').classList.remove('hidden');renderDialogue();alienVoice(c.sp,3);
 }
 function closeDialogue(){if(dlg.c)dlg.c.talking=false;game.dialogue=null;dlg.c=null;$('#dlg').classList.add('hidden')}
@@ -88,7 +90,7 @@ function renderDialogue(){
     const items=S.inv.map((s,i)=>s&&!ITEMS[s.id].dur?`<button class="gift" data-gift="${i}"><img src="${iconURL(s.id)}" alt=""><span>${esc(ITEMS[s.id].name)} ×${s.n}</span></button>`:'').join('');
     opts=`<div class="giftgrid">${items||'<span class="sub">You have nothing to give.</span>'}</div><button class="btn sm" data-d="back">Back</button>`;
   }else if(dlg.mode==='trade'){
-    opts=TRADES[sp].map((o,i)=>{const can=haveAll(ME,o.give,false);const f=(m)=>Object.entries(m).map(([id,n])=>`<img src="${iconURL(id)}" alt="">${n} ${esc(ITEMS[id].name)}`).join(' + ');
+    opts=TRADES[sp].map((o0,i)=>{const o={...o0,give:tradeCost(sp,o0.give)};const can=haveAll(ME,o.give,false);const f=(m)=>Object.entries(m).map(([id,n])=>`<img src="${iconURL(id)}" alt="">${n} ${esc(ITEMS[id].name)}`).join(' + ');
       return`<button class="dopt trade" data-trade="${i}" ${can?'':'disabled'}>${f(o.give)} <b>→</b> ${f(o.get)}</button>`}).join('')+`<button class="btn sm" data-d="back">Back</button>`;
   }else{
     const o=[['greet','👋 Wave hello'],['gift','🎁 Offer a gift']];
@@ -99,8 +101,8 @@ function renderDialogue(){
     o.push(['bye','Leave']);
     opts=o.map(([k,l])=>`<button class="dopt" data-d="${k}">${l}</button>`).join('');
   }
-  $('#dlg').innerHTML=`<div class="dhead"><b style="color:${SP_TALK[sp].color}">${S_.name}</b><span class="sub">Trust <i class="rep"><i style="width:${(rep+100)/2}%"></i></i> ${rep>=30?'friendly':rep>=10?'warming up':rep>=-20?'cautious':'hostile'} · Language ${comprehension(sp)}%</span></div>
-    <div class="dline">${lineHTML(sp,dlg.line)}</div>${dlg.note?`<div class="dnote">${dlg.note}</div>`:''}<div class="dopts">${opts}</div>`;
+  $('#dlg').innerHTML=`<div class="dhead"><b style="color:${SP_TALK[sp].color}">${S_.name}</b><span class="sub">Trust <i class="rep"><i style="width:${(rep+100)/2}%"></i></i> ${repTier(rep).name} · Language ${comprehension(sp)}%</span></div>
+    ${dlg.mem?`<div class="dmem">${dlg.mem}</div>`:''}<div class="dline">${lineHTML(sp,dlg.line)}</div>${comprehension(sp)>=50?`<div class="dtrans">“${dlg.line.map(w=>w).join(' ')}”</div>`:''}${dlg.note?`<div class="dnote">${dlg.note}</div>`:''}<div class="dopts">${opts}</div>`;
 }
 $('#dlg').addEventListener('mousedown',e=>{
   const c=dlg.c;if(!c)return;const b=e.target.closest('[data-d],[data-gift],[data-trade]');if(!b||b.disabled)return;e.preventDefault();
@@ -136,3 +138,32 @@ function dialogueTick(dt){
     else{const a=Math.atan2(c.x-P.pos.x,c.z-P.pos.z);P.yaw=lerpA(P.yaw,a,damp(4,dt));astro.rotation.y=P.yaw;cam.yaw=lerpA(cam.yaw,a+0.6,damp(2,dt))}}
   if(S.research.has('xenoling')&&!S.flags.xenoDone&&net.role!=='guest'){S.flags.xenoDone=true;for(const sp of['tharrak','lumari'])if(S.met&&S.met[sp])learnWords(sp,6);toast('Xenolinguistics: new words learned','good')}
 }
+
+/* ---------- memory, reputation tiers and their consequences ---------- */
+const REP_TIERS=[[-101,'Hostile','They want you gone. Stay away from their homes.'],[-20,'Wary','They watch you closely and won’t trade.'],[0,'Neutral','Curious, but careful.'],[15,'Friendly','They’ll trade with you.'],[30,'Trusted','They share secrets and warn you of storms.'],[60,'Kin','They treat you as family: gifts, help and better trades.']];
+function repTier(rep){let t=REP_TIERS[0];for(const x of REP_TIERS)if(rep>=x[0])t=x;return{name:t[1],desc:t[2]}}
+function amem(sp){S.amem=S.amem||{};return S.amem[sp]=S.amem[sp]||{meets:0,gifts:{},hurt:0,lastSol:null}}
+function memoryLine(sp,gap,first){const m=amem(sp),rep=S.rep[sp]||0,nm=SPECIES[sp].name;if(first)return'';
+  const fav=Object.entries(m.gifts).sort((a,b)=>b[1]-a[1])[0];const parts=[];
+  if(m.hurt>0&&rep<10)parts.push(`They remember that you hurt one of the ${nm} and keep their distance.`);
+  else if(fav&&(GIFT_PREF[sp]||{})[fav[0]]>=4)parts.push(`They remember the ${ITEMS[fav[0]].name}${fav[1]>1?` you have brought them ${fav[1]} times`:' you brought'}, and hum warmly.`);
+  else if(m.bad)parts.push('They still seem wary of the gift that upset them.');
+  if(gap>=3)parts.push(`It has been ${gap} sols since you last met; they seem ${rep>=15?'glad':'surprised'} to see you.`);
+  else if(m.meets>8&&rep>=15)parts.push('You have met many times now; they greet you like an old friend.');
+  return parts.join(' ')}
+// friends of yours trade for less
+function tradeCost(sp,give){if((S.rep[sp]||0)<50)return give;const o={};for(const k in give)o[k]=Math.max(1,give[k]-1);return o}
+// consequences out in the world (host decides; checked every few seconds)
+function alienConsequences(){
+  if(!S||game.state!=='play'||net.role==='guest'||typeof creatures==='undefined')return;
+  for(const sp of['tharrak','lumari']){const rep=S.rep[sp]||0,near=[...creatures.values()].filter(c=>c.sp===sp&&!c.gone&&Math.hypot(c.x-P.pos.x,c.z-P.pos.z)<40);
+    if(!near.length)continue;
+    // allies drive hostile creatures away from you
+    if(rep>=50)for(const h of creatures.values()){if(h.gone||SPECIES[h.sp].kind!=='hostile')continue;if(Math.hypot(h.x-P.pos.x,h.z-P.pos.z)<25){h.fear=Math.max(h.fear||0,12);h.target=null;if(now-(game.allyT||-99)>40){game.allyT=now;radio(SPECIES[sp].name,`The ${SPECIES[sp].name} rush in and drive the ${SPECIES[h.sp].name} away from you!`,'sys')}}}
+    // a hostile species pelts you with stones near their homes
+    if(rep<=-40&&!P.inside&&P.mode==='foot'&&near.some(c=>Math.hypot(c.x-P.pos.x,c.z-P.pos.z)<22)&&now-(game.stoneT||-99)>4){game.stoneT=now;hurt(3,'creature');if(now-(game.stoneMsgT||-99)>30){game.stoneMsgT=now;toast(`The ${SPECIES[sp].name} hurl stones at you! Win back their trust with gifts.`,'bad')}}}
+  // trusted friends warn you of storms even without a weather station
+  if(!S.storm.active&&S.time>=S.nextStorm-4&&!S.flags.allyStormWarn&&!count('weather')){const sp=['tharrak','lumari'].find(k=>(S.rep[k]||0)>=30);
+    if(sp){S.flags.allyStormWarn=true;toast(`The ${SPECIES[sp].name} point at the horizon and hide: a dust storm is coming within a few hours.`,'warn');beep(520,0.2,'square',0.05)}}
+  if(S.storm.active)S.flags.allyStormWarn=false}
+setInterval(alienConsequences,2000);

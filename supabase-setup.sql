@@ -24,7 +24,8 @@ create table public.friendships (
 alter table public.friendships enable row level security;
 create policy "see own friendships" on public.friendships for select to authenticated using (auth.uid() in (requester, addressee));
 create policy "send requests" on public.friendships for insert to authenticated with check (auth.uid() = requester and status = 'pending');
-create policy "accept requests sent to me" on public.friendships for update to authenticated using (auth.uid() = addressee) with check (auth.uid() = addressee and status = 'accepted');
+create policy "accept requests sent to me" on public.friendships for update to authenticated using (auth.uid() = addressee and status = 'pending') with check (auth.uid() = addressee and status = 'accepted');
+-- also run supabase-security-fix.sql: it limits updates to the status column and locks who sent and received each request
 create policy "remove friendships" on public.friendships for delete to authenticated using (auth.uid() in (requester, addressee));
 
 create table public.presence (

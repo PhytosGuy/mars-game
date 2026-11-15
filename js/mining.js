@@ -173,7 +173,7 @@ function drillTick(dt,s,tool){
     if(tool.tier<def.tier){vac.msg=`Your ${tool.name} can’t cut ${ITEMS[def.item].name}. Craft a ${TOOL_FOR_TIER[def.tier]} at a Fabricator`;vac.blocked=true;return}
     vac.mode='mine';vac.target.copy(h.point);
     if(mine.dep!==D.desc.id){mine.dep=D.desc.id;mine.prog=0}
-    mine.prog+=dt*tool.speed/(def.hard*1.4);P.bat=Math.max(0,P.bat-dt*1.4*def.hard*batMult());
+    mine.prog+=dt*tool.speed*(typeof pipMineBoost==='function'?pipMineBoost():1)*(tech('meteoric')?1.15:1)/(def.hard*1.4);P.bat=Math.max(0,P.bat-dt*1.4*def.hard*batMult());
     D.g.position.x=D.desc.x+(Math.random()-0.5)*0.04;D.g.position.z=D.desc.z+(Math.random()-0.5)*0.04;
     if(Math.random()<0.6)emitSparks(h.point,2,def.glow?def.vein:'#ffd9a0');
     vac.msg=`Drilling ${def.name}… ${Math.round(mine.prog*100)}%`;

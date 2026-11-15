@@ -8,7 +8,7 @@ function airlockPos(b){const a=b.rot;return{x:b.x+Math.sin(a)*6.9,z:b.z+Math.cos
 function nearAirlock(){for(const b of blds){if(b.type!=='habitat'||b.progress<1)continue;const p=airlockPos(b);if(Math.hypot(p.x-P.pos.x,p.z-P.pos.z)<3.8)return b}return null}
 
 function updateInteraction(dt){
-  const hints=[],f=focusPos();let ring=null,busy=false;
+  const hints=[],f=focusPos();let ring=null,busy=false;game.hintLen=0;
   let np=null,nd=1e9;for(const p of nearPOIs){const d=Math.hypot(p.x-f.x,p.z-f.z);if(d<nd){nd=d;np=p}}
   game.nearPOI=np&&nd<18?np:null;
   const holdF=!!keys.KeyF&&!build.active;
@@ -21,6 +21,10 @@ function updateInteraction(dt){
     }else if(T.sample&&!S.sampled.has(p.id))hints.push(`<span class="key">F</span>Collect sample: ${T.name}`);
     else if(p.type==='lavatube'&&!cave.active)hints.push(P.mode==='foot'?'A cave entrance: walk down into the sinkhole to explore':'Get out of the rover (<span class="key">E</span>) to explore the cave');
   }
+  if(P.mode==='foot'&&typeof nearBuried==='function'){const bb=nearBuried();if(bb){hints.unshift(`<span class="key">F</span>Hold to dig out the buried ${BUILD[bb.type].name}`);
+      if(holdF&&!busy){prog.dig=(prog.dig||0)+dt;ring={p:prog.dig/2.5,l:'Digging…'};busy=true;if(prog.dig>=2.5){prog.dig=0;bb.buried=0;syncBuried();giveItem(ME,'regolith',3);toast(BUILD[bb.type].name+' dug out and working again','good');puff(bb.x,groundHeight(bb.x,bb.z),bb.z,6)}}else prog.dig=0}
+    const be=nearBlockedCave();if(be){hints.unshift('<span class="key">F</span>Hold to clear the rockfall');
+      if(holdF&&!busy){prog.rub=(prog.rub||0)+dt;ring={p:prog.rub/4,l:'Clearing rubble…'};busy=true;if(prog.rub>=4){prog.rub=0;delete S.blockedCaves[be.id];syncRubble();giveItem(ME,'basalt',4);toast('The cave entrance is open again','good');puff(be.x,groundHeight(be.x,be.z),be.z,10)}}else prog.rub=0}}
   if(P.mode==='foot'&&nearBed()){const t=tod();hints.push(t>19.5||t<5.5?'<span class="key">F</span>Sleep until morning':'<span class="key">F</span>Camp bed (sleep after 19:30)')}
   if(P.mode==='foot'){
     let nb=null,nbd=1e9;
@@ -39,7 +43,7 @@ function updateInteraction(dt){
   if(S.samples.length){const lab=blds.find(b=>b.type==='lab'&&b.progress>=1&&Math.hypot(b.x-f.x,b.z-f.z)<BUILD.lab.r+10);
     if(lab){act({a:'lab',s:S.samples.map(x=>({id:x.id,type:x.type}))});toast(`${S.samples.length} sample(s) handed to the lab for analysis`,'good');S.samples=[]}}
   if(typeof worldInteract==='function'){const r2=worldInteract(hints,holdF&&!busy,dt);if(r2)ring=r2}
-  game.prompt=hints[0]||null;game.busy=ring?ring.l:null;
+  game.prompt=hints[0]||null;game.busy=ring?ring.l:null;game.hasHint=hints.length>0;
   const rg=$('#ring');
   if(ring){rg.classList.remove('hidden');$('#ringfg').style.strokeDashoffset=213.6*(1-clamp(ring.p,0,1));$('#ringlbl').textContent=ring.l}
   else if(!rg.classList.contains('hidden')){rg.classList.add('hidden');$('#ringlbl').textContent=''}

@@ -74,6 +74,7 @@ const LOOT={
   shrine:r=>({artifact:1,resonite:2,alloy:3,tablet:2}),
   spire:r=>({o2can:1,cell:1,flare:3,tablet:1}),
   cave:r=>({titanium:3,crystal:2,cell:1,datapad:1,...(r()<0.15?{u_tank:1}:{})}),
+  deep:r=>({resonite:2+Math.floor(r()*2),alloy:2,crystal:3,cell:2,artifact:1,...({0:{u_battery:1},1:{u_jets:1},2:{u_armor:1},3:{drill2:1}})[Math.floor(r()*4)]}),   // the deep vault's rare finds
 };
 function lootSpotsFor(L){const y=groundHeight(L.x,L.z);
   if(L.type==='wreck')return[{id:'L'+L.id,x:L.x+3,z:L.z+3,table:'wreck'}];
@@ -180,13 +181,13 @@ function hurt(n,cause){
   const h=$('#hurtfx');h.classList.remove('on');void h.offsetWidth;h.classList.add('on');sfx(0.25,220,0.8,0.12,'lowpass');
   if(P.hp<=0)die(cause);
 }
-const DEATH={oxygen:'Your suit ran out of oxygen.',fall:'You fell too far.',creature:'Hostile creatures overwhelmed you.',storm:'The storm shredded your suit.',rock:'Falling rock crushed your suit.',crash:'The crash was too much for your suit.',cold:'The cold froze your suit’s systems.',radiation:'The radiation dose was too high.'};
+const DEATH={thirst:'You ran out of water.',hunger:'You went too long without food.',oxygen:'Your suit ran out of oxygen.',fall:'You fell too far.',creature:'Hostile creatures overwhelmed you.',storm:'The storm shredded your suit.',rock:'Falling rock crushed your suit.',crash:'The crash was too much for your suit.',cold:'The cold froze your suit’s systems.',radiation:'The radiation dose was too high.'};
 async function die(cause){
   if(game.dead)return;game.dead=true;mouse.drag=false;
   act({a:'die',x:P.pos.x,y:P.pos.y,z:P.pos.z});syncCaches();
   fade(true,(DEATH[cause]||'Suit failure.')+' The crew brings you home…');await wait(1800);
   const hb=home(),a=hb.rot||0;P.mode='foot';astro.visible=true;P.pos.set(hb.x+Math.sin(a)*8.5,0,hb.z+Math.cos(a)*8.5);P.pos.y=groundHeight(P.pos.x,P.pos.z);P.vel.set(0,0,0);P.lastG=undefined;
-  P.hp=maxHP()*0.7;P.o2=100;P.ragdoll=null;if(typeof outfitFor==='function')outfitFor(false);P.inside=false;if(INT.g)INT.g.visible=false;astro.rotation.set(0,0,0);P.buffs={};renderBuffs(true);P.bat=Math.max(P.bat,60);P.stam=100;game.camSnap=true;game.dead=false;refreshInvUI();onHotbarChange();
+  P.hp=maxHP()*0.7;P.o2=100;P.food=Math.max(P.food,60);P.water=Math.max(P.water,60);P.ragdoll=null;if(typeof outfitFor==='function')outfitFor(false);P.inside=false;if(INT.g)INT.g.visible=false;astro.rotation.set(0,0,0);P.buffs={};renderBuffs(true);P.bat=Math.max(P.bat,60);P.stam=100;game.camSnap=true;game.dead=false;refreshInvUI();onHotbarChange();
   if(net.role!=='guest'||P.mode==='rover')roverHome();
   fade(false);card('You made it back','Your body','Your suit and everything in your backpack are still where you fell, and the rover has been driven back to base. Follow the red “Your body” marker on the compass and press F at your body to collect your things.','#ff6b5e');
 }

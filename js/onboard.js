@@ -37,4 +37,4 @@ function renderTour(){
 $('#tour').addEventListener('click',e=>{if(e.target.id==='tour-next'){if(tour.i>=TOUR.length-1)endTour();else{tour.i++;renderTour()}}else if(e.target.id==='tour-back'){tour.i=Math.max(0,tour.i-1);renderTour()}});
 $('#tourskip').addEventListener('click',endTour);
 addEventListener('resize',()=>{if(tour.on)renderTour()});
-addEventListener('keydown',e=>{if(!tour.on)return;if(e.key==='Enter'||e.key==='ArrowRight'){e.stopImmediatePropagation();if(tour.i>=TOUR.length-1)endTour();else{tour.i++;renderTour()}}else if(e.key==='ArrowLeft'){e.stopImmediatePropagation();tour.i=Math.max(0,tour.i-1);renderTour()}else if(e.key==='Escape'){e.stopImmediatePropagation();endTour()}},true);
+addEventListener('keydown',e=>{if(!tour.on)return;if(e.key==='Enter'||e.key==='ArrowRight'){e.stopImmediatePropagation();if(tour.i>=TOUR.length-1)endTour();else{tour.i++;renderTour()}}else if(e.key==='ArrowLeft'){e.stopImmediatePropagation();tour.i=Math.max(0,tour.i-1);renderTour()}else if(e.key==='Escape'||e.key===' '){e.preventDefault();e.stopImmediatePropagation();endTour()}},true);

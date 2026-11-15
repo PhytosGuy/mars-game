@@ -78,7 +78,10 @@ function caveData(e){
   const loot=r()<0.45?(()=>{const s=pick(0,0.3,0.8),p=side(s,0.45);return{id:'L'+e.id,x:p.x,y:s.fy,z:p.z,table:'cave'}})():null;
   const spots=[];for(let i=0;i<4;i++){const ti=i%tubes.length,s=pick(ti,0.3,0.98);spots.push({x:s.x,y:s.fy,z:s.z})}
   const unstable=[];for(let i=0;i<2;i++){const s=pick(0,0.25,0.9);unstable.push({x:s.x,y:s.y,z:s.z,r:s.rr})}
-  D={e,tubes,samples,grid,gk,kind,deps,myst,mystAt:{x:ms.x,y:ms.fy,z:ms.z},loot,spots,unstable};
+  // the deepest point of the cave: if it's deep enough, a crystal grotto with a vault of rare finds
+  let deep=null,dd=0;for(const s of samples){const d=tH(s.x,s.z)-s.fy;if(d>dd){dd=d;deep=s}}
+  const vault=dd>30&&deep?{id:'V'+e.id,x:deep.x,y:deep.fy,z:deep.z,table:'deep',depth:Math.round(dd)}:null;
+  D={e,tubes,samples,grid,gk,kind,deps,myst,mystAt:{x:ms.x,y:ms.fy,z:ms.z},loot,spots,unstable,vault};
   caveCache.set(e.id,D);if(caveCache.size>40)caveCache.delete(caveCache.keys().next().value);
   return D;
 }
@@ -121,6 +124,10 @@ function buildCaveMesh(D){
   if(D.kind==='lumari')for(const s of D.spots){const f=mkGlowFungus(r);f.position.set(s.x,s.y,s.z);g.add(f)}
   if(D.kind==='hive'){const s=D.spots[0],h=mkHive(r);h.position.set(s.x,s.y,s.z);g.add(h)}
   for(const u of D.unstable){const c=mkCracks(r);c.position.set(u.x,u.y+u.r*0.7,u.z);g.add(c)}
+  // the deep vault: a grotto of glowing crystals around a cache of rare finds
+  if(D.vault){const v=D.vault,vg=new THREE.Group();vg.position.set(v.x,v.y,v.z);const cm=mat('#9ff0ff',{emissive:'#5fd8ff',emissiveIntensity:1.5,roughness:0.15,transparent:true,opacity:0.9});
+    for(let i=0;i<14;i++){const a=i/14*TAU+r()*0.3,d=1.8+r()*1.6,L=0.8+r()*2.2,c=mesh(shared('vcry',()=>new THREE.CylinderGeometry(0.0,0.22,1,6)),cm,Math.cos(a)*d,L/2,Math.sin(a)*d);c.scale.set(1,L,1);c.rotation.set((r()-0.5)*0.6,r()*3,(r()-0.5)*0.6);vg.add(c)}
+    const vl=new THREE.PointLight(0x7fe8ff,12,16,1.4);vl.position.y=1.5;vg.add(vl);g.add(vg)}
   g.userData.mystColor=M_.color;
   return g;
 }
@@ -184,8 +191,8 @@ function updateCaves(dt){
   if((cave.scanT=(cave.scanT||0)-dt)<=0){cave.scanT=1;
     const want=new Set();
     for(const e of entrancesNear(f.x,f.z,460)){want.add(e.id);if(!cave.nets.has(e.id)){const D=caveData(e),g=buildCaveMesh(D);scene.add(g);cave.nets.set(e.id,{D,g});
-      for(const d of D.deps)addDepMesh(d);if(D.loot&&typeof addLootSpot==='function')addLootSpot(D.loot)}}
-    for(const[id,N]of cave.nets)if(!want.has(id)&&!entrancesNear(f.x,f.z,640).some(e=>e.id===id)){scene.remove(N.g);disposeObj(N.g);for(const d of N.D.deps)removeDepMesh(d.id);if(N.D.loot&&typeof removeLootSpot==='function')removeLootSpot(N.D.loot.id);cave.nets.delete(id)}
+      for(const d of D.deps)addDepMesh(d);if(D.loot&&typeof addLootSpot==='function')addLootSpot(D.loot);if(D.vault&&typeof addLootSpot==='function')addLootSpot(D.vault)}}
+    for(const[id,N]of cave.nets)if(!want.has(id)&&!entrancesNear(f.x,f.z,640).some(e=>e.id===id)){scene.remove(N.g);disposeObj(N.g);for(const d of N.D.deps)removeDepMesh(d.id);if(N.D.loot&&typeof removeLootSpot==='function')removeLootSpot(N.D.loot.id);if(N.D.vault&&typeof removeLootSpot==='function')removeLootSpot(N.D.vault.id);cave.nets.delete(id)}
   }
   const p=P.mode==='foot'?P.pos:R.pos,tH=groundHeight(p.x,p.z);
   cave.depth=Math.max(0,tH-p.y);const was=cave.active;cave.active=P.mode==='foot'&&cave.nets.size>0&&cave.depth>2&&!!caveQuery(p.x,p.z,p.y);
@@ -211,7 +218,7 @@ function caveEnv(){
   for(const d of devils)if(k>0.5)d.pts.visible=false;
 }
 function nearMystery(){for(const N of cave.nets.values()){const m=N.D.mystAt;if(Math.hypot(m.x-P.pos.x,m.z-P.pos.z)<10&&Math.abs(m.y-P.pos.y)<6)return N}return null}
-function studyMystery(N){
+function studyMystery(N){if(typeof unlockTech==='function')unlockTech('crystal');
   S.caves[N.D.e.id]=S.caves[N.D.e.id]||{};if(S.caves[N.D.e.id].myst)return;S.caves[N.D.e.id].myst=true;
   const M_=MYST[N.D.myst];S.flags.caveMystery=true;S.discoveries=(S.discoveries||0)+1;act({a:'discover',id:N.D.e.id,kind:'cave'});
   if(N.D.myst==='carvings'&&typeof learnWords==='function')learnWords('tharrak',4);
@@ -223,3 +230,14 @@ CHAPTERS[3].objs.splice(1,0,{id:'cave',text:'Explore inside a lava tube and find
 GUIDES.cave=()=>{const e=fixedEntrances()[0];if(!e)return null;const f=focusPos();
   if(cave.active){const N=cave.nets.get('cvL')||[...cave.nets.values()][0];if(N){const m=N.D.mystAt;return{x:m.x,z:m.z,r:6,text:'Follow the tunnel down to the deep chamber',near:'Hold <span class="key">F</span> to study it'}}}
   return{x:e.x,z:e.z,r:HOLE_R+2,text:'Walk down into the lava tube',near:P.mode==='foot'?'Walk into the opening':'Get out of the rover first (<span class="key">E</span>)'}};
+
+/* ---------- depth zones: the deeper you go, the rarer the finds ---------- */
+const DEPTH_ZONES=[[18,'The Lava Tubes','Ancient lava carved these tunnels billions of years ago. Lava tubes could shelter future explorers from radiation.'],
+  [32,'The Deep Caverns','Rare crystals grow down here. Somewhere at the bottom of a cave this deep there is a vault of rare finds.'],
+  [50,'The Abyss','Few have come this deep. The rock is warm, and the crystals glow on their own.']];
+function updateDepthZones(){if(!S)return;const d=cave.active?cave.depth:0;S.stats.deepest=Math.max(S.stats.deepest||0,Math.round(d));
+  let z=-1;for(let i=0;i<DEPTH_ZONES.length;i++)if(d>=DEPTH_ZONES[i][0])z=i;
+  if(z>(cave.zone??-1)){const Z=DEPTH_ZONES[z];if(typeof banner==='function')banner(Z[1],`${Math.round(d)} m below the surface`);else toast(Z[1],'good');radio('Mission Control',Z[2],'sys')}
+  cave.zone=cave.active?Math.max(z,cave.zone??-1):-1;
+  if(cave.active&&typeof pipSay==='function')for(const N of cave.nets.values()){const v=N.D.vault;if(v&&!S.loot[v.id]&&Math.hypot(v.x-P.pos.x,v.z-P.pos.z)<30)pipSay('vault','I’m picking up a strong energy signature nearby: something valuable is down here!',120)}}
+setInterval(()=>{if(game.state==='play')updateDepthZones()},700);

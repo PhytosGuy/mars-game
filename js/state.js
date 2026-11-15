@@ -63,7 +63,7 @@ function addBuilding(type,x,z,rot,progress,opts={}){
   const y=footY(x,z,d.r);g.position.set(x,y,z);g.rotation.y=rot;
   if(d.solid!==false&&type!=='beacon'&&type!=='weather'){const f=cy(d.r*0.72,d.r*0.78,4,8,'#6b4a3a',0,-2.0,0);f.castShadow=false;g.add(f)}
   scene.add(g);
-  const b={id:opts.id||++bid,type,x,z,rot,y,g,progress,dust:opts.dust||0,on:opts.on!==false,powered:true,fault:opts.fault||null,cable:null,fm:null};
+  const b={id:opts.id||++bid,type,x,z,rot,y,g,progress,dust:opts.dust||0,on:opts.on!==false,powered:true,fault:opts.fault||null,cable:null,fm:null,buried:opts.buried||0};
   if(progress<1)g.scale.set(1,0.03,1);
   if(!d.remote){const p=nearestGrid(x,z,b);if(p&&p.d<90)b.cable=mkCable(p.b.x,p.b.z,x,z)}
   if(typeof clearRocksUnder==='function')clearRocksUnder(b);           // no boulders poking through the floor

@@ -104,7 +104,7 @@ function quakeTick(dt){
     if(TS3.mtn>0.08||steep>4)surfaceRock(P.pos.x+(Math.random()-0.5)*14,P.pos.z+(Math.random()-0.5)*14)}
   // strong shaking can throw you to the ground
   if(k>0.45&&P.mode==='foot'&&!P.ragdoll&&P.onGround&&!game.dead&&!atBase&&Math.random()<dt*k*0.35){P.vel.x+=(Math.random()-0.5)*6;P.vel.z+=(Math.random()-0.5)*6;P.vel.y=3;P.onGround=false;startRagdoll(5,null);P.ragdoll.dmg=4;toast('The ground heaves and throws you down!','bad')}
-  if(quake.t>=quake.dur){quake.active=false;radio(crewName('Engineer'),'Shaking has stopped. Check the colony for damage.','crew')}
+  if(quake.t>=quake.dur){quake.active=false;if(typeof quakeAftermath==='function'&&net.role!=='guest')quakeAftermath(quake.mag||1);radio(crewName('Engineer'),'Shaking has stopped. Check the colony for damage.','crew')}
 }
 const falling=[];
 function rockfall(x,z){const c=caveQuery(x,z,P.pos.y);if(!c)return;const y=c.s.y+c.s.rr*0.65,m=mesh(rockGeo,mat('#3a2a24',{flatShading:true}),x,y,z);m.scale.setScalar(0.5+Math.random()*0.6);scene.add(m);falling.push({m,vy:0,x,z,fy:c.s.fy});sfx(0.4,300,0.8,0.08,'lowpass')}
@@ -170,3 +170,37 @@ function onWorldEvent(d){
   else if(d.k==='quake'&&isNum(d.mag)&&d.epi)startQuake(d.mag,{x:num(d.epi.x,-1e6,1e6),z:num(d.epi.z,-1e6,1e6)},num(d.dur,1,30,10));
   else if(d.k==='arc'&&isNum(d.x))staticArc(d.x,num(d.y,-5000,5000),num(d.z,-1e6,1e6));
 }
+
+/* ---------- lasting consequences of disasters ---------- */
+// after a dust storm: remote equipment is buried, solar panels are coated, and the wind uncovers new ore
+function stormAftermath(int){if(!S||net.role==='guest')return;let n=0;const hb=home();
+  for(const b of blds){if(b.progress<1||b.type==='habitat'||b.type==='pad')continue;
+    if(b.type==='solar'){b.dust=Math.min(1,(b.dust||0)+0.5*int);continue}
+    if(Math.hypot(b.x-hb.x,b.z-hb.z)>SAFE_R&&Math.random()<0.75*int){b.buried=Math.min(1,0.55+Math.random()*0.45);n++}}
+  const f=focusPos(),a=Math.random()*TAU,d=90+Math.random()*120,x=f.x+Math.cos(a)*d,z=f.z+Math.sin(a)*d,type=['silica','iron','titanium'][Math.floor(Math.random()*3)];
+  S.extraDeps=S.extraDeps||[];S.extraDeps.push({id:'xs'+Math.floor(S.time*100),type,x,z,max:6});if(S.extraDeps.length>40)S.extraDeps.shift();if(typeof updateDeposits==='function')updateDeposits();
+  setTimeout(()=>{if(n)radio(crewName('Engineer'),`The storm buried ${n} piece${n>1?'s':''} of our remote equipment. They won’t work until someone digs them out (hold F next to them).`,'crew');
+    radio('Mission Control',`The storm winds scoured away the sand ${compassWord(x-f.x,z-f.z)} of you and exposed ${ITEMS[type].name}.`,'sys')},1500);
+  syncBuried();if(net.role==='host')net.snapDirty=true}
+// after a quake: rockfall seals a nearby cave entrance until you clear it
+function quakeAftermath(mag){if(!S)return;const f=focusPos();S.blockedCaves=S.blockedCaves||{};
+  const es=entrancesNear(f.x,f.z,350).filter(e=>!S.blockedCaves[e.id]&&!(cave.active&&Math.hypot(e.x-f.x,e.z-f.z)<60)).sort((a,b)=>Math.hypot(a.x-f.x,a.z-f.z)-Math.hypot(b.x-f.x,b.z-f.z));
+  if(!es.length||Math.random()>0.5+0.3*mag)return;const e=es[0];S.blockedCaves[e.id]=true;syncRubble();
+  radio(crewName('Geologist')||'Mission Control',`Rockfall has sealed the cave entrance ${compassWord(e.x-f.x,e.z-f.z)} of you. Hold F at the rubble to clear it.`,'crew');if(net.role==='host')net.snapDirty=true}
+// sand mounds over buried modules
+const buriedMeshes=new Map();
+function syncBuried(){for(const[id,m]of buriedMeshes){const b=blds.find(x=>x.id===id);if(!b||!(b.buried>0.05)){scene.remove(m);buriedMeshes.delete(id)}}
+  for(const b of blds){if(!(b.buried>0.05)||buriedMeshes.has(b.id))continue;const r0=(BUILD[b.type]||{r:2}).r*1.15;
+    const m=new THREE.Mesh(shared('mound',()=>new THREE.SphereGeometry(1,20,10,0,TAU,0,Math.PI/2)),mat('#b8683c',{roughness:1,flatShading:true}));m.scale.set(r0,r0*0.55*b.buried+0.3,r0);m.position.set(b.x,groundHeight(b.x,b.z)-0.1,b.z);scene.add(m);buriedMeshes.set(b.id,m)}}
+// rock piles filling blocked cave entrances
+const rubbleMeshes=new Map();
+function syncRubble(){const bl=(S&&S.blockedCaves)||{};for(const[id,m]of rubbleMeshes)if(!bl[id]){scene.remove(m);rubbleMeshes.delete(id)}
+  for(const N of cave.nets.values()){const e=N.D.e;if(!bl[e.id]||rubbleMeshes.has(e.id))continue;const g=new THREE.Group(),r=mulberry(strHash(e.id)+77),y=groundHeight(e.x+HOLE_R+1,e.z);
+    for(let i=0;i<22;i++){const a=r()*TAU,d=r()*HOLE_R*0.9,s=0.7+r()*1.4,m=mesh(rockGeo,mat('#6b4a3a',{flatShading:true}),e.x+Math.cos(a)*d,y-1.2+r()*1.4,e.z+Math.sin(a)*d);m.scale.set(s*1.3,s,s*1.2);m.rotation.set(r()*3,r()*3,r()*3);g.add(m)}
+    scene.add(g);rubbleMeshes.set(e.id,g)}}
+// you can't climb down into a blocked entrance
+function blockedCaveCollide(){if(!S||!S.blockedCaves||P.mode!=='foot')return;for(const N of cave.nets.values()){const e=N.D.e;if(!S.blockedCaves[e.id])continue;
+  const dx=P.pos.x-e.x,dz=P.pos.z-e.z,d=Math.hypot(dx,dz),rim=groundHeight(e.x+HOLE_R+1,e.z);if(d<HOLE_R+0.6&&P.pos.y<rim-0.4){const k=(HOLE_R+0.8)/(d||1);P.pos.x=e.x+dx*k;P.pos.z=e.z+dz*k;P.pos.y=Math.max(P.pos.y,groundHeight(P.pos.x,P.pos.z));P.vel.set(0,0,0)}}}
+function nearBlockedCave(){if(!S||!S.blockedCaves)return null;for(const N of cave.nets.values()){const e=N.D.e;if(S.blockedCaves[e.id]&&Math.hypot(P.pos.x-e.x,P.pos.z-e.z)<HOLE_R+3)return e}return null}
+function nearBuried(){for(const b of blds)if(b.buried>0.05&&Math.hypot(b.x-P.pos.x,b.z-P.pos.z)<(BUILD[b.type]||{r:2}).r+3)return b;return null}
+setInterval(()=>{if(game.state==='play'&&S){syncBuried();syncRubble()}},1500);

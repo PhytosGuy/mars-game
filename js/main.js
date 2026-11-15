@@ -11,6 +11,7 @@ function loop(t){
   if(game.state==='title'||game.state==='sites')titleUpdate(dt);
   else if(game.state==='intro')introUpdate(dt);
   else if(game.state==='play'&&(!game.paused||(net.role&&!S.over))&&(!game.tour||net.role))playUpdate(dt);
+  if(typeof gfxAuto==='function')gfxAuto(dt);
   updateAudio();
   renderFrame();
 }

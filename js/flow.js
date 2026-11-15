@@ -127,7 +127,7 @@ function playUpdate(dt){
   animatePOIs(dt);updateNPCs(dt);updateSfx();netTick(dt);
   worldTick(dt);aliensTick(dt);dialogueTick(dt);factTick(dt);
   updateInteraction(dt);
-  devilPushThings(dt);updatePickups(dt);updateBolts(dt);updateFlares(dt);updateLightPool();updateSparks(dt);updateFlyers(dt);updatePings(dt);updateDrones(dt);
+  devilPushThings(dt);updatePickups(dt);if(typeof blockedCaveCollide==='function')blockedCaveCollide();if(typeof tickNeeds==='function')tickNeeds(dt);if(typeof updatePip==='function')updatePip(dt);updateBolts(dt);updateFlares(dt);updateLightPool();updateSparks(dt);updateFlyers(dt);updatePings(dt);updateDrones(dt);
   S.roverKW=0;
   if(R.battery<R.maxBat&&!S.roverChargeBlocked){
     const chg=blds.find(b=>b.type==='charger'&&b.progress>=1&&Math.hypot(b.x-R.pos.x,b.z-R.pos.z)<4.5),nh=nearHab(R.pos,12);

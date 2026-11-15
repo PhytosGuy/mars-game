@@ -321,7 +321,7 @@ ACT.hit=(pid,a,predict,local)=>{
   if(predict)return true;const rl=rateOf(pid);if(now-(rl.hit||0)<0.35)return false;rl.hit=now;
   const dmg=tool.tool==='weapon'?tool.dmg:tool.dmg*0.65;c.hp-=dmg;if(tool.stun)c.stun=tool.stun;s.d=Math.max(0,s.d-1);
   c.target=pid;emitSparks(_v1.set(c.x,c.y+c.h*0.5,c.z),8,'#ff9a6a');
-  if(SPECIES[c.sp].kind==='peaceful'){c.fear=30;if(SPECIES[c.sp].sapient){const k=c.sp;S.rep[k]=Math.max(-100,(S.rep[k]||0)-25);for(const o of creatures.values())if(o.sp===k)o.fear=40;
+  if(SPECIES[c.sp].kind==='peaceful'){c.fear=30;if(SPECIES[c.sp].sapient){const k=c.sp;S.rep[k]=Math.max(-100,(S.rep[k]||0)-25);if(typeof amem==='function')amem(k).hurt++;for(const o of creatures.values())if(o.sp===k)o.fear=40;
     if(local)crewSay('Geologist',`Stop! You’re hurting a ${SPECIES[k].name}. They won’t forget that.`)}}
   return true;
 };

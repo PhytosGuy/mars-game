@@ -55,7 +55,7 @@ function updateHUD(){
   // suit integrity as diamond cells (20 points each), then oxygen and battery
   const mh=maxHP();
   const hpP=P.hp/mh*100;
-  setHTML('vitals2',`<div class="hpbig${hpP<30?' low':''}"><span class="hpico">♥</span><div class="hpcol"><div class="hptop"><b>Health</b><em>${Math.ceil(P.hp)} / ${mh}</em></div><i><i style="width:${clamp(hpP,0,100)}%"></i></i></div></div>`+vb('Oxygen',P.o2,P.o2<25?'var(--bad)':'#7fd3ff')+vb('Battery',P.bat,P.bat<20?'var(--bad)':'#ffd34d')+
+  setHTML('vitals2',`<div class="hpbig${hpP<30?' low':''}"><span class="hpico">♥</span><div class="hpcol"><div class="hptop"><b>Health</b><em>${Math.ceil(P.hp)} / ${mh}</em></div><i><i style="width:${clamp(hpP,0,100)}%"></i></i></div></div>`+vb('Oxygen',P.o2,P.o2<25?'var(--bad)':'#7fd3ff')+vb('Battery',P.bat,P.bat<20?'var(--bad)':'#ffd34d')+(S.mode==='sandbox'?'':vb('Food',P.food,P.food<20?'var(--bad)':'#9fe07a')+vb('Water',P.water,P.water<20?'var(--bad)':'#6fb6ff'))+
     (renderCrew(),'')+`<div class="vbar col"><span>Colony O₂</span><em class="${S.rates.o2<0&&S.res.o2/(-S.rates.o2*SOL_H)<1.5?'neg':''}">${S.res.o2.toFixed(1)} kg</em></div>`);
   if(P.mode==='foot'){setHTML('s-vital',cave.active?`Underground · ${Math.round(cave.depth)} m deep`:esc(curRegion?curRegion.name:SITE.name))}
   else{const bp=R.battery/R.maxBat*100;setHTML('s-vital',`Rover ${bar(bp,bp<15?'var(--bad)':bp<35?'var(--warn)':'#ffd34d')} ${Math.round(bp)}% · ${Math.round(Math.hypot(R.vx||0,R.vz||0)*3.6)} km/h${R.air?' · airborne':R.upside?' · flipped':''}${R.cruise?' · cruise':''}${S.roverKW>0?' · charging':''}`)}
@@ -81,6 +81,10 @@ function updateHUD(){
     head=`<span class="mlabel">Mission</span> <b>${ch.title}</b> · ${items.filter(i=>i[1]).length}/${items.length}`}
   setHTML('j-head',head+(items.length?' <span class="chev">▾</span>':''));
   let cur=false;setHTML('j-list',items.map(([t,d])=>{const c=!d&&!cur;if(c)cur=true;return`<li class="${d?'done':c?'cur':''}">${t}</li>`}).join(''));
+  // the next task, always shown big, with progress (it flashes when you finish one)
+  {const nx=items.find(i=>!i[1]),dn=items.filter(i=>i[1]).length,el=$('#j-cur');
+    if(el){if(nx){el.innerHTML=`<span class="jn">Next task</span><b>${nx[0]}</b><i class="jbar"><i style="width:${items.length?dn/items.length*100:0}%"></i></i>`;el.classList.remove('hidden')}else el.classList.add('hidden');
+      if(game.jDone!==undefined&&dn>game.jDone){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');beep(880,0.08);beep(1320,0.12,'sine',0.06,0.09)}game.jDone=dn}}
   // wardrobe hanger at base
   $('#hanger').classList.toggle('hidden',!(P.mode==='foot'&&nearHab(P.pos,12)&&$('#wardrobe').classList.contains('hidden')));
   if(invUI.open&&(game.colT=(game.colT||0)+1)%4===0){if(invUI.mtab==='inv')renderPlayerCard();else if(invUI.mtab==='colony'||invUI.mtab==='crew')renderColony()}

@@ -301,6 +301,14 @@ function mkLander(){
     g.add(cy(0.38,0.38,0.08,8,GREY,Math.cos(a)*2.2,0.04,Math.sin(a)*2.2))}
   const fm=new THREE.MeshBasicMaterial({color:'#ffb066',transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false});
   const flame=new THREE.Mesh(new THREE.ConeGeometry(1.0,4.5,10,1,true),fm);flame.rotation.x=Math.PI;flame.position.y=-1.2;flame.visible=false;g.add(flame);
+  // open crew hatch and stairs (the ones you walk down after landing)
+  const steel=mat('#9aa3ad',{roughness:0.35,metalness:0.7}),hz=-1.62;
+  const hole=new THREE.Mesh(new THREE.PlaneGeometry(0.8,1.6),mat('#15181d',{roughness:0.9}));hole.position.set(0,2.77,hz-0.02);hole.rotation.y=Math.PI;g.add(hole);
+  for(const s of[-1,1])g.add(bx(0.08,1.7,0.12,OFF,s*0.45,2.8,hz-0.04));g.add(bx(0.98,0.1,0.14,ORANGE,0,3.66,hz-0.04));
+  const door=bx(0.8,1.6,0.06,OFF,0.85,2.77,hz-0.08);g.add(door);
+  g.add(bx(1.0,0.06,0.45,steel,0,1.97,hz-0.24));
+  for(let i=0;i<10;i++)g.add(bx(0.86,0.05,0.3,steel,0,1.78-i*0.2,-(2.15+i*0.3)));
+  for(const s of[-1,1]){const len=Math.hypot(2.0,3.0),rl=cy(0.025,0.025,len,6,OFF,s*0.46,1.4,-3.5);rl.rotation.x=Math.atan2(3.0,2.0);g.add(rl)}
   g.userData={flame};return g;
 }
 

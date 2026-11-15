@@ -103,14 +103,14 @@ const funnelMat=()=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,
     float fbm(vec2 p){float v=0.0,a=0.55;for(int i=0;i<4;i++){v+=a*vn(p);p=p*2.1+vec2(3.1,7.7);a*=0.5;}return v;}
     void main(){float u=vUv.x,v=vUv.y;vec2 q=vec2(u*10.0+v*4.0-t*1.8,v*7.0-t*0.9);float n=fbm(q),s=fbm(q*vec2(0.5,3.0)+t*0.3);
       float a=smoothstep(0.32,0.8,n*0.7+s*0.4)*op*smoothstep(0.0,0.06,v)*(1.0-smoothstep(0.7,1.0,v));
-      vec3 c=mix(vec3(0.45,0.27,0.16),vec3(0.86,0.63,0.45),n);gl_FragColor=vec4(c,a*0.8);}`});
+      vec3 c=mix(vec3(0.62,0.31,0.13),vec3(0.98,0.6,0.3),n);gl_FragColor=vec4(c,a*0.72);}`});
 const funnelGeo=(()=>{const pts=[];for(let i=0;i<=24;i++){const h=i/24*DEVIL_H;pts.push(new THREE.Vector2(1.2+h*0.16+Math.pow(h/DEVIL_H,3)*8,h))}return new THREE.LatheGeometry(pts,40)})();
 const devils=[];
 for(let d=0;d<3;d++){
   const r=mulberry(400+d),n=DEVIL_N+DEVIL_BASE,p=new Float32Array(n*3),col=new Float32Array(n*3),prm=new Float32Array(n*4);
   for(let i=0;i<n;i++){const base=i>=DEVIL_N,h=base?r()*3.5:Math.pow(r(),1.3)*DEVIL_H,rad=base?2+r()*9:0.6+h*0.12+r()*1.8+Math.pow(h/DEVIL_H,3)*7;
     prm[i*4]=h;prm[i*4+1]=rad;prm[i*4+2]=r()*TAU;prm[i*4+3]=0.7+r()*0.6;
-    const k=base?0.55:0.55+0.45*(h/DEVIL_H);col[i*3]=0.62*k+0.2;col[i*3+1]=0.4*k+0.12;col[i*3+2]=0.26*k+0.08}
+    const k=base?0.6:0.6+0.4*(h/DEVIL_H);col[i*3]=0.78*k+0.2;col[i*3+1]=0.42*k+0.1;col[i*3+2]=0.18*k+0.04}   // orange Martian dust
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
   const m=new THREE.PointsMaterial({size:3.4,map:puffTex,vertexColors:true,transparent:true,opacity:0,depthWrite:false});
   const pts=new THREE.Points(g,m);pts.frustumCulled=false;
@@ -132,7 +132,7 @@ function updateWeatherFX(dt,focus){
       if(d.wait<=0&&ENV.day>0.55){const a=Math.random()*TAU,r=70+Math.random()*170,stormy=ENV.storm>0.3;
         d.x=focus.x+Math.cos(a)*r;d.z=focus.z+Math.sin(a)*r;
         const toP=Math.atan2(focus.z-d.z,focus.x-d.x)+(Math.random()-0.5)*0.9,sp=3+Math.random()*4;d.vx=Math.cos(toP)*sp;d.vz=Math.sin(toP)*sp; // drift across your path
-        d.life=0;d.max=45+Math.random()*60;d.size=(stormy?1.3:0.85)+Math.random()*0.7;d.alive=true;d.cleaned=new Set()}
+        d.life=0;d.max=40+Math.random()*50;d.size=(stormy?1.05:0.7)+Math.random()*0.45;d.alive=true;d.cleaned=new Set()}
       continue}
     d.life+=dt;d.t+=dt;if(!guest&&S){const hb=nearestHabitat(d.x,d.z);if(hb){const dx=d.x-hb.x,dz=d.z-hb.z,dd=Math.hypot(dx,dz);if(dd<SAFE_R+40){const sp=Math.hypot(d.vx,d.vz)||3;d.vx=dx/dd*sp;d.vz=dz/dd*sp;if(dd<SAFE_R+15){d.x=hb.x+dx/dd*(SAFE_R+15);d.z=hb.z+dz/dd*(SAFE_R+15)}}}} // dust devils veer away from the base
     if(!guest){d.x+=d.vx*dt;d.z+=d.vz*dt;const w=Math.sin(d.t*0.3)*0.6;d.vx+=-d.vz*w*dt*0.2;d.vz+=d.vx*w*dt*0.2}
@@ -156,7 +156,26 @@ function updateWeatherFX(dt,focus){
   for(let i=0;i<arr.length;i+=3){arr[i]+=ws*dt;arr[i+2]+=ws*0.3*dt;if(arr[i]>70)arr[i]-=140;if(arr[i+2]>70)arr[i+2]-=140}
   p.needsUpdate=true;stormPts.position.set(camera.position.x,camera.position.y-20,camera.position.z);
   stormPts.material.opacity=0.04+ENV.storm*0.75;
+  updateStormWall(dt);
 }
+const stormWall=(()=>{const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,uniforms:{t:{value:0},op:{value:0}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+  fragmentShader:`uniform float t,op;varying vec2 vUv;float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
+    float fbm(vec2 p){float v=0.0,a=0.55;for(int i=0;i<5;i++){v+=a*vn(p);p=p*2.03+vec2(1.7,9.2);a*=0.5;}return v;}
+    void main(){vec2 q=vec2(vUv.x*14.0-t*0.05,vUv.y*3.0-t*0.03);float n=fbm(q+fbm(q*1.7+t*0.04));
+      float top=1.0-smoothstep(0.55+0.3*n,0.98,vUv.y),side=smoothstep(0.0,0.12,vUv.x)*smoothstep(1.0,0.88,vUv.x);
+      vec3 c=mix(vec3(0.5,0.24,0.1),vec3(0.92,0.55,0.28),n);gl_FragColor=vec4(c,clamp(op*top*side*(0.55+0.6*n),0.0,1.0));}`});
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,48,1,true,-0.9,1.8),m);w.frustumCulled=false;w.visible=false;scene.add(w);return w})();
+// how close the storm front is: on the horizon before it arrives, sweeping over you as it builds
+function updateStormWall(dt){if(!S||cave.active||(typeof P!=='undefined'&&P.inside)){stormWall.visible=false;return}
+  const s=S.storm,ahead=!s.active?S.nextStorm-S.time:-1;let dist=-1,op=0;
+  if(!s.active&&ahead>=0&&ahead<3){dist=lerp(380,900,ahead/3);op=smooth(3,1.5,ahead)}
+  else if(s.active&&s.level<0.55){dist=lerp(380,30,s.level/0.55);op=1-smooth(0.45,0.55,s.level)}
+  if(dist<0||op<0.02){stormWall.visible=false;return}
+  const wv=typeof windVec==='function'?windVec():{x:1,z:0},wa=Math.atan2(-wv.x,-wv.z),cp=camera.position;stormWall.visible=true;   // the front comes from upwind
+  stormWall.position.set(cp.x,groundHeight(cp.x,cp.z)+120,cp.z);
+  stormWall.scale.set(dist,300,dist);stormWall.rotation.y=wa;stormWall.material.uniforms.t.value+=dt*(4+s.level*20);stormWall.material.uniforms.op.value=op*0.95}
 // guests mirror the host's devils
 function onDevilSnap(d){if(!Array.isArray(d.l))return;d.l.slice(0,devils.length).forEach((a,i)=>{const v=devils[i];
   if(!Array.isArray(a)||a.length!==7||!a.every(isNum)){v.alive=false;return}
@@ -165,19 +184,19 @@ function onDevilSnap(d){if(!Array.isArray(d.l))return;d.l.slice(0,devils.length)
 // you: swirled around and pulled in; in the core you're lifted off your feet and flung out
 function devilPushPlayer(p,dt){
   if(p!==P||game.dead||cave.depth>=2)return;
-  for(const d of devils){const f=devilAt(d,P.pos.x,P.pos.z);if(!f)continue;const s=d.size,tang=16*f.k*s,pull=7*f.k*s;
+  for(const d of devils){const f=devilAt(d,P.pos.x,P.pos.z);if(!f)continue;const s=d.size,tang=8*f.k*s,pull=3.5*f.k*s;
     P.vel.x+=(f.tx*tang-f.nx*pull)*dt;P.vel.z+=(f.tz*tang-f.nz*pull)*dt;
     if(f.dist<devilCore(d)){
-      if(!P.ragdoll){P.vel.y=Math.max(P.vel.y,4+2*s);P.onGround=false;startRagdoll(8,null);P.ragdoll.dmg=4+4*s;toast('The dust devil sweeps you off your feet!','bad')}
-      else if(P.pos.y-groundHeight(P.pos.x,P.pos.z)<4*s)P.vel.y=Math.min(P.vel.y+10*s*dt,4*s);   // carried up several metres, then flung out
-      if((game.devT=(game.devT||0)-dt)<=0){game.devT=1;hurt(1.5+s,'storm')}
+      if(!P.ragdoll){P.vel.y=Math.max(P.vel.y,2.4+1.2*s);P.onGround=false;startRagdoll(5,null);P.ragdoll.dmg=2+2*s;toast('The dust devil sweeps you off your feet!','bad')}
+      else if(P.pos.y-groundHeight(P.pos.x,P.pos.z)<2.2*s)P.vel.y=Math.min(P.vel.y+6*s*dt,2.4*s);   // carried up several metres, then flung out
+      if((game.devT=(game.devT||0)-dt)<=0){game.devT=1.2;hurt(0.8+0.5*s,'storm')}
     }}}
 // the rover: shoved sideways, spun, and (in the core) lifted right off the ground
 function devilPushRover(dt){
   if(cave.active)return;
   for(const d of devils){const f=devilAt(d,R.pos.x,R.pos.z);if(!f)continue;const s=d.size;
-    R.pos.x+=(f.tx*5-f.nx*2)*f.k*s*dt;R.pos.z+=(f.tz*5-f.nz*2)*f.k*s*dt;R.yaw+=f.k*1.4*s*dt;
-    if(f.dist<devilCore(d)*1.3&&R.pos.y-groundHeight(R.pos.x,R.pos.z)<1.5*s){R.vy=Math.max(R.vy,2.6*s);R.air=true;R.speed*=0.97;if(P.mode==='rover'&&(game.devR=(game.devR||0)-dt)<=0){game.devR=3;toast('The dust devil lifts the rover!','bad')}}}}
+    R.pos.x+=(f.tx*3-f.nx*1.2)*f.k*s*dt;R.pos.z+=(f.tz*3-f.nz*1.2)*f.k*s*dt;R.yaw+=f.k*0.8*s*dt;
+    if(f.dist<devilCore(d)*1.3&&R.pos.y-groundHeight(R.pos.x,R.pos.z)<1.5*s){R.vy=Math.max(R.vy,1.5*s);R.air=true;R.speed*=0.97;if(P.mode==='rover'&&(game.devR=(game.devR||0)-dt)<=0){game.devR=3;toast('The dust devil lifts the rover!','bad')}}}}
 // creatures and dropped items get dragged around too
 function devilPushThings(dt){
   if(!S||cave.active)return;

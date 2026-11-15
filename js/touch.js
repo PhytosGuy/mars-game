@@ -26,15 +26,15 @@ const TI={
   build:'<svg viewBox="0 0 24 24"><path d="M4 20l9-9M14 4l6 6-3 3-6-6z" stroke="currentColor" stroke-width="2.6" fill="none"/><path d="M11 7l6 6" stroke="currentColor" stroke-width="2"/></svg>',
   pause:'<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>'};
 const TBTNS=[
-  ['t-jump',TI.jump,'Space',{right:'20px',bottom:'22px'},'big','Jump'],
-  ['t-use',TI.use,'use',{right:'124px',bottom:'22px'},'big','Use'],
-  ['t-int',TI.f,'KeyF',{right:'128px',bottom:'128px'},'','Interact'],
-  ['t-run',TI.run,'sprint',{right:'30px',bottom:'128px'},'','Run'],
-  ['t-car',TI.car,'KeyE',{right:'226px',bottom:'128px'},'','Rover'],
-  ['t-menu',TI.menu,'Tab',{right:'14px',top:'12px'},'sm','Menu'],
-  ['t-map',TI.map,'KeyM',{right:'78px',top:'12px'},'sm','Map'],
-  ['t-build',TI.build,'KeyB',{right:'142px',top:'12px'},'sm','Build'],
-  ['t-pause',TI.pause,'Escape',{right:'206px',top:'12px'},'sm','Pause'],
+  ['t-jump',TI.jump,'Space',{right:'14px',bottom:'16px'},'big','Jump'],
+  ['t-use',TI.use,'use',{right:'90px',bottom:'12px'},'','Use'],
+  ['t-run',TI.run,'sprint',{right:'18px',bottom:'92px'},'','Run'],
+  ['t-int',TI.f,'KeyF',{right:'78px',bottom:'74px'},'ctx int','Interact'],
+  ['t-car',TI.car,'KeyE',{right:'146px',bottom:'16px'},'ctx car','Rover'],
+  ['t-menu',TI.menu,'Tab',{right:'10px',top:'10px'},'sm','Menu'],
+  ['t-map',TI.map,'KeyM',{right:'56px',top:'10px'},'sm','Map'],
+  ['t-build',TI.build,'KeyB',{right:'102px',top:'10px'},'sm','Build'],
+  ['t-pause',TI.pause,'Escape',{right:'148px',top:'10px'},'sm','Pause'],
 ];for(const[id,icon,action,pos,size,cap]of TBTNS){const b=document.createElement('button');b.className='tbtn '+size;b.id=id;b.innerHTML=icon+'<i>'+cap+'</i>';b.title=cap;Object.assign(b.style,pos);b.dataset.a=action;tui.appendChild(b);
   b.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();initAudio();touchPress(action,b,true)},{passive:false});
   b.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();touchPress(action,b,false)},{passive:false});
@@ -103,3 +103,8 @@ setInterval(()=>{
   if(on){const car=$('#t-car');car.querySelector('i').textContent=P.mode==='rover'?'Exit':'Rover';$('#t-build').classList.toggle('on',!!build.active);$('#t-run').classList.toggle('on',!!keys.ShiftLeft)}
   if(touch.use)aimCenter();
 },120);
+
+// show Interact only when there's something to interact with, and Rover only near the rover
+function touchContext(){if(!isTouchDevice()||game.state!=='play')return;const t=$('#touchui');
+  t.classList.toggle('canint',!!game.hasHint);t.classList.toggle('cancar',P.mode==='rover'||Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<9)}
+setInterval(touchContext,250);
