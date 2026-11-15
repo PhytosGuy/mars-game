@@ -89,8 +89,8 @@ function updateHUD(){
   let cur=false;setHTML('j-list',items.map(([t,d])=>{const c=!d&&!cur;if(c)cur=true;return`<li class="${d?'done':c?'cur':''}">${t}</li>`}).join(''));
   // the next task, always shown big, with progress (it flashes when you finish one)
   {const nx=items.find(i=>!i[1]),dn=items.filter(i=>i[1]).length,el=$('#j-cur');
-    if(el){if(nx){el.innerHTML=`<span class="jn">Next task</span><b>${nx[0]}</b><i class="jbar"><i style="width:${items.length?dn/items.length*100:0}%"></i></i>`;el.classList.remove('hidden')}else el.classList.add('hidden');
-      if(game.jDone!==undefined&&dn>game.jDone){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');beep(880,0.08);beep(1320,0.12,'sine',0.06,0.09)}game.jDone=dn}}
+    game.nextTask=nx?{text:nx[0],dn,n:items.length}:null;if(el)el.classList.add('hidden');
+    {const gEl=$('#guide');if(gEl&&game.jDone!==undefined&&dn>game.jDone){gEl.classList.remove('flash');void gEl.offsetWidth;gEl.classList.add('flash');beep(880,0.08);beep(1320,0.12,'sine',0.06,0.09)}game.jDone=dn}}
   // wardrobe hanger at base
   $('#hanger').classList.toggle('hidden',!(P.mode==='foot'&&nearHab(P.pos,12)&&$('#wardrobe').classList.contains('hidden')));
   if(invUI.open&&(game.colT=(game.colT||0)+1)%4===0){if(invUI.mtab==='inv')renderPlayerCard();else if(invUI.mtab==='colony'||invUI.mtab==='crew')renderColony()}
@@ -250,10 +250,10 @@ function computeGuide(){
   if(S.brownout)return buildGuide('solar','Power is short: build a Solar Array');
   if(S.samples.length>=sampleCap()&&count('lab'))return labGuide('Sample cache full: take it to the lab');
   let g=null;
-  const mi=S.mission;if(mi!=null&&CHAPTERS[mi]){const o=CHAPTERS[mi].objs.find(o=>!S.objDone.has(mi+':'+o.id));if(o)g=(GUIDES[o.id]||(()=>({text:o.text})))()}
+  const mi=S.mission;if(mi!=null&&CHAPTERS[mi]){const o=CHAPTERS[mi].objs.find(o=>!S.objDone.has(mi+':'+o.id));if(o){g=(GUIDES[o.id]||(()=>({text:o.text})))();if(g)g.task=true}}
   if(!g&&S.waypoint)g={x:S.waypoint.x,z:S.waypoint.z,r:3,text:'Head to your waypoint'};
   if(!g)return null; // nothing tracked: no arrow, just explore
-  if(g.x!==undefined&&foot&&dist(g)>180&&Math.hypot(R.pos.x-f.x,R.pos.z-f.z)>6)g={x:R.pos.x,z:R.pos.z,r:3,text:'It’s far: take the rover',near:'Press <span class="key">E</span> to get in'};
+  if(g.x!==undefined&&foot&&dist(g)>180&&Math.hypot(R.pos.x-f.x,R.pos.z-f.z)>6)g={x:R.pos.x,z:R.pos.z,r:3,text:'It’s far: take the rover',task:g.task,near:'Press <span class="key">E</span> to get in'};
   return g;
 }
 // ONE instruction on screen at a time. Priority: build mode > action in progress > nearby action > the current task.
@@ -271,7 +271,7 @@ function updateGuide(dt){
     const k=cave.active?1:clamp(d/40,1,8);u.cone.scale.setScalar(k);u.cone.position.y=2.6*k+Math.sin(now*3)*0.4*k;
     u.ring.scale.setScalar(g.r||2);u.ring.position.y=0.3;u.ring.material.opacity=0.5+0.3*Math.sin(now*4);u.beam.visible=d>40&&!cave.active;
   }else guideArrow.visible=guideBeacon.visible=false;
-  let text='',showArrow=false,dist='',cls='';
+  let text='',showArrow=false,dist='',cls='',task=false;
   if(build.active){text=build.line;cls='build'}
   else if(game.busy){text=game.busy}
   else if(vac.mode||vac.msg){text=esc(vac.msg||'Working…')}
@@ -280,8 +280,11 @@ function updateGuide(dt){
   else if(g){
     if(close&&g.near)text=g.near;
     else{text=g.text;if(has){showArrow=true;dist=fmtDist(d)}}
+    task=!!(g.task&&game.nextTask);
   }
-  const gEl=$('#guide');gEl.classList.toggle('none',!text);gEl.className=(text?'':'none ')+cls;
+  // one box at the top: the next task's label and progress sit around the instruction for it
+  const gEl=$('#guide'),fl=gEl.classList.contains('flash');gEl.className=(text?'':'none ')+cls+(task?' task':'')+(fl?' flash':'');
+  if(task){const nt=game.nextTask;setTxt('g-label',`Next task · ${nt.dn+1} of ${nt.n}`);$('#g-bar').firstChild.style.width=(nt.n?nt.dn/nt.n*100:0)+'%'}
   $('#g-arrow').style.display=showArrow?'':'none';
   if(showArrow)$('#g-arrow').style.transform=`rotate(${wrapA(cam.yaw-a)}rad)`;
   setHTML('g-text',text);setTxt('g-dist',dist);drawMinimap(dt);
