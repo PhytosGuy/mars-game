@@ -28,11 +28,11 @@
   function frame() {
     const y = scrollY, H = document.documentElement.scrollHeight - innerHeight;
     bar.style.transform = `scaleX(${H > 0 ? y / H : 0})`;
-    nav.classList.toggle('show', y > innerHeight * 0.7);
-    const a = stages[0].getBoundingClientRect().top, b = stages[2].getBoundingClientRect().bottom;
+    if (nav) nav.classList.toggle('show', y > innerHeight * 0.7 || document.body.classList.contains('info'));
+    if (stages[0] && dots) { const a = stages[0].getBoundingClientRect().top, b = stages[2].getBoundingClientRect().bottom;
     dots.classList.toggle('show', a < innerHeight * 0.5 && b > innerHeight * 0.5);
     let cur = -1; stages.forEach((s, i) => { const r = s.getBoundingClientRect(); if (r.top < innerHeight * 0.5 && r.bottom > innerHeight * 0.5) cur = i; });
-    dl.forEach((d, i) => d.classList.toggle('on', i === cur));
+    dl.forEach((d, i) => d.classList.toggle('on', i === cur)); }
     if (!reduce) for (const el of par) {
       const r = el.parentElement.getBoundingClientRect();
       if (r.bottom < -200 || r.top > innerHeight + 200) continue;

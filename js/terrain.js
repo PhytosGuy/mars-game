@@ -4,7 +4,26 @@
    TERRAIN
    ========================================================= */
 let SITE=SITES.jezero,N1,N2,N3,N4,landingH=0;
-const TS={h:0,ice:0,dune:0,crater:0,mtn:0,terr:0},TS2={...TS},TS3={...TS};
+const TS={h:0,ice:0,dune:0,crater:0,mtn:0,terr:0,iceB:0,crys:0},TS2={...TS},TS3={...TS};
+/* ---------- ice biome: a frozen plain with mountains of blue ice crystal ----------
+   The site's first ice patch (SITE.ice[0]) is the biome; on the Ice-rich Plains the whole site is one.
+   Each crystal mountain is a sharp, six-sided spike in the ground itself (so you can climb it and can't walk through it),
+   with a crystal model on top. */
+const ICE_G=72;
+function iceBiomeW(x,z){if(SITE.iceWorld)return 1;let w=0;for(const b of SITE.ice.slice(0,1)){const d=Math.hypot(x-b[0],z-b[1]);w=Math.max(w,1-smooth(b[2]*0.78,b[2],d))}return w}
+// the crystal spike in grid cell (gx,gz), or null
+function iceSpike(gx,gz){
+  const h=hash2(gx,gz,SITE.seed+911);if(h>(SITE.iceWorld?0.36:0.6))return null;
+  const x=(gx+0.2+0.6*hash2(gx,gz,SITE.seed+912))*ICE_G,z=(gz+0.2+0.6*hash2(gx,gz,SITE.seed+913))*ICE_G;
+  if(x*x+z*z<200*200)return null;const w=iceBiomeW(x,z);if(w<0.9)return null;
+  const a=hash2(gx,gz,SITE.seed+914),b=hash2(gx,gz,SITE.seed+915);
+  return{x,z,r:11+a*20,h:24+Math.pow(b,1.4)*70,rot:a*1.05}}
+function iceSpikes(x,z,o){
+  let v=0,c=0;const gx=Math.floor(x/ICE_G),gz=Math.floor(z/ICE_G);
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const sp=iceSpike(gx+i,gz+j);if(!sp)continue;
+    const dx=x-sp.x,dz=z-sp.z,ca=Math.cos(sp.rot),sa=Math.sin(sp.rot),u=Math.abs(dx*ca-dz*sa),w=Math.abs(dx*sa+dz*ca);
+    const t=Math.max(u*0.866+w*0.5,w)/sp.r;if(t>=1)continue;const hv=sp.h*Math.pow(1-t,1.15);if(hv>v)v=hv;c=Math.max(c,1-t)}
+  o.crys=c;return v}
 
 function craters(x,z,o){
   const CR=230;let h=0,c=0;
@@ -25,20 +44,23 @@ function craters(x,z,o){
   o.crater=c;return h;
 }
 function rawSample(x,z,o){
-  o.terr=0;
+  o.terr=0;o.mtn=0;
   let h=fbm(N1,x*0.0022,z*0.0022,4)*SITE.hills;
   // mountain ranges on every site (sites with big ranges keep them): ridged peaks up to ~170 m
-  const mm=smooth(-0.25,0.45,N2(x*0.0007+31,z*0.0007-17))*Math.max(SITE.mtn,0.6);
+  const dO=Math.hypot(x,z),mm=smooth(-0.25,0.45,N2(x*0.0007+31,z*0.0007-17))*Math.max(SITE.mtn,0.6)*(SITE.rangesFar?smooth(SITE.rangesFar-350,SITE.rangesFar,dO):1);
   let mt=0;
   if(mm>0.001){const r=ridged(N2,x*0.0024,z*0.0024);const rr=Math.max(0,r-0.3)/0.7;mt=rr*mm;h+=rr*rr*170*mm+smooth(0.2,0.9,rr)*N1(x*0.012,z*0.012)*6*mm}
   const dm=smooth(0.15,0.55,N3(x*0.0011-50,z*0.0011+20))*SITE.dunes;
   if(dm>0.001){const u=x*0.8+z*0.6+N1(x*0.01,z*0.01)*12;const s=0.5+0.5*Math.sin(u*0.11);h+=s*s*s*7*dm}
   h+=craters(x,z,o);
-  if(SITE.rim){const d=Math.hypot(x,z),R=SITE.rim[0];h+=SITE.rim[1]*Math.exp(-(((d-R)/190)**2))*(0.75+0.25*N2(x*0.004,z*0.004))+(d>R?SITE.rim[1]*0.45*smooth(R,R+700,d):0)}
+  if(SITE.rim){const d=dO,R=SITE.rim[0],W=SITE.rim[2]||190;h+=SITE.rim[1]*Math.exp(-(((d-R)/W)**2))*(0.75+0.25*N2(x*0.004,z*0.004))+(d>R?SITE.rim[1]*0.45*smooth(R,R+700,d):0)}
   for(const f of SITE.features){
     const d2=((x-f.x)**2+(z-f.z)**2)/(f.r*f.r);
     if(d2<4){
-      const g=Math.exp(-d2*2.2);let fh=f.h*g*(0.88+0.12*N3(x*0.01,z*0.01));
+      const g=Math.exp(-d2*2.2),t=Math.sqrt(d2);let fh;
+      if(f.cone){fh=f.h*Math.pow(Math.max(0,1-t),1.25)+f.h*0.1*Math.exp(-t*t*2);fh*=0.9+0.1*N3(x*0.012,z*0.012);if(f.caldera&&t<0.16){fh-=(0.16-t)/0.16*f.h*0.22}h+=fh;continue}
+      if(f.peak){if(t>=1)continue;fh=f.h*Math.pow(1-t,1.7)*(0.85+0.3*Math.max(0,ridged(N1,x*0.02,z*0.02)));h+=fh;o.mtn=Math.max(o.mtn,(1-t)*0.9);continue}
+      fh=f.h*g*(0.88+0.12*N3(x*0.01,z*0.01));
       if(f.terrace){const k=fh/f.terrace,fl=Math.floor(k);fh=(fl+smooth(0,0.4,k-fl))*f.terrace;o.terr=Math.max(o.terr,g)}
       if(f.caldera&&d2<0.07)fh-=(0.07-d2)/0.07*70;
       h+=fh;
@@ -47,12 +69,15 @@ function rawSample(x,z,o){
   h+=N4(x*0.045,z*0.045)*0.9+N4(x*0.11+7,z*0.11)*0.3;
   let ice=smooth(SITE.iceTh,SITE.iceTh+0.18,N4(x*0.0013-200,z*0.0013+80)*0.5+0.5);
   for(const b of SITE.ice){const d=Math.hypot(x-b[0],z-b[1]);ice=Math.max(ice,1-smooth(b[2]*0.45,b[2],d))}
-  o.h=h;o.ice=ice;o.dune=dm;o.mtn=mt;
+  // inside the ice biome the ground flattens into a frozen plain, then the crystal mountains rise out of it
+  const ib=iceBiomeW(x,z);let dmo=dm,mto=Math.max(mt,o.mtn||0);o.crys=0;
+  if(ib>0){const base=fbm(N1,x*0.0016,z*0.0016,2)*4;h=lerp(h,base+(SITE.iceWorld?0:Math.min(h,base+20)*0.3),ib*0.9);dmo*=1-ib;mto*=1-ib;o.crater*=1-ib;h+=iceSpikes(x,z,o)*ib;ice=Math.max(ice,ib)}
+  o.h=h;o.ice=ice;o.dune=dmo;o.mtn=mto;o.iceB=ib;
 }
 function sample(x,z,o){
   rawSample(x,z,o);
   const d=Math.hypot(x,z),f=smooth(55,170,d);
-  if(f<1){o.h=lerp(landingH,o.h,f);o.crater*=f;o.dune*=f;o.mtn*=f}
+  if(f<1){o.h=lerp(landingH,o.h,f);o.crater*=f;o.dune*=f;o.mtn*=f;o.crys*=f}
   if(typeof caveBowl==='function')o.h-=caveBowl(x,z);
   if(typeof spireH==='function')o.h+=spireH(x,z);
 }
@@ -91,7 +116,7 @@ function groundHeight(x,z){
 }
 
 const TC={dust:new THREE.Color('#d48a55'),rust:new THREE.Color('#b0532c'),deep:new THREE.Color('#843820'),basalt:new THREE.Color('#4e2c24'),
-  sand:new THREE.Color('#5e3a2e'),frost:new THREE.Color('#e8d3c6'),crater:new THREE.Color('#9a4527'),layerA:new THREE.Color('#d6a072'),layerB:new THREE.Color('#9c5636'),dug:new THREE.Color('#6e321d')};
+  sand:new THREE.Color('#5e3a2e'),frost:new THREE.Color('#e8d3c6'),iceSheet:new THREE.Color('#e4edf2'),iceBlue:new THREE.Color('#6eaee6'),iceDeep:new THREE.Color('#3f78c0'),crater:new THREE.Color('#9a4527'),layerA:new THREE.Color('#d6a072'),layerB:new THREE.Color('#9c5636'),dug:new THREE.Color('#6e321d')};
 const _tc=new THREE.Color();
 function terrainColor(x,z,s,slope,out){
   const n=N4(x*0.02+3,z*0.02)*0.5+0.5,n2=N3(x*0.006,z*0.006)*0.5+0.5;
@@ -103,6 +128,7 @@ function terrainColor(x,z,s,slope,out){
   if(s.dune>0.05)out.lerp(TC.sand,smooth(0.05,0.5,s.dune)*0.75);
   if(SITE.dark)out.lerp(TC.basalt,SITE.dark*0.6);
   if(s.ice>0.35&&slope<0.6)out.lerp(TC.frost,smooth(0.35,1,s.ice)*0.42*(1-slope));
+  if(s.iceB>0.01){out.lerp(TC.iceSheet,s.iceB*0.82);if(s.crys>0.01){_tc.copy(TC.iceBlue).lerp(TC.iceDeep,smooth(0.3,1,s.crys)*0.6);out.lerp(_tc,smooth(0,0.18,s.crys)*s.iceB)}}
   const v=0.92+n*0.16;out.r*=v;out.g*=v;out.b*=v;
 }
 
@@ -167,9 +193,9 @@ function buildChunk(cx,cz){
   im.count=used;im.castShadow=true;im.receiveShadow=true;
   if(im.instanceColor)im.instanceColor.needsUpdate=true;
   terrainGroup.add(im);
-  const ch={cx,cz,mesh,im,rocks};if(typeof chunkDeposits==='function')chunkDeposits(ch);return ch;
+  const ch={cx,cz,mesh,im,rocks,cr:crystalsFor(ox,oz)};if(ch.cr)terrainGroup.add(ch.cr);if(typeof chunkDeposits==='function')chunkDeposits(ch);return ch;
 }
-function disposeChunk(c){if(typeof chunkDepositsDispose==='function')chunkDepositsDispose(c);terrainGroup.remove(c.mesh);terrainGroup.remove(c.im);c.mesh.geometry.dispose();c.im.dispose()}
+function disposeChunk(c){if(c.cr){terrainGroup.remove(c.cr);c.cr.dispose()}if(typeof chunkDepositsDispose==='function')chunkDepositsDispose(c);terrainGroup.remove(c.mesh);terrainGroup.remove(c.im);c.mesh.geometry.dispose();c.im.dispose()}
 function updateChunks(px,pz,budget){
   const ccx=Math.floor(px/CHUNK),ccz=Math.floor(pz/CHUNK),need=[];
   for(let i=-VIEW;i<=VIEW;i++)for(let j=-VIEW;j<=VIEW;j++){
@@ -180,8 +206,22 @@ function updateChunks(px,pz,budget){
   for(let q=0;q<Math.min(budget,need.length);q++){const[,x,z,k]=need[q];chunks.set(k,buildChunk(x,z))}
   for(const[k,c]of chunks)if((c.cx-ccx)**2+(c.cz-ccz)**2>(VIEW+2)**2){disposeChunk(c);chunks.delete(k)}
 }
+// six-sided crystal with a pointed tip, and the clusters that crown each ice spike
+const crystalGeo=new THREE.LatheGeometry([new THREE.Vector2(0.001,0),new THREE.Vector2(1,0.02),new THREE.Vector2(1,0.74),new THREE.Vector2(0.001,1)],6);
+const crystalMat=new THREE.MeshStandardMaterial({color:'#7ec3f2',emissive:'#1f5fa8',emissiveIntensity:0.55,roughness:0.1,metalness:0.08,flatShading:true});
+function crystalsFor(ox,oz){
+  if(!SITE.iceWorld&&!SITE.ice.length)return null;const list=[];
+  for(let gx=Math.floor(ox/ICE_G)-1;gx<=Math.floor((ox+CHUNK)/ICE_G);gx++)for(let gz=Math.floor(oz/ICE_G)-1;gz<=Math.floor((oz+CHUNK)/ICE_G);gz++){
+    const sp=iceSpike(gx,gz);if(sp&&sp.x>=ox&&sp.x<ox+CHUNK&&sp.z>=oz&&sp.z<oz+CHUNK)list.push(sp)}
+  if(!list.length)return null;const im=new THREE.InstancedMesh(crystalGeo,crystalMat,list.length*5);let n=0;
+  for(const sp of list){const rng=mulberry(hashI(Math.round(sp.x),Math.round(sp.z),SITE.seed+5)),g=groundHeight(sp.x,sp.z)-sp.h;
+    for(let k=0;k<5;k++){const main=k===0,a=rng()*TAU,off=main?0:sp.r*(0.25+rng()*0.3),hh=main?sp.h*1.08:sp.h*(0.35+rng()*0.35),rr=main?sp.r*0.36:sp.r*(0.12+rng()*0.1);
+      const px=sp.x+Math.cos(a)*off,pz=sp.z+Math.sin(a)*off,base=main?g+sp.h*0.02:groundHeight(px,pz)-hh*0.15;
+      _q.setFromEuler(_e.set(main?0:Math.cos(a)*0.45,sp.rot+k,main?0:Math.sin(a)*0.45));_v1.set(px,base,pz);_v2.set(rr,hh,rr);_m4.compose(_v1,_q,_v2);im.setMatrixAt(n++,_m4)}}
+  im.count=n;im.castShadow=true;im.receiveShadow=true;return im}
 function initSite(key){
   SITE=SITES[key];
+  if(SITE.peakRing&&!SITE._peaks){const P=SITE.peakRing,r=mulberry(SITE.seed+3);for(let i=0;i<P.n;i++){const a=i/P.n*TAU+(r()-0.5)*0.35,d=P.r0+r()*(P.r1-P.r0);SITE.features.push({x:Math.cos(a)*d,z:Math.sin(a)*d,r:55+r()*40,h:85+r()*80,peak:true})}SITE._peaks=true}
   N1=makeNoise(SITE.seed);N2=makeNoise(SITE.seed+101);N3=makeNoise(SITE.seed+202);N4=makeNoise(SITE.seed+303);
   rawSample(0,0,TS);landingH=TS.h;
   hCache.clear();digMap.clear();minedRocks.clear();dirtyChunks.clear();

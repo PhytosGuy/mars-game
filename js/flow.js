@@ -225,10 +225,9 @@ $('#ctrl-list').innerHTML=CONTROLS;$('#p-ctrl').innerHTML=CONTROLS;
 $('#b-ctrl').onclick=()=>$('#ctrl-list').classList.toggle('hidden');
 // (home screen, expeditions list, world creation and settings live in menus.js)
 function renderSites(){
-  const dots=n=>'●'.repeat(n)+'○'.repeat(3-n);
+  // each landing site shows a picture of where you will set up your base
   $('#sgrid').innerHTML=Object.entries(SITES).map(([k,s])=>`<div class="site ${k===selSite?'sel':''}" data-site="${k}"><h3>${s.name}</h3><div class="ins">${s.inspired}</div>
-    <div class="pc"><b>+</b> ${s.pros}<br><i>−</i> ${s.cons}</div>
-    <div class="meter">Easy building <span>${dots(s.meters.build)}</span></div><div class="meter">Water access <span>${dots(s.meters.water)}</span></div><div class="meter">Science value <span>${dots(s.meters.science)}</span></div></div>`).join('');
+    <img class="sitepic" src="img/sites/${k}.jpg?v=1" alt="Your base site at the ${s.name}" loading="lazy" onerror="this.remove()"></div>`).join('');
   $$('#sgrid .site').forEach(el=>el.onclick=()=>{if(selSite===el.dataset.site)return;selSite=el.dataset.site;renderSites();initSite(selSite);tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,40)});
 }
 $('#p-resume').onclick=()=>togglePause(false);

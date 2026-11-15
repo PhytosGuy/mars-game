@@ -14,7 +14,7 @@ Then go to http://localhost:8123. Add `?dev` to the URL to bypass the browser ca
 ## Deploy for free (Vercel)
 Live at https://mars-last-colony.vercel.app (the older https://mars-game-nu.vercel.app still works). The Vercel project `mars-game` is connected to this GitHub repo (PhytosGuy/mars-game).
 
-The NASA Space Apps promo website is in `nasaspaceappschallenge/` and is live at https://mars-last-colony.vercel.app/nasaspaceappschallenge. `/NAA` and the earlier spellings redirect there.
+The NASA Space Apps promo website is in `NAA/` and is live at https://mars-last-colony.vercel.app/NAA, with the detailed challenge page at `/NAA/spaceapps/`. The NASA Mission Design Lab is its own page in `missionlab/` (https://mars-last-colony.vercel.app/missionlab/): every choice is shown in 3D, launched missions are saved in the browser, and the game gives the colony research points for each one.
 
 - **Auto-deploy:** every push to `main` redeploys the live site automatically. Pushes to other branches get their own preview link.
 - **CLI (optional):** `npx vercel --prod` in this folder deploys straight from your computer.
@@ -68,6 +68,14 @@ Tab: open the menu on Inventory, Tab again for the next page (Shift+Tab goes bac
 - **Safe base:** hostile creatures, dust devils and meteor impacts stay away from your habitats.
 - **Onboarding:** a guided tour of the screen and controls the first time you land. Skip (bottom right) ends it, and Settings → Replay the tour shows it again.
 - **Touch controls:** a rounded block-style joystick and buttons, sized and spaced for phones.
+
+## New in 4.7
+- **Landing sites that look like their names:** the Ice-rich Plains is a flat ice sheet with blue ice-crystal mountains; the Crater Basin puts your base on the floor of a big meteorite crater; the Volcanic Highlands are a small plain ringed by four large volcanoes under a red sky; the Rocky Plains are ringed by pointed mountains; the Jezero-type Delta is unchanged. Each site in the expedition picker shows a picture of where your base will be.
+- **Ice biome:** every site has a frozen plain with climbable mountains of blue ice crystal, and the water mission (“scan an ice signature”) sends you there.
+- **Mission Lab:** its own page (`missionlab/`) with a 3D model for every choice, your spacecraft assembled live and launched in 3D, the solar system and flight path on the trajectory step, and every launched mission saved under My missions. Each saved mission gives your colony research points once.
+- **Custom graphics:** Settings → Graphics → Custom switches shaders (post-processing), glow, colour grading and vignette, shadows, sharp shadows and cel shading on or off, and sets the resolution.
+- **Phones:** hints name the on-screen buttons (“Tap Interact”) instead of keyboard keys, and messages, NASA facts and story cards use smaller text.
+- **Loading:** until the game has loaded, buttons are held back and a “Wait for the game to load” message appears.
 
 ## New in 4.2
 - **Landing:** starts in orbit above Mars, then you ride down in a detailed cockpit with a big window and two live screens: a LIDAR terrain scan and a chase camera with flight statistics. After touchdown you turn round, the hatch opens and you walk down the lander's own stairs (the same lander that stays at your base). Space skips every sequence.

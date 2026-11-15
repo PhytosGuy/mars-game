@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NASA Space Apps Challenge | Mars: Last Colony</title>
+<meta name="description" content="Mars: Last Colony, Team NAA’s entry for the NASA Space Apps Challenge 2026 (Space Mission Design Game): the challenge, our objective, how the game works, the NASA science inside it, how it was made and where to play.">
+<meta property="og:title" content="Mars: Last Colony · NASA Space Apps Challenge 2026">
+<meta property="og:image" content="https://mars-last-colony.vercel.app/NAA/img/g_wide.jpg">
+<meta name="theme-color" content="#110d0c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='%23d9622b'/%3E%3Ccircle cx='24' cy='26' r='5' fill='%23a8441b'/%3E%3Ccircle cx='40' cy='40' r='7' fill='%23a8441b'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/NAA/style.css">
+<link rel="stylesheet" href="/NAA/spaceapps/info.css">
+</head>
+<body class="info">
+<div id="progress" aria-hidden="true"></div>
+
+<header id="nav" class="show">
+  <a class="backbtn" href="/NAA/" aria-label="Back to the overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</a>
+  <a class="brand" href="/NAA/"><span class="planet" aria-hidden="true"></span>Mars: Last Colony</a>
+  <a class="btn small primary" href="https://mars-last-colony.vercel.app" target="_blank" rel="noopener">Play</a>
+</header>
+
+<!-- TOP -->
+<section class="ihero">
+  <div class="bg" data-speed="0.2"><img src="/NAA/img/g_vista.jpg" alt="The colony from above at Gale crater"></div>
+  <div class="shade"></div>
+  <div class="ihero-in">
+    <p class="kicker fade">NASA Space Apps Challenge 2026 · Team NAA</p>
+    <h1 class="fade d1">Mars: <em>Last Colony</em></h1>
+    <p class="tag fade d2">Our entry for the <b>Space Mission Design Game</b> challenge: the challenge, our objective, how the game works, the NASA science inside it, and how we built it.</p>
+    <div class="cta center fade d3">
+      <a class="btn primary" href="https://mars-last-colony.vercel.app" target="_blank" rel="noopener">Play the game</a>
+      <a class="btn ghost" href="https://github.com/PhytosGuy/mars-game" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn ghost" href="https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/" target="_blank" rel="noopener">The challenge</a>
+    </div>
+  </div>
+</section>
+
+<div class="doc">
+  <!-- contents, as numbered circles -->
+  <nav class="toc" aria-label="Contents">
+    <a href="#challenge"><i>1</i>The challenge</a>
+    <a href="#objective"><i>2</i>Our objective</a>
+    <a href="#answer"><i>3</i>How we answer it</a>
+    <a href="#stage1"><i>4</i>Mission Design Lab</a>
+    <a href="#stage2"><i>5</i>Landing</a>
+    <a href="#stage3"><i>6</i>Sustain</a>
+    <a href="#nasa"><i>7</i>NASA science</a>
+    <a href="#learning"><i>8</i>Learning in context</a>
+    <a href="#tabmenu"><i>9</i>The Tab menu</a>
+    <a href="#data"><i>10</i>NASA data</a>
+    <a href="#criteria"><i>11</i>Judging criteria</a>
+    <a href="#made"><i>12</i>How it was made</a>
+    <a href="#links"><i>13</i>Links</a>
+  </nav>
+
+  <main class="body">
+    <!-- 1 -->
+    <section id="challenge" class="part">
+      <span class="pnum fade">1</span>
+      <h2 class="fade">The challenge</h2>
+      <p class="lede fade">NASA’s 2026 <a href="https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/" target="_blank" rel="noopener">Space Mission Design Game</a> challenge (difficulty: Beginner/Youth and Intermediate, subject: Games) asks teams to:</p>
+      <blockquote class="fade">“…create an interactive game that allows participants to design, manage, and simulate a complete space mission while making engineering decisions, managing limited resources, and evaluating how each choice shapes the success of their mission.”</blockquote>
+      <p class="fade">Designing a mission means balancing the science goal, the spacecraft, its instruments, the rocket, the orbit, power, mass, communications, budget and lifetime. A choice that helps one part often hurts another: a better instrument brings more science, but also more mass, power, data and cost. Students rarely get to try a whole mission from concept to operation, so these trade-offs stay abstract. NASA asked for a game that closes that gap.</p>
+      <h3 class="fade">What the brief asks for</h3>
+      <ul class="ticks fade">
+        <li>Define a mission objective and its requirements</li>
+        <li>Design a spacecraft and choose its scientific instruments</li>
+        <li>Choose a launch vehicle and an orbit or trajectory</li>
+        <li>Manage mass, power, budget, data, communications and time</li>
+        <li>Show how each decision affects the rest of the mission</li>
+        <li>Simulate the mission and explain why it succeeds or fails</li>
+        <li>Single-player or a team of up to four</li>
+        <li>Accessible to every level, with simple explanations</li>
+      </ul>
+      <p class="fade small">NASA’s resources for the challenge, which we used: <i>Design and Develop Science Missions</i>, the <i>General Mission Analysis Tool (GMAT)</i>, JPL’s <i>Concept Maturity Levels</i>, Goddard’s <i>Mission Design Lab</i>, <i>NASA Mission Viz</i>, the Webb telescope learning game, <i>CubeSat 101</i>, the 2023 challenge <i>Visualize a Space Mission Using Virtual Reality</i>, and the Canadian Space Agency’s games and activities.</p>
+    </section>
+
+    <!-- 2 -->
+    <section id="objective" class="part">
+      <span class="pnum fade">2</span>
+      <h2 class="fade">Our objective</h2>
+      <p class="lede fade">Our game <em>Mars: Last Colony</em> uses captivating and educational gameplay to teach users how to plan and structure a NASA space mission, how to land a shuttle on Mars, and how to sustain life on Mars. Throughout the game, players are met with challenges and decisions that impact the future of their colony.</p>
+      <div class="two-cards">
+        <div class="card fade d1"><h3>Educational</h3><p>Real NASA data, NASA’s own mission design process and 34 mission facts, each delivered at the moment it matters.</p></div>
+        <div class="card fade d2"><h3>Fun</h3><p>A landing you fly yourself, a colony to run, a planet to explore and up to four friends to play with. When learning is this engaging, players stay long enough for it to stick.</p></div>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="answer" class="part">
+      <span class="pnum fade">3</span>
+      <h2 class="fade">How we answer the brief</h2>
+      <p class="fade">The game is one journey in three stages. You design a mission, fly it down to the surface, then live with the consequences.</p>
+      <ol class="stages3 fade">
+        <li><i>1</i><b>Mission Design Lab</b><span>Plan a science mission the way NASA does</span></li>
+        <li><i>2</i><b>Landing</b><span>Fly from orbit to touchdown</span></li>
+        <li><i>3</i><b>Sustain</b><span>Keep a colony alive and growing</span></li>
+      </ol>
+      <div class="tbl fade">
+        <div class="tr th"><span>The brief asks for</span><span>Mars: Last Colony</span></div>
+        <div class="tr"><span>A mission objective and requirements</span><span>Pick science goals in the Mission Design Lab; each goal sets which instruments and destinations work</span></div>
+        <div class="tr"><span>Spacecraft and instruments</span><span>Six spacecraft types and thirteen instruments, each shown in 3D and mounted on your spacecraft as you choose</span></div>
+        <div class="tr"><span>Launch vehicle and orbit</span><span>Five real rockets with real payload limits; launch windows calculated from JPL planet positions</span></div>
+        <div class="tr"><span>Mass, power, budget, data, communications, time</span><span>Payload and launch mass limits, power choices, cost, the Deep Space Network, mission timelines; then oxygen, water, food and power on Mars</span></div>
+        <div class="tr"><span>Decisions with consequences</span><span>Heavier instruments need bigger rockets; solar power fails in dust storms; a missed launch window costs science</span></div>
+        <div class="tr"><span>Simulation and evaluation</span><span>Every requirement is verified before launch, the mission is scored, compared with real NASA missions and saved</span></div>
+        <div class="tr"><span>Team play for up to four</span><span>Co-op for four players in the browser, sharing one colony</span></div>
+        <div class="tr"><span>Accessible to every level</span><span>Three difficulty levels in the lab, a guided tour, plain-language tips and facts in context</span></div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="stage1" class="part">
+      <span class="pnum fade">4</span>
+      <h2 class="fade">Stage 1 · Mission Design Lab</h2>
+      <figure class="shot fade"><img src="/NAA/img/g_traj.jpg" alt="The Earth to Mars transfer orbit from the Mission Design Lab" loading="lazy"><figcaption>The Earth–Mars transfer, calculated from Kepler’s laws</figcaption></figure>
+      <p class="fade">The lab is its own page. It follows the same steps NASA uses to grow an idea into a mission, measured by JPL’s <b>Concept Maturity Levels</b> and the study stages of Goddard’s <b>Mission Design Lab</b>:</p>
+      <ol class="steps fade">
+        <li><i>1</i><div><b>Start</b><span>The four mission segments: launch, space, ground and user. Pick a difficulty: one, two or three science objectives.</span></div></li>
+        <li><i>2</i><div><b>CML 1 · Office Hours</b><span>Choose what to discover: Mars’s ancient water, its lost atmosphere, signs of ancient life, marsquakes, a relay link, the first galaxies, exoplanet air or Earth’s climate.</span></div></li>
+        <li><i>3</i><div><b>CML 2–3 · Concept Development and Trade Study</b><span>Compare a 3U or 6U CubeSat, an orbiter, a lander, a rover or a space telescope by mass, payload, power, cost and risk.</span></div></li>
+        <li><i>4</i><div><b>CML 4 · Point Design</b><span>Fit instruments that see the right kind of light, within the payload limit; choose solar or nuclear (RTG) power and, for telescopes, the mirror size.</span></div></li>
+        <li><i>5</i><div><b>Mission segments</b><span>Pick a rocket that can lift your mass to your destination: Electron, Falcon 9, Atlas V 541, Ariane 5 or SLS. See the ground network and who uses the data.</span></div></li>
+        <li><i>6</i><div><b>Trajectory</b><span>Find the launch window and watch your flight path across a 3D solar system, then scrub through the mission timeline (with an optional VR view).</span></div></li>
+        <li><i>7</i><div><b>Verify</b><span>Check every requirement, as NASA does with vibration and thermal-vacuum tests.</span></div></li>
+        <li><i>8</i><div><b>Launch</b><span>Name your mission and watch it launch. It is scored, compared with real NASA missions and saved.</span></div></li>
+      </ol>
+      <div class="facts4 fade">
+        <div><b>26</b><span>months between Earth–Mars launch windows</span></div>
+        <div><b>259</b><span>day Hohmann transfer</span></div>
+        <div><b>44.3°</b><span>Mars must lead Earth at launch</span></div>
+        <div><b>5</b><span>real rockets with real limits</span></div>
+      </div>
+      <div class="pair fade">
+        <figure class="shot"><img src="/NAA/img/ml_rover.jpg" alt="A rover with its instruments in the Mission Lab" loading="lazy"><figcaption>Your rover, with the instruments you chose</figcaption></figure>
+        <figure class="shot"><img src="/NAA/img/ml_rocket.jpg" alt="The rover inside the Atlas V fairing" loading="lazy"><figcaption>Inside the rocket you chose</figcaption></figure>
+      </div>
+      <p class="fade"><b>Every choice in 3D.</b> Each objective, spacecraft, instrument, power system, mirror and rocket has its own 3D model. Your spacecraft is assembled live as you add instruments, then shown inside the rocket’s fairing, and the rocket lifts off when you launch.</p>
+      <p class="fade"><b>Every mission saved.</b> Launched missions are kept in <b>My missions</b> with their model, score, mass and cost. You can reopen a report or edit a copy, and each mission gives your colony research points in the game.</p>
+      <p class="fade small">Values marked ✓ in the lab are calculated from physics or taken from NASA data; ≈ marks simplified estimates for the game.</p>
+    </section>
+
+    <!-- 5 -->
+    <section id="stage2" class="part">
+      <span class="pnum fade">5</span>
+      <h2 class="fade">Stage 2 · Landing</h2>
+      <div class="pair fade">
+        <figure class="shot"><img src="/NAA/img/g_orbit.jpg" alt="The cockpit in orbit above Mars" loading="lazy"><figcaption>Approaching Mars from orbit</figcaption></figure>
+        <figure class="shot"><img src="/NAA/img/g_descent2.jpg" alt="The cockpit during the powered descent" loading="lazy"><figcaption>Powered descent with the live LIDAR scan</figcaption></figure>
+      </div>
+      <h3 class="fade">Five landing sites</h3>
+      <p class="fade">Before you land you choose where. Each site is inspired by a real place on Mars, and each one looks and plays differently from the moment you step out.</p>
+      <div class="sites5 fade">
+        <figure><img src="/img/sites/jezero.jpg" alt="Jezero-type Delta" loading="lazy"><figcaption><b>Jezero-type Delta</b><span>An ancient river delta like the one Perseverance explores, with rich lake geology.</span></figcaption></figure>
+        <figure><img src="/img/sites/utopia.jpg" alt="Ice-rich Plains" loading="lazy"><figcaption><b>Ice-rich Plains</b><span>A flat frozen plain with mountains of blue ice crystal, like the buried ice MRO’s radar found under Utopia Planitia.</span></figcaption></figure>
+        <figure><img src="/img/sites/gale.jpg" alt="Crater Basin" loading="lazy"><figcaption><b>Crater Basin</b><span>The base sits on the floor of a huge meteorite crater, like Curiosity’s Gale Crater, with its walls all around.</span></figcaption></figure>
+        <figure><img src="/img/sites/tharsis.jpg" alt="Volcanic Highlands" loading="lazy"><figcaption><b>Volcanic Highlands</b><span>A small plain ringed by giant volcanoes under a red sky, inspired by Tharsis and Arsia Mons.</span></figcaption></figure>
+        <figure><img src="/img/sites/elysium.jpg" alt="Rocky Plains" loading="lazy"><figcaption><b>Rocky Plains</b><span>A flat plain like InSight’s Elysium Planitia, ringed by pointed mountains.</span></figcaption></figure>
+      </div>
+      <p class="fade">The landing is flown from a detailed cockpit with a big window and two live screens: a LIDAR terrain scan and a chase camera with flight statistics.</p>
+      <ol class="steps fade">
+        <li><i>1</i><div><b>Orbit</b><span>Swing in towards Mars, 6,779 km across, red from iron oxide dust.</span></div></li>
+        <li><i>2</i><div><b>Atmospheric entry</b><span>About 20,000 km/h; the heat shield reaches around 1,300 °C. The landing flies itself, because radio takes 5 to 20 minutes each way.</span></div></li>
+        <li><i>3</i><div><b>Parachute</b><span>A supersonic parachute opens about 11 km up (Perseverance’s was 21.5 m wide).</span></div></li>
+        <li><i>4</i><div><b>Heat shield released</b><span>The LIDAR sees the ground; Terrain-Relative Navigation steers to a safe spot.</span></div></li>
+        <li><i>5</i><div><b>Powered descent</b><span>You take the throttle. Mars gravity is 3.71 m/s²; touch down slower than 3 m/s.</span></div></li>
+        <li><i>6</i><div><b>Walk out</b><span>Turn round, open the hatch and walk down the stairs onto Mars.</span></div></li>
+      </ol>
+    </section>
+
+    <!-- 6 -->
+    <section id="stage3" class="part">
+      <span class="pnum fade">6</span>
+      <h2 class="fade">Stage 3 · Sustain</h2>
+      <figure class="shot fade"><img src="/NAA/img/g_wide.jpg" alt="The colony at sunset below the mountains" loading="lazy"><figcaption>The colony at Gale crater</figcaption></figure>
+      <h3 class="fade">Life support is a daily balance</h3>
+      <div class="facts4 fade">
+        <div><b>3.4 kg</b><span>oxygen a crew of four uses per sol</span></div>
+        <div><b>16 L</b><span>water per sol</span></div>
+        <div><b>7.2 kg</b><span>food per sol</span></div>
+        <div><b>43%</b><span>of Earth’s sunlight reaches Mars</span></div>
+      </div>
+      <ul class="list fade">
+        <li><b>Oxygen Unit</b> +6 kg O₂ per sol, scaled from NASA’s MOXIE experiment</li>
+        <li><b>Ice Drill</b> +39 L water per sol, only where ice lies buried</li>
+        <li><b>Greenhouse</b> +5 kg food per sol, but it draws 7 L of water</li>
+        <li><b>Power</b> solar arrays give 2.5 kW at noon and nothing at night; batteries hold 30 kWh; a fission unit gives 10 kW day and night. In a shortfall the habitat and oxygen come first.</li>
+        <li><b>17 structures</b> built from mined ore and regolith</li>
+      </ul>
+      <h3 class="fade">People, failures and progress</h3>
+      <ul class="list fade">
+        <li><b>The crew</b> an Engineer (30% fewer faults), a Botanist (15% more food), a Geologist (25% more research) and a Medical Specialist, with a Robotics Specialist and a Planetary Scientist arriving later</li>
+        <li><b>Things fail</b> habitat seals leak oxygen, water lines leak, drills jam, grow lights burn out: every repair is a race against your reserves</li>
+        <li><b>Research</b> 12 projects in 7 branches, such as Improved Electrolysis (+80% oxygen), Water Recovery (half the water, as on the ISS) and an Electrostatic Dust Shield (60% less dust)</li>
+      </ul>
+      <h3 class="fade">Six missions to self-sufficiency</h3>
+      <ol class="missions6 fade">
+        <li><i>1</i><b>Touchdown</b><span>Power and oxygen online</span></li>
+        <li><i>2</i><b>First Survival</b><span>Locate ice, grow food</span></li>
+        <li><i>3</i><b>Secrets Beneath</b><span>Lava tubes and organics, verified twice</span></li>
+        <li><i>4</i><b>Beyond the Horizon</b><span>Laboratory and field science</span></li>
+        <li><i>5</i><b>A Growing World</b><span>A landing pad and new crew</span></li>
+        <li><i>6</i><b>Humanity’s New Home</b><span>Fission power and a full sol in surplus</span></li>
+      </ol>
+      <div class="pair fade">
+        <figure class="shot"><img src="/NAA/img/g_herd.jpg" alt="An astronaut watching Loomstriders" loading="lazy"><figcaption>Wildlife near the habitat</figcaption></figure>
+        <figure class="shot"><img src="/NAA/img/g_night.jpg" alt="The colony at night" loading="lazy"><figcaption>Nightfall, near −90 °C</figcaption></figure>
+      </div>
+      <h3 class="fade">The ice biome</h3>
+      <p class="fade">Every site has an ice biome: a frozen plain with mountains of blue ice crystal that you can climb. The water mission sends you there to scan an ice signature, just as NASA’s orbiters map buried ice for future crews. On the Ice-rich Plains the whole landing site is one.</p>
+      <h3 class="fade">A planet that pushes back</h3>
+      <p class="fade">Dust storms darken the sky and smother solar arrays. Meteor strikes leave craters but expose fresh ore. Marsquakes open fissures and can seal cave entrances. Five landing sites are modelled on Jezero, Gale, Utopia, Tharsis and Elysium, with lava-tube caves to explore by rover and on foot. Pip, a small robot companion, fetches items, helps you drill and warns you about danger, and up to four friends can play together.</p>
+    </section>
+
+    <!-- 7 -->
+    <section id="nasa" class="part">
+      <span class="pnum fade">7</span>
+      <h2 class="fade">NASA science inside the game</h2>
+      <div class="nasa8 fade">
+        <div><small>MOXIE · Perseverance</small><b>Oxygen Unit</b><span>turns Martian CO₂ into breathable oxygen</span></div>
+        <div><small>Kilopower</small><b>Fission Power Unit</b><span>10 kW of continuous surface power</span></div>
+        <div><small>InSight</small><b>Seismometer</b><span>detects marsquakes before the shaking arrives</span></div>
+        <div><small>MRO · SHARAD radar</small><b>Ice prospecting</b><span>buried mid-latitude ice to drill for water</span></div>
+        <div><small>Phoenix lander</small><b>Perchlorate hazard</b><span>toxic salts scrubbed from soil and water</span></div>
+        <div><small>ISS life support</small><b>Water Recovery</b><span>recycling that halves the crew’s water use</span></div>
+        <div><small>Curiosity · Perseverance</small><b>Landing sites</b><span>Gale and Jezero craters as playable terrain</span></div>
+        <div><small>JPL · Goddard</small><b>Mission Design Lab</b><span>Concept Maturity Levels and study stages</span></div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="learning" class="part">
+      <span class="pnum fade">8</span>
+      <h2 class="fade">Learning in context</h2>
+      <p class="fade">The game holds <b>34 NASA facts</b>, each appearing when it is most relevant, so players learn by living the situation:</p>
+      <ul class="list fade">
+        <li><b>During a dust storm</b> a planet-wide storm in 2018 ended Opportunity’s 15-year mission</li>
+        <li><b>While producing oxygen</b> MOXIE generated 122 g of oxygen from the Martian atmosphere</li>
+        <li><b>As the ground shakes</b> InSight recorded over 1,300 marsquakes, the largest near magnitude 4.7</li>
+        <li><b>Under the night sky</b> Phobos orbits so fast that it rises in the west and sets in the east</li>
+      </ul>
+      <p class="fade"><b>Discoveries become technology.</b> Scan a bright crust and learn it is perchlorate, first identified by Phoenix in 2008. That knowledge unlocks scrubbers that raise greenhouse yields by 15%: one of 11 discoveries drawn from real rover and orbiter findings.</p>
+    </section>
+
+    <!-- 9 -->
+    <section id="tabmenu" class="part">
+      <span class="pnum fade">9</span>
+      <h2 class="fade">The Tab menu</h2>
+      <p class="fade">Press <b>Tab</b> (or the menu button on a phone) to open the game’s menu. Press Tab again to flip to the next page.</p>
+      <div class="tabs10 fade">
+        <div><i>1</i><b>Inventory</b><span>36 slots with a 9-slot hotbar, stacking, drag and drop, crafting, and a player card with your suit integrity, oxygen, battery, stamina, boosts and alien standing.</span></div>
+        <div><i>2</i><b>Journal</b><span>Your expedition journal: the current task, notes and discoveries, written as you play.</span></div>
+        <div><i>3</i><b>Mission Lab</b><span>Opens the NASA Mission Design Lab in a new tab and lists your latest saved missions and the research points they earned.</span></div>
+        <div><i>4</i><b>Missions</b><span>The six colony missions and their steps. Track one and the compass, guide arrow and journal lead you to its next step.</span></div>
+        <div><i>5</i><b>Colony</b><span>Life support stock and outlook, the power grid’s generation and demand, and every module, which you can switch on or off.</span></div>
+        <div><i>6</i><b>Research</b><span>12 projects in 7 branches, paid for with research points from science and the Mission Lab.</span></div>
+        <div><i>7</i><b>Crew</b><span>Your crew, their specialisms and bonuses, and the new specialists who arrive later.</span></div>
+        <div><i>8</i><b>Stats</b><span>Your expedition so far: distance, samples, discoveries, missions designed and more.</span></div>
+        <div><i>9</i><b>Logbook</b><span>Every story card, radio message and the NASA facts you have collected.</span></div>
+        <div><i>10</i><b>Mars data</b><span>The real Mars numbers the game is built on, and where each one is used (see the next section).</span></div>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="data" class="part">
+      <span class="pnum fade">10</span>
+      <h2 class="fade">NASA data in the game</h2>
+      <p class="fade">The Mars data page of the Tab menu lists the real values behind the game. Here they are with their sources.</p>
+      <div class="tbl data fade">
+        <div class="tr th"><span>Fact</span><span>Value</span><span>Used in the game for</span><span>Source</span></div>
+        <div class="tr"><span>Sol length</span><span>24 h 37 min (24.66 h)</span><span>The day–night cycle and solar power</span><span><a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noopener">NASA Mars Fact Sheet</a></span></div>
+        <div class="tr"><span>Gravity</span><span>3.72 m/s² (38% of Earth)</span><span>Long, floaty jumps and rover physics</span><span><a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noopener">NASA Mars Fact Sheet</a></span></div>
+        <div class="tr"><span>Surface pressure</span><span>About 610 Pa (0.6% of Earth)</span><span>Shown in the HUD; changes daily and with storms</span><span><a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noopener">NASA Mars Fact Sheet</a></span></div>
+        <div class="tr"><span>Temperatures</span><span>About −98 °C to −10 °C, depending on the site</span><span>Each landing site’s day and night temperatures</span><span><a href="https://science.nasa.gov/mission/mars-2020-perseverance/science-instruments/" target="_blank" rel="noopener">Perseverance’s MEDA weather station</a></span></div>
+        <div class="tr"><span>Surface radiation</span><span>About 0.64 mSv per day</span><span>Your radiation dose outside</span><span><a href="https://science.nasa.gov/mission/msl-curiosity/" target="_blank" rel="noopener">Curiosity’s RAD instrument</a></span></div>
+        <div class="tr"><span>MOXIE</span><span>Made up to about 12 g of oxygen an hour on Perseverance</span><span>The Oxygen Unit is a scaled-up version</span><span><a href="https://www.nasa.gov/missions/mars-2020-perseverance/perseverance-rover/nasas-oxygen-generating-experiment-moxie-completes-mars-mission/" target="_blank" rel="noopener">NASA: MOXIE completes its mission</a></span></div>
+        <div class="tr"><span>Buried ice</span><span>Found by MRO’s SHARAD radar at mid-latitudes</span><span>Ice signatures, the ice biome and the Ice Drill</span><span><a href="https://science.nasa.gov/mission/mars-reconnaissance-orbiter/" target="_blank" rel="noopener">Mars Reconnaissance Orbiter</a></span></div>
+        <div class="tr"><span>Perchlorates</span><span>Found in the soil by Phoenix in 2008</span><span>Salt-crust science and water purification</span><span><a href="https://science.nasa.gov/mission/phoenix/" target="_blank" rel="noopener">Phoenix lander</a></span></div>
+        <div class="tr"><span>Dust devils</span><span>Cleaned the solar panels of Spirit and Opportunity</span><span>Dust devils can clean your panels too</span><span><a href="https://science.nasa.gov/mission/mer-opportunity/" target="_blank" rel="noopener">Opportunity rover</a></span></div>
+        <div class="tr"><span>Blue sunsets</span><span>Fine dust scatters blue light near the Sun</span><span>The sky turns blue around the setting Sun</span><span><a href="https://science.nasa.gov/mars/facts/" target="_blank" rel="noopener">NASA Mars facts</a></span></div>
+        <div class="tr"><span>Phobos</span><span>Orbits faster than Mars spins, so it rises in the west</span><span>Watch it cross the night sky</span><span><a href="https://science.nasa.gov/mars/moons/phobos/" target="_blank" rel="noopener">NASA: Phobos</a></span></div>
+        <div class="tr"><span>Kilopower</span><span>NASA’s fission power test (KRUSTY, 2018)</span><span>The Fission Power Unit</span><span><a href="https://ntrs.nasa.gov/citations/20180005435" target="_blank" rel="noopener">KRUSTY test results (NASA NTRS)</a></span></div>
+        <div class="tr"><span>Crew needs</span><span>About 0.84 kg of oxygen and 1.8 kg of food per person per day</span><span>How fast the colony uses supplies</span><span><a href="https://ntrs.nasa.gov/citations/20180001338" target="_blank" rel="noopener">NASA Life Support Baseline Values</a></span></div>
+        <div class="tr"><span>Water recovery</span><span>The ISS recycles about 98% of its water</span><span>The Water Recovery System research</span><span><a href="https://www.nasa.gov/missions/station/iss-research/nasa-achieves-water-recovery-milestone-on-international-space-station/" target="_blank" rel="noopener">NASA: ISS water recovery milestone</a></span></div>
+        <div class="tr"><span>Marsquakes</span><span>InSight recorded over 1,300, the largest near magnitude 4.7</span><span>Marsquakes and the Seismometer</span><span><a href="https://science.nasa.gov/mission/insight/" target="_blank" rel="noopener">InSight lander</a></span></div>
+      </div>
+      <p class="fade small">Each landing site is generated in the spirit of a real place; the terrain does not reproduce real elevation data. No discovery of life on Mars is presented as fact.</p>
+    </section>
+
+    <!-- 11 -->
+    <section id="criteria" class="part">
+      <span class="pnum fade">11</span>
+      <h2 class="fade">Against the judging criteria</h2>
+      <div class="crit5 fade">
+        <div><i>1</i><b>Impact</b><p>Free in any modern browser on desktop or phone, with nothing to install, so any classroom can play. It turns abstract mission trade-offs into decisions players feel.</p></div>
+        <div><i>2</i><b>Creativity</b><p>Mission design, a piloted landing and a living colony in one journey: you live with the consequences of the mission you planned.</p></div>
+        <div><i>3</i><b>Validity</b><p>Live and playable today. Launch windows, transfer times and Δv come from Kepler’s laws and JPL data; colony numbers are scaled from MOXIE, Kilopower and the ISS.</p></div>
+        <div><i>4</i><b>Relevance</b><p>Built around the Space Mission Design Game brief and NASA’s own resources, with real NASA data at the core rather than added on.</p></div>
+        <div><i>5</i><b>Presentation</b><p>Every image here is captured in the game, and the whole experience is one link away.</p></div>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="made" class="part">
+      <span class="pnum fade">12</span>
+      <h2 class="fade">How it was made</h2>
+      <div class="claude fade">
+        <b>Made with Claude Code</b>
+        <p>Team NAA designed the game and built it with <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a>, Anthropic’s AI coding tool, as an AI pair programmer. We described each feature, tested it, and decided what went in, from the landing sequence to the 3D Mission Lab.</p>
+      </div>
+      <ul class="list fade">
+        <li><b>Three.js (WebGL)</b> 3D graphics: procedural terrain, cel-shaded lighting, caves, weather, the cockpit screens and the Mission Lab models</li>
+        <li><b>Plain JavaScript</b> about 7,700 lines across 43 scripts, with no build step and no framework</li>
+        <li><b>PeerJS · WebRTC</b> co-op for up to four players, sent player to player, with the host keeping the world in sync</li>
+        <li><b>Supabase</b> optional accounts, profiles and friends, protected by row-level security</li>
+        <li><b>NASA and JPL data</b> planetary positions, fact sheets and published mission results</li>
+      </ul>
+      <h3 class="fade">Plays on any device</h3>
+      <ul class="list fade">
+        <li><b>Phones and tablets</b> touch controls with a joystick and buttons; hints name the on-screen buttons, such as Interact, and text is sized to fit small screens</li>
+        <li><b>Graphics settings</b> Auto, High, Medium and Low, or Custom: switch shaders, glow, colour grading, shadows and cel shading on or off, and set the resolution</li>
+        <li><b>Smooth start</b> while the game loads, a “wait for the game to load” message appears instead of buttons that don’t work yet</li>
+      </ul>
+      <h3 class="fade">How it’s hosted</h3>
+      <ol class="pipe in fade">
+        <li><span class="c">1</span><b>Code</b><small>GitHub</small></li>
+        <li><span class="c">2</span><b>Push</b><small>main branch</small></li>
+        <li><span class="c">3</span><b>Deploy</b><small>Vercel, automatically</small></li>
+        <li><span class="c">4</span><b>Play</b><small>any browser</small></li>
+      </ol>
+      <p class="fade">A static site with no game server: it is free to host, there is nothing to install, and every push to GitHub goes live within a minute.</p>
+    </section>
+
+    <!-- 11 -->
+    <section id="links" class="part">
+      <span class="pnum fade">13</span>
+      <h2 class="fade">Links</h2>
+      <div class="links3 fade">
+        <a href="https://mars-last-colony.vercel.app" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></i><b>Play the game</b><span>mars-last-colony.vercel.app</span></a>
+        <a href="https://github.com/PhytosGuy/mars-game" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg></i><b>Source code</b><span>github.com/PhytosGuy/mars-game</span></a>
+        <a href="https://www.spaceappschallenge.org/2026/challenges/space-mission-design-game/" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg></i><b>NASA Space Apps Challenge</b><span>Space Mission Design Game</span></a>
+        <a href="/missionlab/"><i><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="10" ry="5" transform="rotate(-20 12 12)"/><circle cx="12" cy="12" r="2.6"/></svg></i><b>NASA Mission Design Lab</b><span>design a mission in 3D</span></a>
+      </div>
+      <p class="team">Team NAA · Neophytos · Antonio · Alexandra</p>
+    </section>
+  </main>
+</div>
+
+<footer>NASA Space Apps Challenge 2026 · Not endorsed by NASA · Every image is captured in the game · <a href="/NAA/">Back to the overview</a></footer>
+
+<script src="/NAA/main.js"></script>
+<script>
+// highlight the section you are reading in the contents
+(() => { const links = [...document.querySelectorAll('.toc a')];
+  const io = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)) }, { rootMargin: '-40% 0px -55% 0px' });
+  document.querySelectorAll('.part').forEach(s => io.observe(s)) })();
+</script>
+</body>
+</html>

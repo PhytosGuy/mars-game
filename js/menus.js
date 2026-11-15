@@ -48,9 +48,17 @@ $('#wopts').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if
 let setFrom='title';
 function renderSettings(){
   const tog=(k,vals)=>`<div class="opt">${vals.map(([v,l])=>`<button data-o="${k}" data-v="${v}" class="${String(k==='quality'?GFX.q:OPT[k])===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
+  const C=gc(),gtog=(k,lbl,sub)=>`<div class="srow sub2"><span>${lbl}${sub?`<br><small class="sub">${sub}</small>`:''}</span><div class="opt">${[[true,'On'],[false,'Off']].map(([v,l])=>`<button data-gc="${k}" data-v="${v}" class="${C[k]===v?'on':''}">${l}</button>`).join('')}</div></div>`;
   const sl=(k,min,max,step)=>`<input type="range" data-r="${k}" min="${min}" max="${max}" step="${step}" value="${OPT[k]}"><b>${Math.round(OPT[k]*100)}%</b>`;
   $('#setbody').innerHTML=
-    `<div class="srow"><span>Graphics<br><small class="sub">Auto adjusts to keep it smooth${GFX.q==='auto'?` (now ${gfxLevel()}, ${Math.round(GFX.scale*100)}% resolution)`:''}</small></span>${tog('quality',[['auto','Auto'],['high','High'],['medium','Medium'],['low','Low']])}</div>`+
+    `<div class="srow"><span>Graphics<br><small class="sub">Auto adjusts to keep it smooth${GFX.q==='auto'?` (now ${gfxLevel()}, ${Math.round(GFX.scale*100)}% resolution)`:''}</small></span>${tog('quality',[['auto','Auto'],['high','High'],['medium','Medium'],['low','Low'],['custom','Custom']])}</div>`+
+    (GFX.q==='custom'?`<div class="gcbox"><p class="sub">Custom graphics: switch each effect on or off.</p>`+
+      gtog('post','Shaders (post-processing)','Turns every screen effect below on or off together')+
+      gtog('bloom','Glow (bloom)','Soft glow around lights and the Sun')+
+      gtog('grade','Colour grading and vignette','Film-like colours and darker corners')+
+      gtog('shadows','Shadows')+gtog('hiShadows','Sharp shadows','Higher-resolution shadow maps')+
+      gtog('cel','Cel shading','Cartoon-style banded lighting; applies after you reload the game')+
+      `<div class="srow sub2"><span>Resolution</span><input type="range" data-gcr="res" min="0.5" max="1" step="0.05" value="${C.res}"><b>${Math.round(C.res*100)}%</b></div></div>`:'')+
     `<div class="srow"><span>Sound effects on</span>${tog('sound',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Painted look</span>${tog('paint',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Music</span>${sl('music',0,1,0.05)}</div>`+
@@ -67,11 +75,24 @@ function renderSettings(){
 function openSettings(from){setFrom=from;renderSettings();$('#settings').classList.toggle('live',game.state==='play');$('#settings').classList.remove('hidden')}
 function closeSettings(){$('#settings').classList.add('hidden');saveOpts()}
 $('#b-set').onclick=()=>{initAudio();openSettings('title')};
-$('#b-mlab').onclick=()=>{initAudio();openMissionLab()};
+$('#b-mlab').onclick=()=>openMissionLab();
+/* ---------- the NASA Mission Lab is its own page (missionlab/) ----------
+   From the home screen it opens in this tab; during a game it opens in a new tab so your world keeps running.
+   Missions launched there are saved in this browser, and each one gives the colony you're playing research points once. */
+function openMissionLab(){const u='missionlab/';if(game.state==='play'){if(document.pointerLockElement)document.exitPointerLock();const w=window.open(u,'_blank');if(!w)location.href=u}else location.href=u}
+function labMissions(){try{const a=JSON.parse(localStorage.getItem('mlc_missions')||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function claimLabMissions(){
+  if(game.state!=='play'||!S||net.role==='guest')return;const list=labMissions(),fresh=list.filter(m=>!m.claimed&&isNum(m.rp));if(!fresh.length)return;
+  let rp=0;for(const m of fresh){rp+=clamp(Math.round(m.rp),0,25);m.claimed=true}
+  S.res.rp+=rp;S.stats.missionsDesigned=(S.stats.missionsDesigned||0)+fresh.length;
+  try{localStorage.setItem('mlc_missions',JSON.stringify(list))}catch(e){}
+  toast(`Mission Lab: ${fresh.length===1?'“'+str(fresh[0].name,40)+'”':fresh.length+' missions'} earned your colony ${rp} research points`,'good')}
+addEventListener('focus',claimLabMissions);addEventListener('storage',e=>{if(e.key==='mlc_missions')claimLabMissions()});setInterval(claimLabMissions,8000);
 $('#p-set').onclick=()=>openSettings('pause');
 $('#set-x').onclick=closeSettings;$('#set-done').onclick=closeSettings;
 $('#setbody').addEventListener('click',e=>{
   if(e.target.id==='tour-replay'){OPT.onboarded=false;saveOpts();closeSettings();if(game.state==='play'){if(game.paused)togglePause(false);startTour()}else toast('The tour will play when you next land');return}
+  const g=e.target.closest('[data-gc]');if(g){OPT.gc=Object.assign(gc(),{[g.dataset.gc]:g.dataset.v==='true'});saveOpts();applyGfx();if(g.dataset.gc==='cel')toast('Cel shading changes after you reload the game');renderSettings();return}
   const b=e.target.closest('[data-o]');if(!b)return;const k=b.dataset.o,v=b.dataset.v;
   if(k==='quality'){GFX.q=v;GFX.autoLvl=null;GFX.scale=1;applyGfx()}
   else if(k==='paint'||k==='guide'||k==='fovAuto'||k==='companion')OPT[k]=v==='true';
@@ -81,7 +102,7 @@ $('#setbody').addEventListener('click',e=>{
 /* ---------- one window at a time ----------
    Opening any window closes whichever one was open. A window opened from the pause menu
    hides the pause menu, and closing it brings the pause menu back. */
-const WINS=['pause','settings','coop','account','friends','mapov','wardrobe','invov','journalov','creator','habcol','mlab'];
+const WINS=['pause','settings','coop','account','friends','mapov','wardrobe','invov','journalov','creator','habcol'];
 const winOpen=id=>!$('#'+id).classList.contains('hidden');
 function closeWin(id){
   if(!winOpen(id))return;
@@ -89,7 +110,6 @@ function closeWin(id){
   else if(id==='wardrobe'&&game.wardrobe)closeWardrobe();
   else if(id==='journalov')closeJournal();
   else if(id==='creator')closeCreator();
-  else if(id==='mlab')closeMissionLab();
   else if(id==='settings')closeSettings();
   else if(id==='coop'){closeCoop();if(net.peer&&!net.role)leaveNet(true)}
   else $('#'+id).classList.add('hidden');
@@ -104,5 +124,5 @@ const winWatch=(recs=>{
 {const mo=new MutationObserver(winWatch);for(const id of WINS)mo.observe($('#'+id),{attributes:true,attributeFilter:['class'],attributeOldValue:true})}
 // Escape closes the open window first (on the home screen too)
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;
-  const w=['settings','coop','account','friends','journalov','creator','habcol','mlab'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
-$('#setbody').addEventListener('input',e=>{const fv=e.target.closest('[data-fov]');if(fv){OPT.fov=+fv.value;fv.nextElementSibling.textContent=OPT.fov+'°';camera.fov=OPT.fov;camera.updateProjectionMatrix();saveOpts();return}const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});
+  const w=['settings','coop','account','friends','journalov','creator','habcol'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
+$('#setbody').addEventListener('input',e=>{const gr=e.target.closest('[data-gcr]');if(gr){OPT.gc=Object.assign(gc(),{res:+gr.value});gr.nextElementSibling.textContent=Math.round(+gr.value*100)+'%';saveOpts();applyGfx();return}const fv=e.target.closest('[data-fov]');if(fv){OPT.fov=+fv.value;fv.nextElementSibling.textContent=OPT.fov+'°';camera.fov=OPT.fov;camera.updateProjectionMatrix();saveOpts();return}const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});

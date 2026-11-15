@@ -60,13 +60,14 @@ function updateEnv(dt,focus){
   const hor=_c1.copy(C_NH).lerp(C_DH,day),zen=_c2.copy(C_NZ).lerp(C_DZ,day);
   const sunset=(1-smooth(0.02,0.35,sy))*smooth(-0.16,0.0,sy);
   hor.lerp(C_SET,sunset*0.35);
+  if(typeof SITE!=='undefined'&&SITE.tint&&!(typeof cave!=='undefined'&&cave.active)){const T=SITE.tint,k=T.k*(0.35+0.65*day);hor.lerp(_c3.set(T.hor),k);zen.lerp(_c3.set(T.zen),k*0.85)}
   if(st>0){const sc=_c3.copy(C_ST).multiplyScalar(0.2+0.8*day);hor.lerp(sc,st*0.9);zen.lerp(sc,st*0.95)}
   skyU.hor.value.copy(hor);skyU.zen.value.copy(zen);skyU.sunDir.value.copy(ENV.sunDir);
   skyU.sunsetK.value=sunset*(1-st);skyU.day.value=day*(1-st*0.85);
   // aerial perspective: distant hills fade into a soft, bright haze
   const fogC=_c4.copy(hor).lerp(_c3.setRGB(0.98,0.86,0.76),0.18*day).multiplyScalar(0.98);scene.fog.color.copy(fogC);skyU.fogc.value.copy(fogC);
   skyU.tm.value=time*60;skyU.cloudK.value=1-st;
-  scene.fog.near=lerp(50,6,st);scene.fog.far=lerp(VIEW*CHUNK-40,120,st);
+  const fk=typeof SITE!=='undefined'&&SITE.fogK||1;scene.fog.near=lerp(50*fk,6,st);scene.fog.far=lerp((VIEW*CHUNK-40)*fk,120,st);
   sun.intensity=smooth(-0.03,0.25,sy)*(1-0.7*st)*2.8;
   const w=smooth(0,0.4,sy);sun.color.setRGB(1,lerp(0.62,0.93,w),lerp(0.42,0.84,w));
   hemi.intensity=0.5+0.65*day*(1-0.25*st);

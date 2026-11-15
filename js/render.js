@@ -2,7 +2,8 @@
 /* ---------- cinematic post-processing ---------- */
 /* cel shading for every lit material: light falls into soft bands, plus a gentle rim of light on silhouettes */
 {const k='lights_physical_pars_fragment',src=THREE.ShaderChunk[k],from='vec3 irradiance = dotNL * directLight.color;';
-  if(src&&src.includes(from))THREE.ShaderChunk[k]=src.replace(from,'float toonNL = smoothstep( 0.0, 0.08, dotNL ) * 0.55 + smoothstep( 0.42, 0.5, dotNL ) * 0.45;\n\tfloat toonRim = pow( 1.0 - saturate( dot( geometryNormal, geometryViewDir ) ), 4.0 ) * smoothstep( 0.0, 0.2, dotNL ) * 0.35;\n\tvec3 irradiance = ( toonNL + toonRim ) * directLight.color;');
+  if(OPT.gc&&OPT.gc.cel===false){}   // custom graphics: cel shading switched off (takes effect when the game loads)
+  else if(src&&src.includes(from))THREE.ShaderChunk[k]=src.replace(from,'float toonNL = smoothstep( 0.0, 0.08, dotNL ) * 0.55 + smoothstep( 0.42, 0.5, dotNL ) * 0.45;\n\tfloat toonRim = pow( 1.0 - saturate( dot( geometryNormal, geometryViewDir ) ), 4.0 ) * smoothstep( 0.0, 0.2, dotNL ) * 0.35;\n\tvec3 irradiance = ( toonNL + toonRim ) * directLight.color;');
   else console.warn('Cel shading: shader chunk not found, using standard lighting')}
 const GFX={q:(()=>{try{const v=localStorage.getItem('mlc-gfx');return v==='fast'?'low':v||'auto'}catch(e){return'auto'}})(),scale:1,post:true,ema:1/60,t:0};
 const composer=new EffectComposer(renderer);
@@ -27,18 +28,22 @@ const gradePass=new ShaderPass({uniforms:{tDiffuse:{value:null},vig:{value:0.32}
       vec2 d=vUv-0.5;c.rgb*=1.0-dot(d,d)*vig*2.4;c.r*=1.0+warm;c.b*=1.0-warm;c.rgb+=vec3(1.0,0.78,0.55)*flash;gl_FragColor=c;}`});
 composer.addPass(gradePass);composer.addPass(new OutputPass());
 // graphics levels: High, Medium, Low, or Auto (watches your frame rate and adjusts resolution, shadows and effects)
-function gfxLevel(){const touch=matchMedia('(pointer:coarse)').matches;return GFX.q==='auto'?(GFX.autoLvl||(touch?'medium':'high')):GFX.q}
+function gfxLevel(){const touch=matchMedia('(pointer:coarse)').matches;return GFX.q==='auto'?(GFX.autoLvl||(touch?'medium':'high')):GFX.q==='custom'?'custom':GFX.q}
+// custom graphics: each effect switched on or off by the player (Settings → Graphics → Custom)
+const GC_DEF={post:true,bloom:true,grade:true,shadows:true,hiShadows:true,cel:true,res:1};
+function gc(){return Object.assign({},GC_DEF,OPT.gc||{})}
 function applyGfx(){
-  const lv=gfxLevel(),touch=matchMedia('(pointer:coarse)').matches,cap={high:touch?1.3:1.75,medium:touch?1.0:1.25,low:touch?0.75:0.85}[lv]||1;
-  GFX.post=lv!=='low';sun.castShadow=lv!=='low';
-  renderer.setPixelRatio(Math.max(0.5,Math.min(devicePixelRatio,cap)*(GFX.q==='auto'?GFX.scale:1)));renderer.setSize(innerWidth,innerHeight);
+  const lv=gfxLevel(),touch=matchMedia('(pointer:coarse)').matches,C=gc(),cap=lv==='custom'?(touch?1.3:1.75)*C.res:{high:touch?1.3:1.75,medium:touch?1.0:1.25,low:touch?0.75:0.85}[lv]||1;
+  GFX.post=lv==='custom'?C.post:lv!=='low';sun.castShadow=lv==='custom'?C.shadows:lv!=='low';
+  renderer.setPixelRatio(Math.max(0.4,Math.min(devicePixelRatio*(lv==='custom'?C.res:1),cap)*(GFX.q==='auto'?GFX.scale:1)));renderer.setSize(innerWidth,innerHeight);
   composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);paintPass.uniforms.res.value.set(innerWidth*renderer.getPixelRatio(),innerHeight*renderer.getPixelRatio());
-  const ms=lv==='high'?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+  const ms=(lv==='custom'?C.hiShadows:lv==='high')?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
   try{localStorage.setItem('mlc-gfx',GFX.q)}catch(e){}
 }
 addEventListener('resize',()=>{composer.setSize(innerWidth,innerHeight);paintPass.uniforms.res.value.set(innerWidth*renderer.getPixelRatio(),innerHeight*renderer.getPixelRatio())});
 applyGfx();
 function renderFrame(){
+  const C=GFX.q==='custom'?gc():null;bloomPass.enabled=!C||C.bloom;gradePass.enabled=!C||C.grade;
   bloomPass.strength=cave.active?0.4:0.3+0.5*ENV.night;
   const fl=gradePass.uniforms.flash;fl.value=Math.max(0,fl.value-0.025);
   paintPass.enabled=OPT.paint!==false&&!game.landing;   // keep the cockpit screens sharp during the landing

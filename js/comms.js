@@ -5,7 +5,7 @@
    ========================================================= */
 function radio(from,msg,kind=''){
   const feed=$('#radiofeed');if(!feed)return;
-  const el=document.createElement('div');el.className='rmsg '+kind;el.innerHTML=`<b>${esc(from)}</b><span>${esc(msg)}</span>`;feed.appendChild(el);
+  const el=document.createElement('div');el.className='rmsg '+kind;el.innerHTML=`<b>${esc(from)}</b><span>${keyText(esc(msg))}</span>`;feed.appendChild(el);
   while(feed.children.length>5)feed.firstChild.remove();
   setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),600)},kind==='chat'||kind==='nasa'?15000:10000);
   if(S){S.radioLog=S.radioLog||[];S.radioLog.unshift({from,msg,sol:solNum()});if(S.radioLog.length>40)S.radioLog.pop()}

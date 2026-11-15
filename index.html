@@ -178,6 +178,33 @@ h1 span{display:block;font-size:.3em;letter-spacing:.5em;color:var(--gold);margi
 .site.sel{border-color:var(--accent);box-shadow:0 0 16px var(--glow),inset 0 0 18px rgba(127,230,220,.08)}
 .site h3{margin:0 0 6px;font-size:17px;color:var(--text)}
 .site .ins{font-size:12px;color:var(--dim);line-height:1.45;min-height:50px}
+#bootpill{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9998;display:none;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(22,19,19,.9);border:1px solid var(--line2);font:700 13px var(--fd);color:var(--text)}
+#bootpill i{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:var(--accent);animation:bwspin .8s linear infinite}
+body.booting #bootpill{display:flex}
+#bootwait{position:fixed;inset:0;z-index:9999;display:none;place-items:center;background:rgba(10,8,8,.45);backdrop-filter:blur(3px)}
+body.bootnag #bootwait{display:grid}
+.bw-card{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:320px;padding:24px 26px;border-radius:18px;background:var(--solid);border:1px solid var(--line2);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:bwpop .25s ease-out}
+.bw-card b{font:800 18px var(--fd)}.bw-card span{font-size:13.5px;color:var(--dim);line-height:1.45}
+.bw-spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:bwspin .8s linear infinite;margin-bottom:4px}
+@keyframes bwspin{to{transform:rotate(360deg)}}@keyframes bwpop{from{transform:scale(.92);opacity:0}}
+/* phones: info, facts and messages are smaller so they fit on the screen */
+body.touch .toast{font-size:12px;padding:3px 14px;line-height:1.35}
+body.touch .rmsg{font-size:11.5px;padding:4px 9px;line-height:1.35}
+body.touch .rmsg b{font-size:9px}
+body.touch #radiofeed{width:min(300px,52vw)}
+body.touch .rmsg.nasa span{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+body.touch #guide{font-size:13px;padding:4px 12px}
+body.touch .scard h4{font-size:14px!important}
+body.touch .scard .s{font-size:10px!important}
+body.touch .scard p{font-size:11.5px!important;line-height:1.4}
+body.touch #banner{transform:translateX(-50%) scale(.78);transform-origin:50% 0}
+body.touch #dlg{padding:10px 12px;font-size:12.5px;bottom:10px}
+body.touch #tip{font-size:12px;max-width:80vw}
+body.touch #j-cur,body.touch #journal{font-size:12px}
+body.touch #journal b{font-size:12.5px}
+.gcbox{margin:-4px 0 10px;padding:6px 12px 8px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.srow.sub2 span{font-size:13.5px}
+.sitepic{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;margin-top:10px;border:1px solid var(--line);background:rgba(0,0,0,.25)}
 .site .pc{font-size:12.5px;margin-top:8px;line-height:1.5}
 .site .pc b{color:var(--good)}.site .pc i{color:#ff9d8f;font-style:normal;font-weight:700}
 .meter{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:4px}
@@ -522,7 +549,23 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
 </head>
-<body>
+<body class="booting">
+<!-- until every script has loaded, buttons are held back and a "wait" popup explains why -->
+<div id="bootpill" aria-hidden="true"><i></i><span id="bootpct">Loading the game…</span></div>
+<div id="bootwait" role="alertdialog" aria-live="assertive"><div class="bw-card"><div class="bw-spin"></div><b>Wait for the game to load</b><span>It only takes a moment. The buttons will work as soon as it’s ready.</span></div></div>
+<script>
+(function(){
+  var evs=['click','pointerdown','keydown','touchstart','dblclick','contextmenu'];
+  function block(e){
+    if(window.__booted)return;
+    if(e.type==='keydown'&&!(e.key==='Enter'||e.key===' '||e.key==='Escape'||e.key==='Tab'))return;
+    e.preventDefault();e.stopImmediatePropagation();
+    if(e.type==='click'||e.type==='keydown'||e.type==='touchstart'){document.body.classList.add('bootnag');clearTimeout(window.__bwT);window.__bwT=setTimeout(function(){document.body.classList.remove('bootnag')},2400)}
+  }
+  evs.forEach(function(t){addEventListener(t,block,{capture:true,passive:false})});
+  window.__bootDone=function(){evs.forEach(function(t){removeEventListener(t,block,{capture:true})});document.body.classList.remove('booting','bootnag')};
+})();
+</script>
 <canvas id="game" tabindex="0"></canvas>
 <div id="envfx"><i class="dust"></i><i class="grit"></i><i class="frost"></i><i class="rad"></i></div>
 
@@ -648,9 +691,6 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <div class="crright"><div class="crtabs" id="cr-tabs"></div><div id="cr-opts"></div></div></div>
 <div class="btns"><button class="btn primary" id="cr-done">Done</button></div></div></div>
 <div id="habcol" class="overlay hidden"><div class="win pausewin"><div class="winhead"><h2>Room colours</h2><button class="x" id="hc-x">✕</button></div><div id="habcolbody"></div><div class="btns"><button class="btn" id="hc-reset">Reset</button><button class="btn primary" id="hc-done">Done</button></div></div></div>
-<div id="mlab" class="overlay hidden"><div class="win mlwin"><div class="winhead"><h2>NASA Mission Design Lab</h2><button class="x" id="ml-x">✕</button></div>
-<div id="mlsteps" class="mlsteps"></div><div id="mlbody" class="mlbody"></div>
-<div class="btns mlnav"><button class="btn" id="ml-back">Back</button><span style="flex:1"></span><button class="btn primary" id="ml-next">Next</button></div></div></div>
 <div id="account" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Account</h2><button class="x" id="acc-x">✕</button></div><div id="acc-prev"><canvas id="acc-cv"></canvas><span>Drag to turn</span></div><div id="acctbody"></div></div></div>
 <div id="friends" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Friends</h2><button class="x" id="fr-x">✕</button></div><div id="frbody"></div></div></div>
 <div id="tour" class="hidden"><div id="tourhole"></div><div id="tourcard"></div><button class="btn" id="tourskip">Skip tour <kbd>Space</kbd></button></div>
@@ -674,14 +714,16 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.5.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
-const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','net','touch','config','account','missionlab','onboard','main'];
+const V='4.7.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});
+let __n=0;const __pct=document.getElementById('bootpct');
 for(const f of FILES){
+  if(__pct)__pct.textContent='Loading the game… '+Math.round(__n++/FILES.length*100)+'%';
   await new Promise((res,rej)=>{const s=document.createElement('script');s.src='js/'+f+'.js?v='+V;s.onload=res;s.onerror=()=>rej(new Error('Could not load js/'+f+'.js'));document.body.appendChild(s)}).catch(e=>{fail(e.message);throw e});
 }
-window.__booted=true;
+window.__booted=true;if(window.__bootDone)window.__bootDone();
 </script>
 </body>
 </html>

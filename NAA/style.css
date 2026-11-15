@@ -94,6 +94,11 @@ em{font-style:normal;color:var(--gold)}
 .g:hover img{transform:scale(1.06)}
 .g figcaption{position:absolute;left:16px;bottom:14px;padding:7px 14px;border-radius:999px;font:800 13px var(--fb);letter-spacing:.06em;background:rgba(17,13,12,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 
+/* stage galleries */
+.sub-gal{padding:clamp(70px,9vw,120px) 0 clamp(50px,7vw,90px)}
+.gal-p{max-width:56ch;margin:18px auto 0;color:var(--dim);font-size:clamp(16px,1.5vw,18px)}
+.grid.sites{grid-template-columns:repeat(5,1fr);grid-auto-rows:auto}
+.grid.sites .g{aspect-ratio:16/10}
 /* circles */
 .nasa,.numbers,.made{padding:clamp(80px,11vw,140px) 0}
 .nasa{background:var(--bg2)}
@@ -109,6 +114,24 @@ em{font-style:normal;color:var(--gold)}
 .circles.big .c{width:clamp(120px,14vw,170px);height:clamp(120px,14vw,170px)}
 .circles.big .c b{font:600 clamp(42px,4.6vw,60px)/1 var(--fb);color:var(--text)}
 .circles.big small{font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+
+/* numbers: gameplay pictures inside the circles */
+.circles.big .c.pic{position:relative;overflow:hidden;border:2px solid rgba(255,179,122,.55);background:#000}
+.circles.big .c.pic::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(17,13,12,.35),rgba(17,13,12,.62)),var(--img) center/cover;transition:transform .8s var(--ease)}
+.circles.big li:hover .c.pic::before{transform:scale(1.12)}
+.circles.big .c.pic b{position:relative;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+
+/* NASA Space Apps Challenge */
+.apps{position:relative;overflow:hidden;padding:clamp(110px,14vw,180px) 0}
+.apps .shade{background:linear-gradient(180deg,var(--bg) 0%,rgba(17,13,12,.72) 22%,rgba(17,13,12,.72) 78%,var(--bg) 100%)}
+.apps .wrap{position:relative}
+.apps .kicker{margin-bottom:16px}
+.apps-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:46px auto 38px;max-width:980px}
+.apps .glass{max-width:none}
+.apps h3{font:400 28px var(--fh);margin:0 0 10px}
+.apps p{margin:0;color:#efe5dc;font-size:17px}
+.num.sm svg{width:22px;height:22px;fill:none;stroke:#1b0d05;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.num.sm{width:46px;height:46px;font-size:20px;margin-bottom:18px;box-shadow:0 0 0 7px rgba(255,138,61,.16)}
 
 /* made */
 .sub{color:var(--dim);margin:16px 0 0;font-size:17px}
@@ -144,6 +167,8 @@ footer{padding:26px 20px 34px;text-align:center;color:var(--dim);font-size:13px;
   .circles.big{grid-template-columns:repeat(2,1fr)}
   .grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:clamp(140px,30vw,240px)}
   .g.big{grid-column:span 2;grid-row:span 1}
+  .grid.sites{grid-template-columns:repeat(2,1fr)}
+  .grid.sites .g:last-child{grid-column:span 2}
 }
 @media (max-width:700px){
   body{font-size:16px}
@@ -159,6 +184,8 @@ footer{padding:26px 20px 34px;text-align:center;color:var(--dim);font-size:13px;
   .grid{width:calc(100% - 32px);gap:10px}
   .wrap,.hero-in,.stage-in{width:calc(100% - 32px)}
   .btn.big{width:100%}
+  .apps-grid{grid-template-columns:1fr}
+  .hero .cta .btn{width:100%}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}

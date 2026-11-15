@@ -3,8 +3,14 @@
 /* =========================================================
    UI: TOASTS, CARDS, HUD, COMPASS
    ========================================================= */
+/* on touch screens, keyboard keys in hints become the on-screen button names (F → Interact) */
+const TOUCH_KEYS={F:'Interact',Space:'Jump',B:'Build',M:'Map',Tab:'Menu',Enter:'Chat'};
+function keyText(s){
+  if(typeof s!=='string'||!document.body.classList.contains('touch')||!/F|key|Space|Tab/.test(s))return s;
+  return s.replace(/Press (<span class="key">)/g,'Tap $1').replace(/<span class="key">([^<]+)<\/span>/g,(m,k)=>TOUCH_KEYS[k]?`<span class="key">${TOUCH_KEYS[k]}</span>`:m)
+    .replace(/\[F\]/g,'[Interact]').replace(/\b(press|Press|tap|Tap) F\b/g,(m,v)=>(v[0]==='p'||v[0]==='t'?'tap':'Tap')+' Interact').replace(/\b(hold|Hold) F\b/g,'$1 Interact').replace(/\bF to\b/g,'Interact to')}
 function toast(text,kind=''){
-  if(game.state!=='play'&&game.state!=='intro')return;
+  if(game.state!=='play'&&game.state!=='intro')return;text=keyText(text);
   const c=$('#toasts');if([...c.children].some(e=>e.textContent===text&&!e.classList.contains('out')))return;
   const el=document.createElement('div');el.className='toast '+kind;el.textContent=text;c.appendChild(el);
   while(c.children.length>1)c.firstChild.remove();
@@ -14,13 +20,13 @@ function card(title,sub,body,color='#6fe0c8'){
   S.log.unshift({title,sub,body,sol:solNum(),t:tod()});if(S.log.length>60)S.log.pop();
   if(game.state!=='play')return;
   const el=document.createElement('div');el.className='scard';
-  el.innerHTML=`<h4><i style="background:${color}"></i>${title}</h4><div class="s">${sub}</div><p>${body}</p>`;
+  el.innerHTML=keyText(`<h4><i style="background:${color}"></i>${title}</h4><div class="s">${sub}</div><p>${body}</p>`);
   el.onclick=()=>{if(document.body.classList.contains('touch')&&!el.classList.contains('open'))el.classList.add('open');else el.remove()};
   const c=$('#cards');c.appendChild(el);while(c.children.length>1)c.firstChild.remove();
   setTimeout(()=>{el.style.opacity=0;setTimeout(()=>el.remove(),700)},20000);
 }
 function fmtTime(){const t=tod(),h=Math.floor(t),m=Math.floor((t-h)*60);return pad2(h)+':'+pad2(m)}
-const setHTML=(id,h)=>{const e=document.getElementById(id);if(e&&e.innerHTML!==h)e.innerHTML=h};
+const setHTML=(id,h)=>{const e=document.getElementById(id);h=keyText(h);if(e&&e.innerHTML!==h)e.innerHTML=h};
 const setTxt=(id,v)=>{const e=document.getElementById(id);if(e&&e.textContent!==v)e.textContent=v};
 function rateStr(r,unit){const v=r*SOL_H;return(v>=0?'+':'')+v.toFixed(1)+unit+'/sol'}
 
