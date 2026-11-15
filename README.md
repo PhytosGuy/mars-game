@@ -16,7 +16,7 @@ Our Space Apps project page: https://www.spaceappschallenge.org/2026/find-a-team
 For the game, visit: https://mars-last-colony.vercel.app  
 For project demo/ quick review, visit: https://mars-last-colony.vercel.app/NAA/                                   
 For more detail, visit: https://mars-last-colony.vercel.app/NAA/spaceapps/  
-For code, visit github: https://github.com/PhytosGuy/mars-game (you are here)
+For code, visit github: https://github.com/PhytosGuy/mars-game (you are here)                                       
 For sources, visit: https://mars-last-colony.vercel.app/NAA/sources  
 
 ## Play locally
