@@ -12,7 +12,9 @@ python -m http.server 8123
 Then go to http://localhost:8123. Add `?dev` to the URL to bypass the browser cache while editing.
 
 ## Deploy for free (Vercel)
-Live at https://mars-game-nu.vercel.app. The Vercel project `mars-game` is connected to this GitHub repo (PhytosGuy/mars-game).
+Live at https://mars-last-colony.vercel.app (the older https://mars-game-nu.vercel.app still works). The Vercel project `mars-game` is connected to this GitHub repo (PhytosGuy/mars-game).
+
+The NASA Space Apps promo website is in `nasaspaceappschallenge/` and is live at https://mars-last-colony.vercel.app/nasaspaceappschallenge. `/NAA` and the earlier spellings redirect there.
 
 - **Auto-deploy:** every push to `main` redeploys the live site automatically. Pushes to other branches get their own preview link.
 - **CLI (optional):** `npx vercel --prod` in this folder deploys straight from your computer.

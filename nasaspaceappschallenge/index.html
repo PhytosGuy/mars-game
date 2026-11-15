@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mars: Last Colony</title>
+<meta name="description" content="Plan a NASA-style mission, land on Mars and sustain a colony. A free educational browser game by Team NAA for the NASA Space Apps Challenge 2026.">
+<meta property="og:title" content="Mars: Last Colony">
+<meta property="og:description" content="Plan the mission. Land on Mars. Sustain the colony.">
+<meta property="og:image" content="https://mars-last-colony.vercel.app/nasaspaceappschallenge/img/g_wide.jpg">
+<meta name="theme-color" content="#110d0c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='%23d9622b'/%3E%3Ccircle cx='24' cy='26' r='5' fill='%23a8441b'/%3E%3Ccircle cx='40' cy='40' r='7' fill='%23a8441b'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/nasaspaceappschallenge/style.css">
+</head>
+<body>
+<div id="progress" aria-hidden="true"></div>
+
+<header id="nav">
+  <a class="brand" href="#top"><span class="planet" aria-hidden="true"></span>Mars: Last Colony</a>
+  <a class="btn small primary" href="https://mars-last-colony.vercel.app" target="_blank" rel="noopener">Play</a>
+</header>
+
+<!-- side progress through the three stages -->
+<nav id="dots" aria-label="Stages">
+  <a href="#s1" data-for="s1"><span>1</span></a>
+  <a href="#s2" data-for="s2"><span>2</span></a>
+  <a href="#s3" data-for="s3"><span>3</span></a>
+</nav>
+
+<!-- HERO -->
+<section id="top" class="hero">
+  <div class="bg" data-speed="0.3"><img src="/nasaspaceappschallenge/img/g_wide.jpg" alt="The colony at sunset below the mountains of Gale crater"></div>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="shade"></div>
+  <div class="hero-in">
+    <div>
+      <p class="kicker fade">NASA Space Apps Challenge 2026</p>
+      <h1 class="fade d1">Mars: <em>Last Colony</em></h1>
+    </div>
+    <div>
+      <p class="tag fade d2">Plan the mission. Land on Mars. Sustain the colony.</p>
+      <div class="cta center fade d3">
+        <a class="btn primary" href="https://mars-last-colony.vercel.app" target="_blank" rel="noopener">Play free</a>
+        <a class="btn ghost" href="#about">Discover</a>
+      </div>
+    </div>
+  </div>
+  <a class="cue" href="#about" aria-label="Scroll down"><span></span></a>
+</section>
+
+<!-- SUMMARY -->
+<section id="about" class="about">
+  <div class="wrap">
+    <p class="lead fade">Our game <em>Mars: Last Colony</em> uses captivating and educational gameplay to teach users how to plan and structure a NASA space mission, how to land a shuttle on Mars, and how to sustain life on Mars.</p>
+    <p class="lead2 fade d1">Throughout the game, players are met with challenges and decisions that impact the future of their colony.</p>
+  </div>
+</section>
+
+<!-- THREE STAGES -->
+<section id="s1" class="stage">
+  <div class="bg" data-speed="0.18"><img src="/nasaspaceappschallenge/img/g_traj.jpg" alt="The Earth to Mars transfer orbit in the Mission Design Lab" loading="lazy"></div>
+  <div class="shade side"></div>
+  <div class="stage-in"><div class="glass">
+    <span class="num fade">1</span>
+    <h2 class="fade d1">Mission Design Lab</h2>
+    <p class="fade d2">Choose a science goal, a spacecraft and a rocket, then catch the launch window to Mars, the way NASA does.</p>
+  </div></div>
+</section>
+
+<section id="s2" class="stage right">
+  <div class="bg" data-speed="0.18"><img src="/nasaspaceappschallenge/img/g_descent2.jpg" alt="The cockpit during the powered descent above Mars" loading="lazy"></div>
+  <div class="shade side"></div>
+  <div class="stage-in"><div class="glass">
+    <span class="num fade">2</span>
+    <h2 class="fade d1">Landing</h2>
+    <p class="fade d2">Fall from orbit, open the parachute and fly the final descent yourself. Touch down softly.</p>
+  </div></div>
+</section>
+
+<section id="s3" class="stage">
+  <div class="bg" data-speed="0.18"><img src="/nasaspaceappschallenge/img/g_vista.jpg" alt="The colony from above: lander, habitat, rover, solar arrays and a herd" loading="lazy"></div>
+  <div class="shade side"></div>
+  <div class="stage-in"><div class="glass">
+    <span class="num fade">3</span>
+    <h2 class="fade d1">Sustain</h2>
+    <p class="fade d2">Keep oxygen, water, food and power flowing. Survive storms and quakes, and grow a colony.</p>
+  </div></div>
+</section>
+
+<!-- GALLERY -->
+<section class="gallery-sec">
+  <div class="wrap">
+    <h2 class="center fade">Life on Mars</h2>
+  </div>
+  <div class="grid">
+    <figure class="g big fade"><img src="/nasaspaceappschallenge/img/g_herd.jpg" alt="An astronaut watching a herd of Loomstriders" loading="lazy"><figcaption>Wildlife</figcaption></figure>
+    <figure class="g fade d1"><img src="/nasaspaceappschallenge/img/g_rover.jpg" alt="The rover at sunset below the mountains" loading="lazy"><figcaption>Rover</figcaption></figure>
+    <figure class="g fade d2"><img src="/nasaspaceappschallenge/img/g_night.jpg" alt="The colony glowing at night" loading="lazy"><figcaption>Night</figcaption></figure>
+    <figure class="g fade d1"><img src="/nasaspaceappschallenge/img/g_interior.jpg" alt="Inside the habitat with a holographic Mars" loading="lazy"><figcaption>Habitat</figcaption></figure>
+    <figure class="g fade d2"><img src="/nasaspaceappschallenge/img/g_orbit.jpg" alt="Approaching Mars from orbit in the cockpit" loading="lazy"><figcaption>Orbit</figcaption></figure>
+  </div>
+</section>
+
+<!-- NASA -->
+<section class="nasa">
+  <div class="wrap">
+    <h2 class="center fade">Built on real NASA science</h2>
+    <ul class="circles">
+      <li class="fade d1"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="14" r="5"/><circle cx="16.5" cy="7.5" r="3"/><circle cx="18" cy="16" r="1.6"/></svg></span><b>MOXIE</b><small>Oxygen from Mars air</small></li>
+      <li class="fade d2"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 13.5h6L10 22l9-12h-6z"/></svg></span><b>Kilopower</b><small>Fission power</small></li>
+      <li class="fade d3"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h3l2-5 3 10 3-14 3 13 2-4h4"/></svg></span><b>InSight</b><small>Marsquakes</small></li>
+      <li class="fade d1"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/></svg></span><b>MRO</b><small>Buried ice</small></li>
+      <li class="fade d2"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 0 0-14.3-2.5M4 16a8 8 0 0 0 14.3 2.5"/><path d="M20 3v5h-5M4 21v-5h5"/></svg></span><b>ISS</b><small>Water recycling</small></li>
+      <li class="fade d3"><span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="10" ry="5" transform="rotate(-20 12 12)"/><circle cx="12" cy="12" r="2.6"/><circle cx="20.4" cy="9" r="1.4"/></svg></span><b>Mission design</b><small>NASA's own process</small></li>
+    </ul>
+  </div>
+</section>
+
+<!-- NUMBERS -->
+<section class="numbers">
+  <div class="wrap">
+    <ul class="circles big">
+      <li class="fade"><span class="c"><b data-count="3">0</b></span><small>stages</small></li>
+      <li class="fade d1"><span class="c"><b data-count="6">0</b></span><small>missions</small></li>
+      <li class="fade d2"><span class="c"><b data-count="34">0</b></span><small>NASA facts</small></li>
+      <li class="fade d3"><span class="c"><b data-count="4">0</b></span><small>players co-op</small></li>
+    </ul>
+  </div>
+</section>
+
+<!-- MADE / HOSTED -->
+<section class="made">
+  <div class="wrap">
+    <h2 class="center fade">Made for the web</h2>
+    <p class="center sub fade d1">Three.js · JavaScript · PeerJS · Supabase</p>
+    <ol class="pipe" id="pipe">
+      <li><span class="c">1</span><b>Code</b><small>GitHub</small></li>
+      <li><span class="c">2</span><b>Push</b><small>main branch</small></li>
+      <li><span class="c">3</span><b>Deploy</b><small>Vercel</small></li>
+      <li><span class="c">4</span><b>Play</b><small>any browser</small></li>
+    </ol>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="final">
+  <div class="bg" data-speed="0.22"><img src="/nasaspaceappschallenge/img/g_night.jpg" alt="" loading="lazy"></div>
+  <div class="shade"></div>
+  <div class="final-in">
+    <h2 class="fade">Every mission begins as an idea.<br><em>Ours ends with a home on Mars.</em></h2>
+    <div class="cta center fade d1">
+      <a class="btn primary big" href="https://mars-last-colony.vercel.app" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Play the game</a>
+      <a class="btn ghost big" href="https://github.com/PhytosGuy/mars-game" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>GitHub</a>
+    </div>
+    <p class="team fade d2">Team NAA · Neophytos · Antonio · Alexandra</p>
+  </div>
+</section>
+
+<footer>NASA Space Apps Challenge 2026 · Not endorsed by NASA · Every image is captured in the game</footer>
+
+<script src="/nasaspaceappschallenge/main.js"></script>
+</body>
+</html>
