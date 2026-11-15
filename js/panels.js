@@ -16,7 +16,7 @@ function renderColony(){
   $('#col-sub').textContent=`· Sol ${solNum()}, ${fmtTime()} · ${SITE.name}`;
   let h='';
   if(colTab==='overview'){
-    const row=(n,stock,r,unit)=>{const sl=r<0?(stock/(-r*SOL_H)).toFixed(1)+' sols left':'Stable';return`<tr><td>${n}</td><td>${stock}</td><td class="${r>=0?'pos':'neg'}">${rateStr(r,' '+unit)}</td><td>${sl}</td></tr>`};
+    const row=(n,stock,r,unit)=>{const sl=r<0?(parseFloat(stock)/(-r*SOL_H)).toFixed(1)+' sols left':'Stable';return`<tr><td>${n}</td><td>${stock}</td><td class="${r>=0?'pos':'neg'}">${rateStr(r,' '+unit)}</td><td>${sl}</td></tr>`};
     h+=`<div class="grid2"><div><h3>Life support</h3><table class="rt"><tr><th>Resource</th><th>Stock</th><th>Net</th><th>Outlook</th></tr>
       ${row('Oxygen',S.res.o2.toFixed(1)+' kg',S.rates.o2,'kg')}${row('Water',Math.round(S.res.water)+' L',S.rates.water,'L')}${row('Food',S.res.food.toFixed(1)+' kg',S.rates.food,'kg')}</table>
       <h3>Power grid</h3><table class="rt"><tr><td>Generation</td><td>${S.powerProd.toFixed(1)} kW</td></tr><tr><td>Demand</td><td>${S.powerDemand.toFixed(1)} kW</td></tr>
@@ -29,14 +29,14 @@ function renderColony(){
       h+=`<tr><td>${d.name}</td><td>${list.length}</td><td>${d.power?d.power+' kW':(t==='solar'?'+2.5 kW peak':t==='reactor'?'+10 kW':'–')}</td><td>${st}</td><td>${d.power>0&&t!=='habitat'?`<span class="tog ${off?'off':''}" data-toggle="${t}">${off?'OFF':'ON'}</span>`:''}</td></tr>`}
     h+=`</table></div></div>`;
   }else if(colTab==='research'){
-    h+=`<div class="sec">From your discoveries</div><p class="sub" style="text-transform:none;letter-spacing:0;font-size:13px">Exploring and doing science on Mars unlocks practical technology on its own.</p><div class="rgrid">${Object.entries(DISCO_TECH).map(([k,T])=>`<div class="rcard ${tech(k)?'done':''}"><div class="sub">Discovery</div><h4>${T.name}</h4><p>${T.effect}</p>${tech(k)?'<span class="pos" style="font-size:12px;font-weight:600">✓ In use</span>':`<span class="sub" style="text-transform:none">🔍 Unlock by ${T.from}</span>`}</div>`).join('')}</div><div class="sec">Research projects</div>`;
+    h+=`<div class="sec">From your discoveries</div><p class="sub" style="text-transform:none;letter-spacing:0;font-size:13px">Exploring and doing science on Mars unlocks practical technology on its own.</p><div class="rgrid">${Object.entries(DISCO_TECH).map(([k,T])=>`<div class="rcard ${tech(k)?'done':''}">${thumbImg('d:'+k)}<div class="sub">Discovery</div><h4>${T.name}</h4><p>${T.effect}</p>${tech(k)?'<span class="pos" style="font-size:12px;font-weight:600">✓ In use</span>':`<span class="sub" style="text-transform:none">🔍 Unlock by ${T.from}</span>`}</div>`).join('')}</div><div class="sec">Research projects</div>`;
     h+=`<p class="sub" style="text-transform:none;letter-spacing:0;font-size:13px">Research points: <b style="color:#c69bff">${Math.floor(S.res.rp)}</b>. Earn them by scanning points of interest and analysing samples in a lab.</p><div class="rgrid">`;
     for(const r of RESEARCH){const done=S.research.has(r.id),ok=!r.req||r.req();
-      h+=`<div class="rcard ${done?'done':''}"><div class="sub">${r.branch}</div><h4>${r.name}</h4><p>${r.desc}</p>`+
+      h+=`<div class="rcard ${done?'done':''}">${thumbImg('r:'+r.id)}<div class="sub">${r.branch}</div><h4>${r.name}</h4><p>${r.desc}</p>`+
         (done?'<span class="pos" style="font-size:12px;font-weight:600">✓ Complete</span>':ok?`<button class="btn sm" data-res="${r.id}" ${S.res.rp<r.cost?'disabled':''}>Research · ${r.cost} RP</button>`:`<span class="sub" style="text-transform:none">🔒 ${r.reqText}</span>`)+`</div>`}
     h+='</div>';
   }else if(colTab==='crew'){
-    h+=`<table class="rt"><tr><th>Name</th><th>Specialty</th><th>Bonus</th><th>Right now</th></tr>${S.crewList.map((c,i)=>`<tr><td>${c.name}</td><td>${c.role}</td><td>${c.bonus}</td><td>${activity(c,i)}</td></tr>`).join('')}</table>
+    h+=`<table class="rt"><tr><th>Name</th><th>Specialty</th><th>Bonus</th><th>Right now</th></tr>${S.crewList.map((c,i)=>`<tr><td>${c.name}</td><td>${thumbImg('c:'+c.role)}${c.role}</td><td>${c.bonus}</td><td>${activity(c,i)}</td></tr>`).join('')}</table>
       <p class="sub" style="margin-top:12px;text-transform:none;letter-spacing:0;line-height:1.6">Crew wellbeing stays high when life support is stable. Running out of power or supplies puts the mission at risk. Your EVA radiation dose so far: ${S.dose.toFixed(2)} mSv (Curiosity measured about 0.64 mSv per day on the surface).</p>`;
   }else if(colTab==='log'){
     h+=S.log.length?`<div class="log">${S.log.map(l=>`<div class="sub">Sol ${l.sol} · ${l.sub}</div><b>${l.title}</b><p>${l.body}</p>`).join('')}</div>`:'<p class="sub">No reports yet. Scan a point of interest to get started.</p>';

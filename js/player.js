@@ -107,8 +107,12 @@ function collideBodies(pos,rad,self){let hit=false;
 function animSuit(av,ph,amt,ground,climb,hop){
   const u=av.userData,s=Math.sin(ph),c=Math.cos(ph),A=0.6*amt,kL=u.legL.userData.knee,kR=u.legR.userData.knee;
   if(climb){u.legL.rotation.x=-0.6+s*0.5;u.legR.rotation.x=-0.6-s*0.5;kL.rotation.x=0.9-s*0.4;kR.rotation.x=0.9+s*0.4;u.armL.rotation.set(-2.6+s*0.6,0,0);u.armR.rotation.set(-2.6-s*0.6,0,0);return 0}
-  if(!ground&&hop){const k=0.2;u.legL.rotation.x=lerp(u.legL.rotation.x,-0.42*hop,k);u.legR.rotation.x=lerp(u.legR.rotation.x,0.32*hop,k);   // a low-gravity bound: one leg reaching forward
-    kL.rotation.x=lerp(kL.rotation.x,hop>0?0.55:0.25,k);kR.rotation.x=lerp(kR.rotation.x,hop>0?0.25:0.55,k);u.armL.rotation.set(0.35*hop,0,0.22);u.armR.rotation.set(-0.35*hop,0,-0.22);return 0}
+  if(!ground&&hop){const k=0.18,f=hop>0;u.legL.rotation.x=lerp(u.legL.rotation.x,-0.46*hop,k);u.legR.rotation.x=lerp(u.legR.rotation.x,0.36*hop,k);   // in the air: the next foot reaches forward to land, the other trails
+    kL.rotation.x=lerp(kL.rotation.x,f?0.35:0.7,k);kR.rotation.x=lerp(kR.rotation.x,f?0.7:0.35,k);u.armL.rotation.x=lerp(u.armL.rotation.x,0.4*hop,k);u.armR.rotation.x=lerp(u.armR.rotation.x,-0.4*hop,k);
+    u.armL.rotation.z=0.24;u.armR.rotation.z=-0.24;return 0}
+  if(ground&&hop){const k=0.35;u.legL.rotation.x=lerp(u.legL.rotation.x,-0.12*hop,k);u.legR.rotation.x=lerp(u.legR.rotation.x,0.12*hop,k);   // touch-down: knees soak up the landing, then push off
+    kL.rotation.x=lerp(kL.rotation.x,0.5,k);kR.rotation.x=lerp(kR.rotation.x,0.5,k);u.armL.rotation.x=lerp(u.armL.rotation.x,0.15*hop,k);u.armR.rotation.x=lerp(u.armR.rotation.x,-0.15*hop,k);
+    u.armL.rotation.z=0.24;u.armR.rotation.z=-0.24;return -0.06}
   if(!ground){u.legL.rotation.x=lerp(u.legL.rotation.x,-0.45,0.15);u.legR.rotation.x=lerp(u.legR.rotation.x,0.3,0.15);kL.rotation.x=lerp(kL.rotation.x,0.75,0.15);kR.rotation.x=lerp(kR.rotation.x,0.4,0.15);
     u.armL.rotation.set(-0.5,0,0.65);u.armR.rotation.set(-0.3,0,-0.65);return 0}
   u.legL.rotation.x=s*A;u.legR.rotation.x=-s*A;                                   // hips swing in opposition
@@ -135,9 +139,11 @@ function updateWalker(dt,inp){
     if(P.onGround){const k=damp(ml>0.1?6:4,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)}   // low gravity means less grip: you slide a little
     else if(ml>0.1){const k=damp(1.1,dt);P.vel.x=lerp(P.vel.x,mx*spd,k);P.vel.z=lerp(P.vel.z,mz*spd,k)} // air control: steer, keep momentum
     if(P.onGround&&inp.jump&&!game.dead){P.vel.y=Math.max(P.vel.y,0)+(buffOn('jump')?8:4.4);if(ml>0.1){P.vel.x+=mx*spd*0.5;P.vel.z+=mz*spd*0.5}P.onGround=false;jumped=true;P.jetLock=true;P.hopping=false}   // a leap: up and forward
-    // running on Mars turns into a bounding lope, like the Apollo astronauts' moon hops
-    // low gravity: walking turns into gentle hops and running into long bounds, like the Apollo astronauts on the Moon
-    if(P.onGround&&ml>0.3&&!jumped&&!P.inside&&!game.dead){P.hopT=(P.hopT||0)+dt;if(P.hopT>(sprint?0.5:0.62)){P.hopT=0;P.vel.y=sprint?2.3:1.55;P.onGround=false;jumped=true;P.hopping=true;P.hopSide=-(P.hopSide||1)}}else if(ml<=0.3)P.hopT=0;
+    // Mars gait: in 38% gravity every step is a small hop, left foot, right foot, left, right (a skipping lope like the Apollo astronauts').
+    // Each foot touches down for a moment, then pushes straight off again. Up-speed v gives an airtime of 2v/g:
+    // walking 0.95 m/s → ~0.51 s in the air, about 12 cm off the ground; running 1.45 m/s → ~0.78 s, about 28 cm.
+    if(P.onGround&&ml>0.3&&!jumped&&!P.inside&&!game.dead){P.hopT=(P.hopT||0)+dt;if(P.hopT>(sprint?0.07:0.11)){P.hopT=0;P.vel.y=sprint?1.45:0.95;P.onGround=false;jumped=true;P.hopping=true;P.hopSide=-(P.hopSide||1)}}
+    else if(ml<=0.3){P.hopT=0;if(P.onGround)P.hopping=false}
     if(!inp.jump)P.jetLock=false;
     // thruster pack: hold Space in mid-air
     P.jet=false;if(!P.onGround&&inp.jump&&!P.jetLock&&S.ups&&S.ups.u_jets&&P.bat>0){P.vel.y=Math.min(P.vel.y+7.8*dt,5);P.bat=Math.max(0,P.bat-dt*7*batMult());P.jet=true;if(Math.random()<0.7)emitSparks(_v1.set(P.pos.x-Math.sin(P.yaw)*0.4,P.pos.y+0.9,P.pos.z-Math.cos(P.yaw)*0.4),2,'#ffb070')}
@@ -166,7 +172,7 @@ function updateWalker(dt,inp){
   // walk cycle: stride lengthens with speed so the feet don't skate
   P.walkAmt=lerp(P.walkAmt||0,P.climbing?1:clamp(hs/4.6,0,1.25),damp(8,dt));
   P.phase+=P.climbing?dt*5:hs*dt*TAU/(1.5+hs*0.18);
-  const u=astro.userData,bob=animSuit(astro,P.phase,P.walkAmt,P.onGround,P.climbing,P.hopping?P.hopSide:0);
+  const u=astro.userData,bob=animSuit(astro,P.phase,P.walkAmt,P.onGround,P.climbing,P.hopping?P.hopSide*(sprint?1.3:1):0);
   // the head turns toward where the camera is looking (straight ahead if you're looking back at yourself)
   {let hy=wrapA(cam.yaw-P.yaw);hy=Math.abs(hy)>2.2?0:clamp(hy,-1.1,1.1);const hp=P.climbing?-0.35:clamp((cam.pitch-0.3)*0.6,-0.5,0.5);
    u.head.rotation.y=lerpA(u.head.rotation.y,hy,damp(7,dt));u.head.rotation.x=lerp(u.head.rotation.x,hp,damp(7,dt))}
@@ -177,7 +183,8 @@ function updateWalker(dt,inp){
   else P.o2-=dt*100/240*o2Mult()*o2Diff()*(typeof coldFactor==='function'?coldFactor():1);
   if(P.o2<25&&(game.o2Beep=(game.o2Beep||0)-dt)<=0){game.o2Beep=2.5;beep(740,0.12,'square',0.04)}
   if(P.o2<=0&&!game.dead)die('oxygen');
-  u.lamp.intensity=P.inside?0:P.flash?(cave.active?26:13):(LOOK.lamp||cave.active)?smooth(0.4,0.9,ENV.night+ENV.storm*0.6+(cave.active?1:0))*(cave.active?30:15):0;
+  // flashlight: F forces it on or off; until you press F it switches itself on at night, in storms and in caves
+  u.lamp.intensity=P.inside?0:P.flash===true?(cave.active?26:13):P.flash===false?0:(LOOK.lamp||cave.active)?smooth(0.4,0.9,ENV.night+ENV.storm*0.6+(cave.active?1:0))*(cave.active?30:15):0;
 }
 function blackout(){die('oxygen')}
 /* ---------- rover: the original arcade driving model, plus full air control (A/D yaw, W/S flips) ---------- */

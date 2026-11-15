@@ -79,7 +79,8 @@ function updateSfx(){
   if(!AU.ctx||!AU.wbuf||game.state!=='play')return;
   if(P.mode==='foot'){
     const hs=Math.hypot(P.vel.x,P.vel.z),ph=Math.floor(P.phase/Math.PI);
-    if(P.onGround&&hs>0.6&&ph!==game.lastStep)SFX.step();game.lastStep=ph;
+    if(P.hopping){if(P.onGround&&!game.stepDown)SFX.step();game.stepDown=P.onGround}   // hopping: one footstep each time a foot lands
+    else if(P.onGround&&hs>0.6&&ph!==game.lastStep)SFX.step();game.lastStep=ph;
     if(P.onGround&&game.wasAir&&game.airVy<-3)SFX.land();
     game.wasAir=!P.onGround;if(!P.onGround)game.airVy=P.vel.y;
   }

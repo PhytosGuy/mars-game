@@ -22,6 +22,7 @@ function refreshInvUI(){
   $('#mtabs').innerHTML=MTABS.map(([k,l])=>`<button class="mtab${invUI.mtab===k?' on':''}" data-mtab="${k}">${l}</button>`).join('');
   const inv=invUI.mtab==='inv';$('#pane-inv').classList.toggle('hidden',!inv);$('#pane-col').classList.toggle('hidden',inv);
   if(!inv){renderMenuPage();return}
+  heroShow(null);
   renderPlayerCard();
   renderGrid($('#g-bag'),S.inv,'inv',HOTBAR,INV_SIZE);renderGrid($('#g-hot'),S.inv,'inv',0,HOTBAR);
   const base=nearBase(ME),fab=nearFab(ME);
@@ -60,7 +61,7 @@ function openMenu(tab){
   if(tab===false){if(!invUI.open)return;invUI.open=false;if(game.wantLock)setShiftLock(true);$('#invov').classList.add('hidden');invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');renderHotbar();return}
   if(!invUI.open){if(document.pointerLockElement)document.exitPointerLock();invUI.open=true;$('#invov').classList.remove('hidden');closePanels(true);if(nearBase(ME)&&invUI.tab!=='craft')invUI.tab='store';mouse.drag=false;sfx(0.08,1400,2,0.04)}
   else sfx(0.04,1900,2,0.03);
-  invUI.mtab=tab||'inv';invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');refreshInvUI();
+  invUI.mtab=tab||'inv';markTabSeen(invUI.mtab);invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');refreshInvUI();
 }
 function openInventory(on){if(on===false||(on===undefined&&invUI.open&&invUI.mtab==='inv'))openMenu(false);else openMenu('inv')}
 function cycleMenu(dir){if(!invUI.open){openMenu('inv');return}const i=MTABS.findIndex(t=>t[0]===invUI.mtab);openMenu(MTABS[(i+dir+MTABS.length)%MTABS.length][0])}
@@ -85,7 +86,7 @@ function renderPlayerCard(){
 function renderMissions(){
   let h=`<p class="lead">${S.mode==='sandbox'?'Missions are optional goals in Sandbox (no rewards).':'Track any mission: its next step shows on your compass and as the guide arrow. Objectives count whenever you complete them, tracked or not.'}</p><div class="mlist">`;
   CHAPTERS.forEach((ch,i)=>{const done=missionDone(i),[d,n]=missionProgress(i),tr=S.mission===i;
-    h+=`<div class="mcard${done?' done':''}${tr?' tracked':''}"><div class="mhead"><span class="mnum">${String(i+1).padStart(2,'0')}</span><div class="mt"><h4>${esc(ch.title)}</h4><div class="sub">${done?'Complete':d+'/'+n+' objectives'} · ${S.mode==='sandbox'?'no reward':ch.reward.rp+' RP + supplies'}</div></div>`+
+    h+=`<div class="mcard${done?' done':''}${tr?' tracked':''}"><div class="mhead"><span class="mnum">${String(i+1).padStart(2,'0')}</span>${thumbImg('m:'+i)}<div class="mt"><h4>${esc(ch.title)}</h4><div class="sub">${done?'Complete':d+'/'+n+' objectives'} · ${S.mode==='sandbox'?'no reward':ch.reward.rp+' RP + supplies'}</div></div>`+
       (done?'<span class="mtick">✓</span>':`<button class="btn sm${tr?' primary':''}" data-mission="${tr?-1:i}">${tr?'Tracking':'Track'}</button>`)+`</div>
       <p>${esc(ch.intro)}</p><ul>${ch.objs.map(o=>`<li class="${S.objDone.has(i+':'+o.id)?'done':''}">${esc(o.text)}</li>`).join('')}</ul></div>`});
   $('#col-body').innerHTML=h+'</div>';$('#col-sub').textContent=`· ${S.chapter}/${CHAPTERS.length} complete`;
@@ -102,6 +103,7 @@ function renderStats(){
 }
 function renderMenuPage(){
   const t=invUI.mtab;$('#col-title').textContent=(MTABS.find(x=>x[0]===t)||['',''])[1];
+  heroShow(t==='mlab'?'sat':t==='colony'?'hab':null);
   if(t==='mlab'){$('#col-body').innerHTML=`<div class="mlpage"><h3>NASA Mission Design Lab</h3><p>Design a real-style science mission, step by step the way NASA does: pick a science goal, compare spacecraft in a trade study, choose instruments that see the right kind of light, pick a rocket, find a launch window to Mars, verify every requirement and launch. Good designs earn your colony research points.</p><p class="sub">It opens in a new tab, so your colony keeps running here. Every spacecraft, instrument and rocket you choose appears in 3D, and every mission you launch is saved.</p><button class="btn primary bigbtn" id="mlab-open">Open the Mission Lab</button><p class="sub" style="margin-top:12px">Missions designed: ${S.stats.missionsDesigned||0}</p>${(()=>{const l=labMissions().slice(0,4);return l.length?`<div class="sub" style="margin-top:10px">Your latest missions</div><ul class="mlrecent">${l.map(m=>`<li><b>${str(m.name,48).replace(/</g,'&lt;')}</b> · score ${m.score|0}/100${m.claimed?'':' · research points waiting'}</li>`).join('')}</ul>`:''})()}</div>`;$('#mlab-open').onclick=()=>openMissionLab();$('#col-sub').textContent='· learn how missions are built';return}
   if(t==='journal'){mountBook($('#col-body'),{compact:true,title:(S.worldName||'Expedition')+' · journal'});$('#col-sub').textContent='· saved with this expedition';return}
   if(t==='missions')renderMissions();else if(t==='stats')renderStats();

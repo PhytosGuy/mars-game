@@ -94,7 +94,7 @@ function buildInterior(){
   g.visible=!!P.inside;scene.add(g);INT.g=g;
 }
 function enterHabitat(){
-  if(P.inside||game.cine)return;P.flash=false;
+  if(P.inside||game.cine)return;P.flash=null;   // back to automatic when you come out
   if(!INT.g||Math.abs(INT.x-home().x)>1)buildInterior();applyHabCols();
   const al=airlockPos(home());P.outPos={x:al.x,y:groundHeight(al.x,al.z),z:al.z};
   fade(true,'Opening the outer hatch…');SFX.hiss();

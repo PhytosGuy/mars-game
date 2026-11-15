@@ -305,14 +305,15 @@ function fitModel(m,size){const b=new THREE.Box3().setFromObject(m),s=b.getSize(
   const w=new THREE.Group();while(m.children.length)w.add(m.children[0]);w.position.copy(c).multiplyScalar(-1);m.add(w);m.scale.setScalar(k);return m}
 // inventory icons: each item is rendered once in 3D, given a dark cartoon outline, and cached as an image
 const ICON3D={r:null,sc:null,cam:null,cv:null,ok:true};
-function icon3D(id){
-  if(!ICON3D.ok)return null;
-  try{
-    if(!ICON3D.r){const cv=document.createElement('canvas');cv.width=cv.height=128;
+function icon3DInit(){if(ICON3D.r)return true;const cv=document.createElement('canvas');cv.width=cv.height=128;
       ICON3D.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});ICON3D.r.setSize(128,128,false);ICON3D.r.outputColorSpace=THREE.SRGBColorSpace;ICON3D.r.toneMapping=THREE.ACESFilmicToneMapping;ICON3D.r.toneMappingExposure=1.2;ICON3D.r.setClearColor(0x000000,0);
       const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xfff4e8,0x5a3a2a,1.5));const k=new THREE.DirectionalLight(0xffffff,2.6);k.position.set(-2,4,3);const rim=new THREE.DirectionalLight(0xffc89a,1.2);rim.position.set(3,1,-3);sc.add(k,rim);
-      const cam=new THREE.PerspectiveCamera(26,1,0.1,20);cam.position.set(2.1,1.7,3.1);cam.lookAt(0,0,0);ICON3D.sc=sc;ICON3D.cam=cam;ICON3D.cv=cv}
-    const m=iconModel(ITEMS[id]);fitModel(m,1.25);ICON3D.sc.add(m);ICON3D.r.render(ICON3D.sc,ICON3D.cam);ICON3D.sc.remove(m);
+      const cam=new THREE.PerspectiveCamera(26,1,0.1,20);cam.position.set(2.1,1.7,3.1);cam.lookAt(0,0,0);ICON3D.sc=sc;ICON3D.cam=cam;ICON3D.cv=cv;return true}
+// render any model with the item icons' lighting and dark cartoon outline (also used for the Tab menu's mission, research and crew icons)
+function icon3DShot(m,size=1.25){
+  if(!ICON3D.ok)return null;
+  try{
+    icon3DInit();fitModel(m,size);ICON3D.sc.add(m);ICON3D.r.render(ICON3D.sc,ICON3D.cam);ICON3D.sc.remove(m);
     // outline: draw a dark silhouette a little bigger behind the render
     const out=document.createElement('canvas');out.width=out.height=128;const x=out.getContext('2d');
     const sil=document.createElement('canvas');sil.width=sil.height=128;const sx=sil.getContext('2d');sx.drawImage(ICON3D.cv,0,0);sx.globalCompositeOperation='source-in';sx.fillStyle='rgba(22,12,8,.9)';sx.fillRect(0,0,128,128);
@@ -320,6 +321,7 @@ function icon3D(id){
     x.drawImage(ICON3D.cv,0,0);return out.toDataURL();
   }catch(e){ICON3D.ok=false;return null}
 }
+function icon3D(id){if(!ICON3D.ok)return null;try{return icon3DShot(iconModel(ITEMS[id]),1.25)}catch(e){return null}}
 const ICONS={};
 function iconURL(id){
   if(ICONS[id])return ICONS[id];

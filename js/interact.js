@@ -59,7 +59,7 @@ function pressF(){
   toggleFlash();
 }
 function nearBed(){for(const b of blds)if(b.type==='bed'&&b.progress>=1&&Math.hypot(b.x-P.pos.x,b.z-P.pos.z)<2.2)return b;return null}
-function toggleFlash(){P.flash=!P.flash;toast(P.flash?'Flashlight on':'Flashlight off');beep(P.flash?1200:700,0.05)}
+function toggleFlash(){const lit=P.flash===true||(P.flash!==false&&astro.userData.lamp.intensity>0.5);P.flash=!lit;toast(P.flash?'Flashlight on':'Flashlight off');beep(P.flash?1200:700,0.05)}
 function repair(b){
   act({a:'repairBld',id:b.id});
 }

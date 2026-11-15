@@ -178,7 +178,7 @@ function playUpdate(dt){
   if(net.role!=='guest'&&(game.objT-=dt)<=0){game.objT=0.5;checkObjectives()}
   if((game.hudT-=dt)<=0){game.hudT=0.12;updateHUD()}
   if((game.guideT=(game.guideT||0)-dt)<=0){game.guideT=0.3;game.guide=computeGuide();if(build.active)renderBuildBar()}
-  updateGuide(dt);
+  updateGuide(dt);tabHintTick(dt);
   if((game.cmpT-=dt)<=0){game.cmpT=0.04;updateCompass()}
   if(!$('#mapov').classList.contains('hidden')&&(game.mapT=(game.mapT||0)-dt)<=0){game.mapT=1;drawMap()}
   if((game.saveT-=dt)<=0){game.saveT=30;saveGame(true)}

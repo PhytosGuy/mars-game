@@ -129,7 +129,7 @@ h3{font:16px var(--fd);letter-spacing:.06em;margin:14px 0 8px;color:var(--gold)}
 table.rt{width:100%;border-collapse:collapse;font-size:13px}
 table.rt td,table.rt th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left}
 table.rt th{color:var(--dim);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}@media (max-width:700px){.grid2{grid-template-columns:1fr;gap:12px}}
 .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
 .rcard{padding:12px;border-radius:3px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
 .rcard h4{margin:0 0 4px;font:15px var(--fd);letter-spacing:.03em}.rcard p{margin:0 0 9px;font-size:12px;color:#d6cfbb;line-height:1.45}
@@ -505,6 +505,12 @@ body.touch #chatbtn{top:16px;left:148px;right:auto}
 @media (max-width:760px){#habcol.overlay,#settings.overlay.live{justify-content:center;align-items:flex-end;padding:0;background:transparent}}
 /* pause menu */
 #pause .tmenu{display:flex;flex-direction:column;gap:10px;align-items:stretch}.pbig{display:block;font-size:17px;padding:13px 16px;text-align:center}
+/* pause menu: compact, and see-through so the game stays visible behind it */
+#pause{background:rgba(14,8,6,.32)!important;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+#pause .pausewin{width:min(290px,84vw);padding:16px 18px 18px;background:rgba(20,14,12,.58)!important;backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(255,255,255,.12);border-radius:18px}
+#pause .winhead{margin-bottom:10px}#pause .winhead h2{font-size:20px}
+#pause .tmenu{gap:7px}#pause .pbig{font-size:14.5px;padding:9px 14px;border-radius:12px}
+#pause .btn:not(.primary){background:rgba(255,255,255,.07)}
 .pbig b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:rgba(0,0,0,.25);font-size:13px}
 #verlbl{position:absolute;right:16px;bottom:12px;font-size:12px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.04em}
 /* health first and biggest; crewmates under it */
@@ -574,6 +580,28 @@ body.touch #j-cur b{font-size:12.5px}body.touch #j-cur{padding:6px 9px 7px}
 #guide.flash{animation:jflash 1.2s ease-out}
 body.touch #guide.task{padding:6px 12px 7px;border-radius:13px}body.touch #guide.task #g-label{font-size:9.5px}
 #j-cur{display:none!important}
+/* stronger tint on the guide box, compass just under it */
+#guide{background:rgba(12,10,10,.86)!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.1)}
+#guide.task{background:linear-gradient(135deg,rgba(255,128,48,.55),rgba(26,14,10,.93))!important;border-color:rgba(255,160,90,.9)}
+#top #compass{margin-top:2px}
+/* "Press Tab to see…" drops down under the compass */
+#tabhint{pointer-events:auto;cursor:pointer;max-height:0;opacity:0;overflow:hidden;transform:translateY(-10px);transition:max-height .45s var(--ease,ease),opacity .35s,transform .45s var(--ease,ease);
+  padding:0 16px;border-radius:999px;background:rgba(12,10,10,.82);border:1px solid rgba(255,160,90,.55);font-size:13.5px;font-weight:700;color:#efe6da;white-space:nowrap;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#tabhint.show{max-height:44px;opacity:1;transform:none;padding:7px 16px}
+#tabhint b{color:#ffb35c}#tabhint .key{margin:0 2px}
+body.touch #tabhint{position:absolute;left:50%;bottom:calc(250px + env(safe-area-inset-bottom));width:max-content;max-width:min(300px,80vw);transform:translate(-50%,10px);font-size:11.5px;white-space:normal;text-align:center}body.touch #tabhint.show{padding:6px 14px;transform:translate(-50%,0)}
+/* 3D in the Tab menu */
+.th3{flex:none;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
+.mhead .th3{width:60px;height:60px;margin:-8px 0}
+.rcard{position:relative}.rcard .th3{position:absolute;right:8px;top:8px;width:52px;height:52px}.rcard h4,.rcard>.sub{padding-right:56px}
+.rt .th3{width:36px;height:36px;vertical-align:middle;margin:-8px 8px -8px -2px}
+#hero3d{position:relative;height:180px;margin:0 0 14px;border-radius:14px;overflow:hidden;border:1px solid var(--line);cursor:grab;touch-action:pan-y;
+  background:radial-gradient(ellipse at 50% 35%,rgba(255,150,90,.16),transparent 70%),linear-gradient(180deg,#120e18,#2a1610)}
+#hero3d[data-kind="hab"]{background:radial-gradient(ellipse at 50% 30%,rgba(255,190,140,.28),transparent 70%),linear-gradient(180deg,#d98b5a 0%,#a8573a 55%,#4a2418 100%)}
+#hero3d:active{cursor:grabbing}#hero3d canvas{display:block;width:100%;height:100%}
+#hero-cap{position:absolute;left:14px;bottom:10px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffcf9a;text-shadow:0 1px 6px rgba(0,0,0,.7);pointer-events:none}
+.h3drag{position:absolute;right:14px;bottom:10px;font-size:11px;color:rgba(255,255,255,.55);pointer-events:none}
+@media (max-width:760px){#hero3d{height:136px}.mhead .th3{width:46px;height:46px}.rcard .th3{width:44px;height:44px}.rcard h4,.rcard>.sub{padding-right:48px}}
 .mlv{color:#7fe6a0;font-weight:900;cursor:help}.mle{color:#ffd34d;font-weight:900;cursor:help}
 .mlnums{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.mlnums td{padding:4px 2px;border-bottom:1px solid var(--line)}.mlnums td:last-child{text-align:right;font-weight:700;white-space:nowrap}
 .dmem{margin:6px 0;padding:7px 10px;border-radius:10px;background:rgba(255,207,106,.1);border-left:3px solid #ffcf6a;font-size:13px;line-height:1.45;color:#f0e6d0}.dtrans{font-size:13px;color:#cfe;font-style:italic;margin-top:2px}
@@ -620,8 +648,9 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <div id="clock"></div>
   <div id="netinfo" class="hidden"></div>
   <div id="top">
-    <div id="compass"><div id="cmp"></div><div class="cmp-center"></div></div>
     <div id="guide" class="none"><span id="g-label"></span><div id="g-row"><svg id="g-arrow" viewBox="0 0 24 24"><path d="M12 2 L21 20 L12 15.5 L3 20 Z" fill="#ff9147" stroke="#2a1206" stroke-width="1.2" stroke-linejoin="round"/></svg><span id="g-text"></span><span id="g-dist"></span></div><i id="g-bar"><i></i></i></div>
+    <div id="compass"><div id="cmp"></div><div class="cmp-center"></div></div>
+    <div id="tabhint" role="button" tabindex="-1"><span id="th-text"></span></div>
   </div>
   <div id="journal" class="collapsed"><div id="j-head"></div><div id="j-cur" class="hidden"></div><ul id="j-list"></ul></div>
   <div id="status" class="collapsed"><div id="s-vital"></div><div id="s-main"></div><div id="s-more"></div></div>
@@ -740,7 +769,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
       <div><div class="tabs" id="inv-tabs"></div><div id="inv-panel"></div></div>
     </div>
   </div>
-  <div id="pane-col" class="hidden"><div class="sec"><span id="col-title"></span> <span class="sub" id="col-sub"></span></div><div id="col-body"></div></div>
+  <div id="pane-col" class="hidden"><div class="sec"><span id="col-title"></span> <span class="sub" id="col-sub"></span></div><div id="hero3d" class="hidden"><canvas id="hero-cv"></canvas><span id="hero-cap"></span><span class="h3drag">Drag to turn</span></div><div id="col-body"></div></div>
 </div></div>
 <div id="journalov" class="hidden"><div id="jbookroot"></div></div>
 <div id="creator" class="overlay hidden"><div class="win crwin"><div class="winhead"><h2>Your character</h2><button class="x" id="cr-x">✕</button></div>
@@ -773,8 +802,8 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.7.5'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
-const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','net','touch','config','account','onboard','main'];
+const V='4.8.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','menu3d','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});
 let __n=0;const __pct=document.getElementById('bootpct');
