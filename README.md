@@ -14,7 +14,7 @@ Every number in the game is linked to its source on the sources page. The game, 
 Our Space Apps project page: https://www.spaceappschallenge.org/2026/find-a-team/naa/?tab=project
 
 For the game, visit: https://mars-last-colony.vercel.app  
-For project demo/ quick review, visit: https://mars-last-colony.vercel.app/NAA/
+For project demo/ quick review, visit: https://mars-last-colony.vercel.app/NAA/                                   
 For more detail, visit: https://mars-last-colony.vercel.app/NAA/spaceapps/  
 For code, visit github: https://github.com/PhytosGuy/mars-game (you are here)
 For sources, visit: https://mars-last-colony.vercel.app/NAA/sources  
