@@ -417,9 +417,8 @@ function mkPOIModel(type,seed){
     if(type==='organics')for(let i=0;i<3;i++){const h=cy(0.25,0.25,0.06,10,'#d9d2c8',-1.5+i*1.4,1.2,2.0);h.rotation.x=Math.PI/2;g.add(h)}
   }else if(type==='clay'){const m=sp(4,'#b9a48f',0,-1.6,0,10,6);m.scale.y=0.5;g.add(m);for(let i=0;i<5;i++)rock(0.6+r()*0.6,'#8f8a76',(r()-0.5)*6,0.4,(r()-0.5)*6);top=1}
   else if(type==='basalt'){for(let i=0;i<6;i++)rock(0.9+r()*1.6,'#3d2a26',(r()-0.5)*7,0.5,(r()-0.5)*7);top=2.5}
-  else if(type==='ice'){const f=cy(5,5.5,0.1,12,'#f1ebe6',0,0.05,0);g.add(f);
-    const im=mat('#dff4ff',{emissive:'#7fc6ff',emissiveIntensity:0.25,roughness:0.15,metalness:0.1});
-    for(let i=0;i<6;i++){const m=mesh(new THREE.IcosahedronGeometry(0.6+r()*0.9,0),im,(r()-0.5)*6,0.1,(r()-0.5)*6);m.rotation.set(r()*3,r()*3,r()*3);g.add(m)}top=1.2}
+  else if(type==='ice'){ // an ice signature: blue crystals pushing up through the ice sheet, like the biome's mountains
+    for(let i=0;i<7;i++){const big=i===0,m=new THREE.Mesh(crystalGeo,crystalMat),a=r()*6.28,d=big?0:1.2+r()*2.6,h=big?3.4:1+r()*1.8,w=big?0.7:0.25+r()*0.3;m.scale.set(w,h,w);m.position.set(Math.cos(a)*d,-0.2,Math.sin(a)*d);if(!big)m.rotation.set(Math.cos(a)*0.4,r()*3,Math.sin(a)*0.4);g.add(m)}top=3.6}
   else if(type==='salt'){for(let i=0;i<7;i++){const c=cy(0.8+r()*1.8,1+r()*1.8,0.08,7,'#f3ece4',(r()-0.5)*8,0.06,(r()-0.5)*8);c.rotation.y=r()*3;g.add(c)}top=0.5}
   else if(type==='ejecta'){for(let i=0;i<9;i++){const b=bx(0.6+r()*1.6,0.5+r()*1.2,0.6+r()*1.6,['#7a4632','#5a3a30','#b0704a'][i%3],(r()-0.5)*10,0.3,(r()-0.5)*10);b.rotation.set(r(),r()*3,r());g.add(b)}top=1.6}
   else if(type==='sand'){for(let i=0;i<5;i++){const b=sp(2.2,'#4a3028',(i-2)*1.7,-0.5,(r()-0.5)*1.5,8,4);b.scale.set(0.4,0.45,1.6);g.add(b)}top=0.8}

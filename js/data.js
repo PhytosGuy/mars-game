@@ -34,7 +34,7 @@ const BUILD={
   solar:{name:'Solar Array',cost:8,r:2.6,power:0,desc:'2.5 kW at noon. Tracks the Sun. Dust lowers output, so clean it with [F].'},
   battery:{name:'Battery Bank',cost:12,r:1.8,power:0,desc:'Stores 30 kWh to get through the night.'},
   moxie:{name:'Oxygen Unit',cost:20,r:2.4,power:1.5,prio:9,desc:'A scaled-up MOXIE that splits atmospheric CO₂ into O₂. +6 kg O₂/sol.'},
-  drill:{name:'Ice Drill',cost:26,r:2.6,power:2,prio:8,res:'icedrill',needsIce:true,remote:true,desc:'Mines and melts subsurface ice. +39 L water/sol. Must sit on ice-rich ground; links to the grid by buried cable.'},
+  drill:{name:'Ice Drill',cost:26,r:2.6,power:2,prio:8,res:'icedrill',needsIce:true,remote:true,desc:'Mines and melts subsurface ice. +39 L water/sol. Must be built in the ice biome; links to the grid by buried cable.'},
   greenhouse:{name:'Greenhouse',cost:30,r:4.4,power:1.5,prio:6,res:'greenhouse',desc:'LED hydroponics. +5 kg food/sol, uses 7 L water/sol.'},
   lab:{name:'Science Lab',cost:28,r:3.6,power:1,prio:4,desc:'Analyses rock samples to earn research points.'},
   regolith:{name:'Regolith Processor',cost:16,r:2.6,power:1.5,prio:3,desc:'Sinters regolith into construction material. +54 materials/sol.'},
@@ -81,7 +81,7 @@ const CHAPTERS=[
     {id:'moxie',text:'Make oxygen: build an Oxygen Unit (MOXIE) [B]',check:()=>count('moxie')>=1}]},
   {title:'First Survival',intro:'The rover is yours. The stored supplies won’t last: call home, find water and start growing food.',reward:{mat:40,rp:10},objs:[
     {id:'comms',text:'Establish communications: build a Comms Antenna',check:()=>count('comms')>=1},
-    {id:'ice',text:'Find subsurface ice: scan an ice signature',check:()=>S.flags.iceFound},
+    {id:'ice',text:'Find the ice biome and scan an ice signature',check:()=>S.flags.iceFound},
     {id:'drill',text:'Research Ice Extraction, then build an Ice Drill',check:()=>count('drill')>=1},
     {id:'gh',text:'Research Agriculture, then build a Greenhouse',check:()=>count('greenhouse')>=1},
     {id:'pos',text:'Get oxygen and water production into surplus',check:()=>S.rates.o2>0&&S.rates.water>0}]},

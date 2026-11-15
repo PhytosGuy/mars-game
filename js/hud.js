@@ -149,7 +149,7 @@ function placeReason(t,x,z,loose,auth){
   if(staticLander&&Math.hypot(staticLander.position.x-x,staticLander.position.z-z)<def.r+(loose?5:2.6))return'Too close to the lander';
   if(loose&&Math.hypot(R.pos.x-x,R.pos.z-z)<def.r+4)return'Rover parked there';
   if(!def.remote){const gr=nearestGrid(x,z,null);if(!gr||gr.d>BUILD[gr.b.type].r+def.r+38)return'Out of grid range: build within ~40 m of the colony'}
-  if(def.needsIce){sample(x,z,TS3);if(TS3.ice<0.35)return'No accessible ice here. Look for frosty, ice-rich ground'}
+  if(def.needsIce){sample(x,z,TS3);if(TS3.ice<0.35)return'No ice here: Ice Drills go in the ice biome (the frozen plain with blue crystal mountains)'}
   if(t==='reactor'&&blds.some(b=>b.type==='habitat'&&Math.hypot(b.x-x,b.z-z)<30))return'Must be at least 30 m from habitats';
   return'';
 }
@@ -219,8 +219,8 @@ const GUIDES={
   solar:()=>buildGuide('solar',`Build ${Math.max(1,5-count('solar'))} more Solar Array${5-count('solar')>1?'s':''}`),
   comms:()=>buildGuide('comms','Build a Comms Antenna'),
   moxie:()=>buildGuide('moxie','Build an Oxygen Unit'),
-  ice:()=>storyGuide('s_ice','Find the ice: scan the ice signature'),
-  drill:()=>buildGuide('drill','Build the Ice Drill on the frosty ground'),
+  ice:()=>storyGuide('s_ice','Go to the ice biome: scan the ice signature'),
+  drill:()=>buildGuide('drill','Build the Ice Drill in the ice biome'),
   gh:()=>buildGuide('greenhouse','Build a Greenhouse'),
   pos:()=>S.brownout?buildGuide('solar','Add Solar Arrays: power is short'):S.rates.o2<=0?buildGuide('moxie','Build another Oxygen Unit'):buildGuide('drill','Build another Ice Drill'),
   lab:()=>buildGuide('lab','Build a Science Lab'),

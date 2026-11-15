@@ -67,8 +67,8 @@ function rawSample(x,z,o){
     }
   }
   h+=N4(x*0.045,z*0.045)*0.9+N4(x*0.11+7,z*0.11)*0.3;
-  let ice=smooth(SITE.iceTh,SITE.iceTh+0.18,N4(x*0.0013-200,z*0.0013+80)*0.5+0.5);
-  for(const b of SITE.ice){const d=Math.hypot(x-b[0],z-b[1]);ice=Math.max(ice,1-smooth(b[2]*0.45,b[2],d))}
+  // ice exists only in the ice biome: no scattered frost patches, so every ice mission leads there
+  let ice=0;
   // inside the ice biome the ground flattens into a frozen plain, then the crystal mountains rise out of it
   const ib=iceBiomeW(x,z);let dmo=dm,mto=Math.max(mt,o.mtn||0);o.crys=0;
   if(ib>0){const base=fbm(N1,x*0.0016,z*0.0016,2)*4;h=lerp(h,base+(SITE.iceWorld?0:Math.min(h,base+20)*0.3),ib*0.9);dmo*=1-ib;mto*=1-ib;o.crater*=1-ib;h+=iceSpikes(x,z,o)*ib;ice=Math.max(ice,ib)}
