@@ -113,16 +113,23 @@ const TITLE_SCENES=[
   {n:'Dawn over the crater',site:'gale',t:6.4,mode:'fly'},
 ];
 let tScene=0,titleProps=null;
+// scenes you have seen: ◀ steps back through them, and each scene picks up where you left it
+const sceneHistory=[],sceneState={};
+function saveSceneState(){sceneState[tScene]={d:tcam.d,a:tcam.a,tY:game.tY,t:titleTime}}
+function nextTitleScene(){saveSceneState();sceneHistory.push(tScene);if(sceneHistory.length>40)sceneHistory.shift();setTitleScene(tScene+1,true)}
+function prevTitleScene(){saveSceneState();const i=sceneHistory.length?sceneHistory.pop():tScene-1;setTitleScene(i,true)}
 function clearTitleProps(){if(!titleProps)return;for(const o of titleProps.list){scene.remove(o);if(o.userData.own&&typeof disposeObj==='function')disposeObj(o)}if(titleProps.astro){astro.visible=false;rover.visible=false}titleProps=null}
 function titleSceneProps(kind){const list=[],put=(o,x,z,ry=0,own=true)=>{o.position.set(x,groundHeight(x,z),z);o.rotation.y=ry;o.userData.own=own;scene.add(o);list.push(o);return o};
   if(kind==='hab'){put(MAKERS.habitat(),0,0,0.4);put(MAKERS.solar(),13,5,0.5);put(MAKERS.solar(),15,-6,0.5);put(MAKERS.moxie(),-9,9,1.2);put(rover,9,13,2.4,false);rover.visible=true;put(astro,5,6,2.6,false);astro.visible=true;astro.position.y+=0;titleProps={list,astro:true};return}
   if(kind==='animals'){[[0,-4,0.2],[7,2,2.6],[-6,4,4.3]].forEach(([x,z,ry])=>put(CR_MAKE.strider().g,x,z,ry));[[3,8,3.4],[-3,10,1]].forEach(([x,z,ry])=>{const g=put(CR_MAKE.lumari().g,x,z,ry);g.position.y+=1.4});
     [[10,-6],[11,-3],[9,-9]].forEach(([x,z],i)=>put(CR_MAKE.hopper().g,x,z,i));titleProps={list};return}}
-function setTitleScene(i){
+function setTitleScene(i,resume){
   tScene=(i+TITLE_SCENES.length)%TITLE_SCENES.length;const sc=TITLE_SCENES[tScene],site=sc.site==='sel'?selSite:sc.site;
   clearTitleProps();if(SITE!==SITES[site]||typeof N1!=='function')initSite(site);titleTime=sc.t;tcam.mode=sc.mode;tcam.d=0;tcam.a=i*1.7;tcam.sc=sc;
   const ic=SITE.ice[0];tcam.cx=sc.at==='ice'?ic[0]:0;tcam.cz=sc.at==='ice'?ic[1]:0;
-  if(sc.props)titleSceneProps(sc.props);game.tY=undefined;titleCam(0);updateChunks(camera.position.x,camera.position.z,80);
+  if(sc.props)titleSceneProps(sc.props);game.tY=undefined;
+  const st=resume&&sceneState[tScene];if(st){tcam.d=st.d;tcam.a=st.a;game.tY=st.tY;titleTime=st.t}
+  titleCam(0);updateChunks(camera.position.x,camera.position.z,80);
   const lbl=$('#sc-name');if(lbl)lbl.textContent=sc.n}
 function titleCam(dt){
   const sc=tcam.sc;
@@ -250,11 +257,14 @@ const CONTROLS=`<b>WASD</b> walk / drive · <b>Shift</b> sprint · <b>Space</b> 
 <b>I</b> inventory & crafting · <b>F</b> interact, talk, feed animals, scan, open · <b>E</b> rover (get out any time; at speed you tumble) · <b>C</b> cruise<br><b>In the air</b> (rover): <b>W/S</b> flip, <b>A/D</b> spin, <b>Shift+A/D</b> barrel roll<br><b>Tumbling</b> (thrown or bailed out): <b>WASD</b> steer and turn, <b>W/S</b> flip, hold <b>Space</b> to brace and land on your feet<br>
 <b>Tab</b> menu: inventory, missions, colony, research, stats (Tab again for the next page) · <b>I</b> inventory · <b>M</b> map<br><b>B</b> build · <b>X</b> recycle · <b>R</b> rotate<br>
 <b>Caps Lock</b> shift lock (the mouse looks around, aim at the centre) · <b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>Esc</b> pause`;
-$('#ctrl-list').innerHTML=CONTROLS;$('#p-ctrl').innerHTML=CONTROLS;
-$('#b-ctrl').onclick=()=>$('#controls').classList.remove('hidden');
-$('#ctrl-x').onclick=$('#ctrl-done').onclick=()=>$('#controls').classList.add('hidden');
+$('#ctrl-list').innerHTML=CONTROLS;
+// Controls opens from Settings or the pause menu; closing it goes back to where you came from
+let ctrlFrom=null;
+function openControls(from){ctrlFrom=from||null;$('#controls').classList.remove('hidden')}
+$('#p-ctrls').onclick=()=>openControls('pause');
+$('#ctrl-x').onclick=$('#ctrl-done').onclick=()=>{$('#controls').classList.add('hidden');if(ctrlFrom==='settings')openSettings(setFrom);ctrlFrom=null};
 // the links at the top left of the home screen fold away (they start open)
-$('#sc-prev').onclick=()=>setTitleScene(tScene-1);$('#sc-next').onclick=()=>setTitleScene(tScene+1);
+$('#sc-prev').onclick=prevTitleScene;$('#sc-next').onclick=nextTitleScene;
 $('#hl-tog').onclick=()=>{const h=$('#homelinks'),c=h.classList.toggle('closed');$('#hl-tog').setAttribute('aria-expanded',String(!c));$('#hl-tog').title=c?'Show the links':'Hide these links'};
 // (home screen, expeditions list, world creation and settings live in menus.js)
 function renderSites(){

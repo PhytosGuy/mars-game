@@ -69,6 +69,7 @@ function renderSettings(){
     `<div class="srow"><span>Pip, your robot companion</span>${tog('companion',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Guide arrow</span>${tog('guide',[[true,'On'],[false,'Off']])}</div>`+
     `<div class="srow"><span>Touch controls</span>${tog('touch',[['auto','Auto'],['on','On'],['off','Off']])}</div>`+
+    `<div class="srow"><span>Controls<br><small class="sub">Keyboard, mouse and rover controls</small></span><button class="btn sm" id="set-ctrls">View controls</button></div>`+
     `<div class="srow"><span>Tutorial</span><button class="btn sm" id="tour-replay">Replay the tour</button></div>`+
     `<p class="sub" style="line-height:1.5">World options (difficulty, day cycle, weather, creatures) are chosen when you create an expedition.</p>`;
 }
@@ -91,6 +92,7 @@ addEventListener('focus',claimLabMissions);addEventListener('storage',e=>{if(e.k
 $('#p-set').onclick=()=>openSettings('pause');
 $('#set-x').onclick=closeSettings;$('#set-done').onclick=closeSettings;
 $('#setbody').addEventListener('click',e=>{
+  if(e.target.id==='set-ctrls'){openControls('settings');return}
   if(e.target.id==='tour-replay'){OPT.onboarded=false;saveOpts();closeSettings();if(game.state==='play'){if(game.paused)togglePause(false);startTour()}else toast('The tour will play when you next land');return}
   const g=e.target.closest('[data-gc]');if(g){OPT.gc=Object.assign(gc(),{[g.dataset.gc]:g.dataset.v==='true'});saveOpts();applyGfx();if(g.dataset.gc==='cel')toast('Cel shading changes after you reload the game');renderSettings();return}
   const b=e.target.closest('[data-o]');if(!b)return;const k=b.dataset.o,v=b.dataset.v;

@@ -2,6 +2,23 @@
 
 A survival, exploration and colony-building game on a NASA-science-inspired Mars. It runs in the browser as a static site with no build step: `index.html` plus the scripts in `js/`. Three.js and PeerJS load from the unpkg CDN.
 
+## NASA Space Apps Challenge 2026: Team NAA
+Mars: Last Colony is Team NAA's entry for the NASA Space Apps Challenge 2026. It teaches players three stages of a real Mars mission through gameplay and real NASA data:
+
+1. **Mission Design Lab:** plan a NASA mission by choosing the objective, destination, instruments, power, spacecraft, rocket and trajectory.
+2. **Landing:** fly entry, descent and landing at one of five sites, each modelled on a real Martian landscape.
+3. **Sustain:** keep the colony alive with oxygen, water ice, power, food and repairs, while choices shape the colony's future.
+
+Every number in the game is linked to its source on the sources page. The game, visuals and sounds were vibe-coded with Claude Code.
+
+Our Space Apps project page: https://www.spaceappschallenge.org/2026/find-a-team/naa/?tab=project
+
+For more detail, visit: https://mars-last-colony.vercel.app/NAA/spaceapps/  
+For the game, visit: https://mars-last-colony.vercel.app  
+For code, visit github: https://github.com/PhytosGuy/mars-game  
+For sources, visit: https://mars-last-colony.vercel.app/NAA/sources  
+For project demo, visit: https://mars-last-colony.vercel.app/NAA/
+
 ## Play locally
 Serve the folder (opening `index.html` directly won't load the scripts):
 
