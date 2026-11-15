@@ -15,7 +15,7 @@ function card(title,sub,body,color='#6fe0c8'){
   if(game.state!=='play')return;
   const el=document.createElement('div');el.className='scard';
   el.innerHTML=`<h4><i style="background:${color}"></i>${title}</h4><div class="s">${sub}</div><p>${body}</p>`;
-  el.onclick=()=>el.remove();
+  el.onclick=()=>{if(document.body.classList.contains('touch')&&!el.classList.contains('open'))el.classList.add('open');else el.remove()};
   const c=$('#cards');c.appendChild(el);while(c.children.length>1)c.firstChild.remove();
   setTimeout(()=>{el.style.opacity=0;setTimeout(()=>el.remove(),700)},20000);
 }
@@ -376,7 +376,7 @@ function renderCrew(force){
   el.innerHTML=list.map(p=>{const mh=p.t.mh||100,hp=clamp((p.t.hp||0)/mh*100,0,100),o2=clamp(p.t.o2??100,0,100);let l={};try{l=JSON.parse(p.lookS||'{}')}catch(e){}
     return`<div class="crew${hp<30?' low':''}">${pfpImg(l)}<div class="cinfo"><b>${esc(p.name||'Crewmate')}${p.t.in?' <small>· in the habitat</small>':''}</b><span class="cb hp"><i style="width:${hp}%"></i></span><span class="cb o2"><i style="width:${o2}%"></i></span></div></div>`}).join('');
   el.classList.toggle('hidden',!list.length)}
-$('#hudfold').addEventListener('click',()=>{document.body.classList.toggle('hudmin')});
+$('#hudfold').addEventListener('click',()=>{document.body.classList.toggle('hudmin');OPT.hudFull=!document.body.classList.contains('hudmin');saveOpts();layoutLeft()});
 
 /* ---------- coordinates under the minimap: Mars latitude/longitude, local grid and elevation ---------- */
 // real landing-site coordinates (centre of each site), and roughly how high or low the ground there sits (MOLA, metres)
@@ -389,3 +389,60 @@ function updateCoords(){const el=$('#mmcoord');if(!el||!S)return;const f=focusPo
   if(P.inside){el.textContent='Inside the habitat';return}const c=marsCoords(f.x,f.z);
   el.innerHTML=`<b>${fmtLat(c.lat)} ${fmtLon(c.lon)}</b><span>E ${c.east>=0?'+':''}${c.east} · N ${c.north>=0?'+':''}${c.north} · ${c.elev.toLocaleString()} m</span>`}
 setInterval(()=>{if(game.state==='play')updateCoords()},250);
+
+/* ---------- left side of the screen: stack the map, coordinates, stats, crew, boosts and radio so nothing overlaps ---------- */
+function mmSize(){const t=document.body.classList.contains('touch'),def=t?(innerHeight<500?100:128):190;return clamp(+((t?OPT.mmSizeT:OPT.mmSize)||def),90,Math.min(340,innerHeight*0.45))}
+function layoutLeft(){
+  if(game.state!=='play')return;if(document.body.classList.contains('touch')&&OPT.hudFull!==true)document.body.classList.add('hudmin');const t=document.body.classList.contains('touch'),sz=mmSize(),mm=$('#minimap'),gr=$('#mmgrip'),co=$('#mmcoord');
+  mm.style.width=mm.style.height=sz+'px';const L=parseFloat(getComputedStyle(mm).left)||16,T=parseFloat(getComputedStyle(mm).top)||14;
+  gr.style.left=(L+sz-18)+'px';gr.style.top=(T+sz-18)+'px';co.style.width=sz+'px';co.style.left=L+'px';
+  let y=T+sz+4;const put=(el,gap=6)=>{if(!el||el.classList.contains('hidden')||!el.offsetHeight)return;el.style.setProperty('top',y+'px','important');el.style.setProperty('left',L+'px','important');y+=el.offsetHeight+gap};
+  {const cd=$('#cards');if(!t&&cd.style.top){for(const k of['left','right','bottom','top','width'])cd.style.removeProperty(k);cd.style.maxHeight='';cd.style.overflowY=''}}
+  put(co);put($('#vitals2'),8);if(!t){put($('#crewhud'),8)}put($('#buffs'),8);put($('#netinfo'),8);
+  if(t){const hf=$('#hudfold');hf.style.setProperty('left',(L+sz+8)+'px','important');hf.style.setProperty('top',(T+40)+'px','important');const ch=$('#crewhud');ch.style.setProperty('left',(L+sz+44)+'px','important');ch.style.setProperty('top',(T+36)+'px','important');
+    {const tp=$('#top'),cb=$('#chatbtn'),pb=$('#t-pause');if(tp&&cb&&pb){const gl=cb.getBoundingClientRect().right+8,gr2=pb.getBoundingClientRect().left-8;
+      if(gr2-gl>=200){for(const[k,v]of[['left',gl+'px'],['width',Math.min(420,gr2-gl)+'px'],['top',T+'px'],['transform','none']])tp.style.setProperty(k,v,'important')}else for(const k of['left','width','top','transform'])tp.style.removeProperty(k)}}
+    const ts=$('#toasts'),jr=$('#journal');if(ts){let xr=L+sz;for(const id of['#vitals2','#mmcoord','#buffs','#netinfo']){const e=$(id);if(e&&e.offsetHeight)xr=Math.max(xr,e.getBoundingClientRect().right)}const x0=xr+12,x1=(jr&&jr.offsetHeight?jr.getBoundingClientRect().left:innerWidth)-8;ts.style.setProperty('left',x0+'px','important');ts.style.setProperty('width',Math.max(160,x1-x0)+'px','important');ts.style.setProperty('transform','none','important');{const tpb=$('#top').offsetHeight?$('#top').getBoundingClientRect().bottom+6:0;ts.style.setProperty('top',Math.max(T+86,tpb)+'px','important')}
+      const tb=ts.children.length?ts.getBoundingClientRect().bottom+8:0,cd=$('#cards'),ct=Math.max(T+96,tb);cd.style.setProperty('left',x0+'px','important');cd.style.setProperty('right','auto','important');cd.style.setProperty('bottom','auto','important');cd.style.setProperty('top',ct+'px','important');cd.style.setProperty('width',Math.max(160,Math.min(420,x1-x0))+'px','important');cd.style.maxHeight=Math.max(80,innerHeight-ct-70)+'px';cd.style.overflowY='auto'}}
+  {const py=layoutPortrait(L,T,sz,y);if(py)y=py}
+  if(!t)fitDesktop(L,sz);
+  const jh=$('#joyhint');if(jh&&t){const jr=jh.getBoundingClientRect();jh.style.visibility=jr.top<y+4?'hidden':''}
+  const rf=$('#radiofeed');if(rf){rf.style.setProperty('top',(y+4)+'px','important');rf.style.maxHeight=Math.max(0,innerHeight-y-130)+'px';rf.style.overflow='hidden'}}
+/* desktop: the guide, messages and story cards keep their usual places, and only move when the window is narrow
+   enough that they would run into the map, the task card or the clock */
+function fitDesktop(L,sz){
+  const hit=(a,b)=>a.left<b.right-2&&b.left<a.right-2&&a.top<b.bottom-2&&b.top<a.bottom-2,rc=e=>e.getBoundingClientRect();
+  let xr=L+sz;for(const id of['#minimap','#mmcoord']){const e=$(id);if(e&&e.offsetHeight)xr=Math.max(xr,rc(e).right)}
+  const jr=$('#journal'),jl=jr&&jr.offsetHeight?rc(jr).left:innerWidth,gl=xr+12,gw=jl-8-gl,mm=rc($('#minimap'));
+  let below=0;
+  for(const id of['#top','#toasts']){const e=$(id);if(!e)continue;for(const k of['left','width','transform','top'])e.style.removeProperty(k);if(!e.offsetHeight)continue;
+    const r=rc(e);if(hit(r,mm)||(jr&&jr.offsetHeight&&hit(r,rc(jr)))||(below&&r.top<below)){e.style.setProperty('left',gl+'px','important');e.style.setProperty('width',Math.max(180,gw)+'px','important');e.style.setProperty('transform','none','important');if(below&&rc(e).top<below)e.style.setProperty('top',below+'px','important')}
+    below=rc(e).bottom+6}
+  const cd=$('#cards'),ck=$('#clock');if(cd&&ck){cd.style.removeProperty('bottom');if(cd.offsetHeight&&ck.offsetHeight&&hit(rc(cd),rc(ck)))cd.style.setProperty('bottom',(innerHeight-rc(ck).top+8)+'px','important')}}
+/* phone held upright: map top left, buttons top right, then the guide, task card, messages and story cards stacked down
+   the screen; the hotbar shrinks to fit and the jump, use and run buttons sit above it */
+const PORT_IDS=['#chatbtn','#hudfold','#crewhud','#top','#journal','#hotbar','#toasts','#cards'];
+// move the bottom-right touch buttons up by dy pixels (0 puts them back)
+function liftTouchButtons(dy){if(typeof TBTNS==='undefined')return;for(const[id,,,pos]of TBTNS){const e=document.getElementById(id);if(e&&pos.bottom&&parseFloat(pos.bottom)<200)e.style.bottom=(parseFloat(pos.bottom)+Math.max(0,dy))+'px'}}
+function layoutPortrait(L,T,sz,y){
+  const on=document.body.classList.contains('touch')&&innerHeight>innerWidth*1.1;document.body.classList.toggle('portrait',on);
+  if(!on){if(layoutPortrait.on){layoutPortrait.on=false;for(const s of PORT_IDS){const e=$(s);if(e)for(const k of['left','right','top','bottom','width','transform','transform-origin'])e.style.removeProperty(k)}liftTouchButtons(0)}return 0}
+  layoutPortrait.on=true;const W=innerWidth,set=(e,o)=>{if(e)for(const k in o)e.style.setProperty(k,o[k],'important')},x0=L+sz+8;
+  const cb=$('#chatbtn');set(cb,{left:x0+'px',top:'58px',right:'auto',bottom:'auto'});
+  const hf=$('#hudfold');set(hf,{left:(x0+cb.offsetWidth+6)+'px',top:'60px'});
+  const tp=$('#top');set(tp,{left:x0+'px',top:'100px',width:(W-x0-12)+'px',transform:'none'});
+  let cy2=tp.offsetHeight?tp.getBoundingClientRect().bottom+6:100;const ch=$('#crewhud');set(ch,{left:x0+'px',top:cy2+'px'});if(ch&&ch.offsetHeight)cy2+=ch.offsetHeight+6;
+  let yy=Math.max(y,cy2)+4;
+  const jr=$('#journal');set(jr,{left:L+'px',right:'auto',top:yy+'px',width:(W-2*L)+'px'});if(jr&&jr.offsetHeight)yy+=jr.offsetHeight+8;
+  const ts=$('#toasts');set(ts,{left:L+'px',width:(W-2*L)+'px',transform:'none',top:yy+'px'});if(ts.children.length)yy=ts.getBoundingClientRect().bottom+8;
+  const cd=$('#cards');set(cd,{left:L+'px',width:(W-2*L)+'px',top:yy+'px',right:'auto',bottom:'auto'});cd.style.maxHeight=Math.max(80,innerHeight*0.3)+'px';if(cd.children.length)yy=cd.getBoundingClientRect().bottom+8;
+  const hb=$('#hotbar');set(hb,{left:'50%',transform:'translateX(-50%)','transform-origin':'50% 100%'});const k=Math.min(1,(W-12)/hb.offsetWidth);set(hb,{transform:`translateX(-50%) scale(${k.toFixed(3)})`});
+  const lift=innerHeight-hb.getBoundingClientRect().top+8;
+  liftTouchButtons(lift-14);
+  return yy}
+setInterval(layoutLeft,300);addEventListener('resize',layoutLeft);
+// drag the corner of the minimap to resize it
+{let drag=null;const gr=$('#mmgrip');
+  gr.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();gr.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,s:mmSize()}});
+  gr.addEventListener('pointermove',e=>{if(!drag)return;const ns=clamp(drag.s+Math.max(e.clientX-drag.x,e.clientY-drag.y),90,Math.min(340,innerHeight*0.45));if(document.body.classList.contains('touch'))OPT.mmSizeT=ns;else OPT.mmSize=ns;layoutLeft()});
+  const end=()=>{if(drag){drag=null;saveOpts()}};gr.addEventListener('pointerup',end);gr.addEventListener('pointercancel',end)}

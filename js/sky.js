@@ -82,7 +82,7 @@ function updateEnv(dt,focus){
   moonDir(((time/132)%1)*TAU+1.3,-0.2,_v1);deimos.position.copy(camera.position).addScaledVector(_v1,1180);
   const f=focus||camera.position;
   sun.position.set(f.x+ENV.sunDir.x*250,f.y+ENV.sunDir.y*250,f.z+ENV.sunDir.z*250);sun.target.position.set(f.x,f.y,f.z);
-  if(typeof P!=='undefined'&&P.inside){sun.intensity=0;hemi.intensity=0.55;hemi.color.setRGB(1,0.93,0.84);hemi.groundColor.setRGB(0.4,0.33,0.28);renderer.toneMappingExposure=1.05} // indoor light only
+  if(typeof P!=='undefined'&&P.inside){sun.intensity=0;hemi.intensity=0.55;hemi.color.setRGB(1,0.93,0.84);hemi.groundColor.setRGB(0.4,0.33,0.28);hemi.intensity=0.5-0.15*ENV.night;renderer.toneMappingExposure=0.95-0.12*ENV.night} // indoor light only
   const nk=smooth(0.3,0.8,ENV.night+st*0.6);
   for(const n of nightMats)n.m.emissiveIntensity=n.base+n.k*nk;
 }

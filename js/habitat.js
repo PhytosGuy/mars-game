@@ -42,8 +42,8 @@ function buildInterior(){
   const fl=new THREE.Mesh(new THREE.CircleGeometry(R,48),floorM);fl.rotation.x=-Math.PI/2;fl.position.y=0.01;g.add(fl);
   for(const[r0,r1,m]of[[2.1,2.16,cyan],[5.2,5.26,cyan],[R-0.5,R-0.42,amber]]){const rg=new THREE.Mesh(new THREE.RingGeometry(r0,r1,64),m);rg.rotation.x=-Math.PI/2;rg.position.y=0.025;g.add(rg)}
   // lights
-  const L1=new THREE.PointLight(0xdff3ff,20,26,1.5);L1.position.set(0,topY-0.8,0);const L2=new THREE.PointLight(0xffd2a0,14,14,1.6);L2.position.set(-3.6,2.2,-3.2);const L3=new THREE.PointLight(0x7fe8ff,10,10,1.6);L3.position.set(3.8,2.2,-3.4);g.add(L1,L2,L3);
-  INT.mats={floor:floorM,stripe:cyan,trim:amber};
+  const L1=new THREE.PointLight(0xdff3ff,10,26,1.5);L1.position.set(0,topY-0.8,0);const L2=new THREE.PointLight(0xffd2a0,7,14,1.6);L2.position.set(-3.6,2.2,-3.2);const L3=new THREE.PointLight(0x7fe8ff,5,10,1.6);L3.position.set(3.8,2.2,-3.4);INT.lights=[[L1,10],[L2,7],[L3,5]];g.add(L1,L2,L3);
+  INT.mats={floor:floorM,stripe:cyan,trim:amber};INT.bedCount=0;INT.extraBeds=null;INT.beds=[];
   const prop=(m,x,z,w,d)=>{g.add(m);INT.props.push({x,z,w:w/2,d:d/2});return m};
   // centre: holo table with a slowly turning Mars
   const holo=new THREE.Group();holo.position.set(0,0,0.4);holo.add(cy(0.5,0.7,0.8,24,white,0,0.4,0));holo.add(cy(0.95,0.95,0.08,32,dark,0,0.84,0));
@@ -94,7 +94,7 @@ function buildInterior(){
   g.visible=!!P.inside;scene.add(g);INT.g=g;
 }
 function enterHabitat(){
-  if(P.inside||game.cine)return;
+  if(P.inside||game.cine)return;P.flash=false;
   if(!INT.g||Math.abs(INT.x-home().x)>1)buildInterior();applyHabCols();
   const al=airlockPos(home());P.outPos={x:al.x,y:groundHeight(al.x,al.z),z:al.z};
   fade(true,'Opening the outer hatch…');SFX.hiss();
@@ -159,22 +159,23 @@ function interiorCamera(){const c=camera.position;let x=c.x-INT.x,z=c.z-INT.z;co
 function interiorInteract(hints){
   if(!P.inside)return;const lx=P.pos.x-INT.x,lz=P.pos.z-INT.z;
   const dDesk=Math.hypot(lx-INT.desk.x,lz-INT.desk.z),dBed=Math.hypot(lx-INT.bed.x,lz-INT.bed.z),dDoor=Math.hypot(lx-INT.door.x,lz-INT.door.z);
-  if(dDesk<1.7){if(!INT.nearDesk){INT.nearDesk=true;openJournal()}hints.unshift('<span class="key">F</span>Open your journal')}else if(dDesk>2.6)INT.nearDesk=false;
-  if(dBed<2.2){const t=tod(),night=t>19.5||t<5.5;hints.unshift(night?'<span class="key">F</span>Sleep until morning':'<span class="key">F</span>Rest (you can only sleep through the night)')}
+  if(dDesk<1.7)hints.unshift('<span class="key">E</span>Open your journal');
+  if(dBed<2.2||INT.beds.some(b=>Math.hypot(lx-b.x,lz-b.z)<1.8)){const t=tod(),night=t>19.5||t<5.5;hints.unshift(night?'<span class="key">F</span>Sleep until morning':'<span class="key">F</span>Rest (you can only sleep through the night)')}
   if(dDoor<1.5)hints.unshift('<span class="key">F</span>Go outside');
   if(Math.hypot(lx-INT.galley.x,lz-INT.galley.z)<1.6)hints.unshift('<span class="key">F</span>Eat and drink (uses colony food and water)');
   if(INT.bench&&Math.hypot(lx-INT.bench.x,lz-INT.bench.z)<1.8)hints.unshift('<span class="key">F</span>Workbench: craft fabricator items at home');
-  const dW=Math.hypot(lx-INT.wardrobe.x,lz-INT.wardrobe.z);if(dW<1.5){if(!INT.nearW){INT.nearW=true;openCreator()}hints.unshift('<span class="key">F</span>Change your look')}else if(dW>2.4)INT.nearW=false;
+  const dW=Math.hypot(lx-INT.wardrobe.x,lz-INT.wardrobe.z);if(dW<1.5)hints.unshift('<span class="key">F</span>Change your look');
   if(Math.hypot(lx,lz-0.4)<2.0)hints.unshift('<span class="key">F</span>Open the holo-map');
   if(Math.hypot(lx-INT.panel.x,lz-INT.panel.z)<1.2)hints.unshift('<span class="key">F</span>Room colours');
   if(INT.desk.book)INT.desk.book.rotation.y=0.2+Math.sin(now*0.8)*0.02;
+  if(INT.lights){const k=1-0.4*(ENV.night||0);INT.lights.forEach(([l,b])=>l.intensity=b*k)}
+  ensureBeds();
   if(INT.holo){INT.holo.rotation.y=now*0.35;INT.holo.position.y=1.65+Math.sin(now*1.3)*0.04}
 }
 function interiorPressF(){
   if(!P.inside)return false;const lx=P.pos.x-INT.x,lz=P.pos.z-INT.z;
   if(Math.hypot(lx-INT.door.x,lz-INT.door.z)<1.5){exitHabitat();return true}
-  if(Math.hypot(lx-INT.desk.x,lz-INT.desk.z)<1.7){openJournal();return true}
-  if(Math.hypot(lx-INT.bed.x,lz-INT.bed.z)<2.2){trySleep();return true}
+  if(Math.hypot(lx-INT.bed.x,lz-INT.bed.z)<2.2||INT.beds.some(b=>Math.hypot(lx-b.x,lz-b.z)<1.8)){trySleep();return true}
   if(Math.hypot(lx-INT.galley.x,lz-INT.galley.z)<1.6){eatMeal();return true}
   if(INT.bench&&Math.hypot(lx-INT.bench.x,lz-INT.bench.z)<1.8){openMenu('inv');invUI.tab='craft';refreshInvUI();return true}
   if(Math.hypot(lx-INT.wardrobe.x,lz-INT.wardrobe.z)<1.5){openCreator();return true}
@@ -257,3 +258,15 @@ function habExpandHTML(){const lv=S.habLv||1;if(lv>=3)return'<div class="sec">Yo
 function habExpand(){const lv=S.habLv||1;if(lv>=3)return;const nx=HAB_LV[lv+1];
   if(S.mode!=='sandbox'){if(!haveAll(ME,nx.cost,true)){toast('Missing: '+missingText(ME,nx.cost,true),'warn');return}payAll(ME,nx.cost,true)}
   S.habLv=lv+1;buildInterior();applyHabCols();INT.g.visible=!!P.inside;fade(true,'Expanding the habitat…');setTimeout(()=>fade(false),700);toast(`Habitat expanded to level ${S.habLv}!`,'good');openHabCols();if(net.role==='host')net.snapDirty=true}
+
+/* ---------- E at the desk opens your journal ---------- */
+function interiorPressE(){if(!P.inside)return false;const lx=P.pos.x-INT.x,lz=P.pos.z-INT.z;if(Math.hypot(lx-INT.desk.x,lz-INT.desk.z)<1.7){openJournal();return true}return false}
+/* ---------- one bed for each person in the colony (you plus everyone who joined) ---------- */
+const EXTRA_BEDS=[[-5.8,-1.6,Math.PI/2],[5.9,-1.4,Math.PI/2],[-3.6,4.6,0.25]];
+function ensureBeds(){if(!INT.g)return;const need=clamp(1+(typeof net!=='undefined'?net.players.size:0),1,4);if(INT.bedCount===need)return;INT.bedCount=need;
+  if(INT.extraBeds){INT.g.remove(INT.extraBeds);INT.props=INT.props.filter(p=>!p.bed)}const grp=new THREE.Group();INT.g.add(grp);INT.extraBeds=grp;INT.beds=[];
+  const white=mat('#f2f4f6',{roughness:0.3,metalness:0.1}),blankets=['#8a6cd8','#3cb37a','#e8553b'];
+  for(let i=0;i<need-1;i++){const[x,z,r]=EXTRA_BEDS[i],b=new THREE.Group();b.position.set(x,0,z);b.rotation.y=r;
+    b.add(bx(2.5,0.42,1.3,white,0,0.3,0));b.add(bx(2.3,0.2,1.18,mat('#dfe6ee'),0,0.6,0));b.add(bx(1.4,0.1,1.2,mat(blankets[i],{roughness:0.9}),0.4,0.72,0));b.add(bx(0.5,0.15,0.8,mat('#ffffff'),-0.85,0.74,0));
+    b.traverse(o=>{if(o.isMesh)o.castShadow=false});grp.add(b);const c=Math.abs(Math.cos(r)),sn=Math.abs(Math.sin(r));INT.props.push({x,z,w:(2.5*c+1.3*sn)/2,d:(2.5*sn+1.3*c)/2,bed:true});INT.beds.push({x,z})}
+  grp.traverse(o=>o.layers.set(0))}

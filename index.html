@@ -504,6 +504,19 @@ body.touch #j-cur b{font-size:12.5px}body.touch #j-cur{padding:6px 9px 7px}
 .mlnums{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.mlnums td{padding:4px 2px;border-bottom:1px solid var(--line)}.mlnums td:last-child{text-align:right;font-weight:700;white-space:nowrap}
 .dmem{margin:6px 0;padding:7px 10px;border-radius:10px;background:rgba(255,207,106,.1);border-left:3px solid #ffcf6a;font-size:13px;line-height:1.45;color:#f0e6d0}.dtrans{font-size:13px;color:#cfe;font-style:italic;margin-top:2px}
 #wpmode{margin:0 10px}#wpname{display:flex;gap:6px;margin:6px 0}#wpname.hidden{display:none}#wpname input{flex:1;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);font:inherit}
+.btn.pulse{animation:btnPulse 1.4s ease-in-out infinite}@keyframes btnPulse{50%{box-shadow:0 0 0 5px rgba(255,138,61,.35)}}
+/* previews: the canvas never pushes its box bigger (that made the preview zoom in forever) */
+#cr-prev,#acc-prev,#mlviz{position:relative}#cr-cv,#acc-cv,#mlcv{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+/* the wardrobe is in the habitat now */
+#hanger{display:none!important}
+/* resizable minimap */
+#minimap{width:190px;height:190px}#mmgrip{position:absolute;width:18px;height:18px;border-radius:0 0 10px 0;cursor:nwse-resize;pointer-events:auto;z-index:3;background:linear-gradient(135deg,transparent 50%,rgba(255,255,255,.55) 50%)}
+body.touch #mmgrip{width:24px;height:24px}
+/* nothing overlaps the chat button or each other */
+#tourskip{right:18px!important;bottom:104px!important}body.touch #tourskip{bottom:18px!important;right:auto!important;left:50%;transform:translateX(-50%)}
+#radiofeed{bottom:auto!important}
+@media (max-width:900px){body:not(.touch) #hotbar{transform:translateX(-50%) scale(.86);transform-origin:50% 100%}body:not(.touch) #chatbtn{bottom:70px}body:not(.touch) #clock{bottom:112px}}
+body.touch #toasts{top:152px!important;width:min(380px,56vw)!important}body.touch .scard{padding:9px 12px}body.touch .scard p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12px}body.touch .scard.open p{display:block}body.touch .scard:not(.open)::after{content:'Tap to read more';display:block;font-size:10.5px;color:var(--dim);margin-top:4px}
 h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -525,7 +538,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <button id="chatbtn" title="Radio chat (Enter)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg><span>Chat</span><kbd>Enter</kbd></button>
   <button id="hanger" class="hidden" title="Wardrobe"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9a3 3 0 1 1 4.2 2.75c-.75.35-1.2 1-1.2 1.8V15"/><path d="M16 15 3.5 23.2c-.9.6-.5 1.8.5 1.8h24c1 0 1.4-1.2.5-1.8Z"/></svg><span>Wardrobe</span></button>
   <div id="lockaim" class="hidden"></div><div id="hotbar"></div><svg id="reticle" width="46" height="46" viewBox="0 0 46 46" class="hidden"><circle cx="23" cy="23" r="17" stroke="rgba(0,0,0,.45)" stroke-width="4" fill="none"/><circle id="retfg" cx="23" cy="23" r="17" stroke="#bff8f2" stroke-width="2.5" fill="none" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 23 23)"/><path d="M23 8v7M23 31v7M8 23h7M31 23h7" stroke="#e9f6f2" stroke-width="1.6"/><circle cx="23" cy="23" r="1.6" fill="#e9f6f2"/></svg><div id="hblabel"></div><div id="pickfeed"></div>
-  <div id="minimap"><canvas id="mmc" width="300" height="300"></canvas><div id="mmlabel"></div></div><div id="mmcoord"></div><div id="vitals2"></div><div id="crewhud" class="hidden"></div><button id="hudfold" title="Show or hide details">▾</button><div id="buffs"></div><svg id="stamwheel" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" stroke="rgba(0,0,0,.45)" stroke-width="6" fill="none"/><circle id="stamfg" cx="22" cy="22" r="17" stroke="#8fe39a" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
+  <div id="minimap"><canvas id="mmc" width="400" height="400"></canvas><div id="mmlabel"></div></div><div id="mmcoord"></div><div id="mmgrip" title="Drag to resize the map"></div><div id="vitals2"></div><div id="crewhud" class="hidden"></div><button id="hudfold" title="Show or hide details">▾</button><div id="buffs"></div><svg id="stamwheel" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" stroke="rgba(0,0,0,.45)" stroke-width="6" fill="none"/><circle id="stamfg" cx="22" cy="22" r="17" stroke="#8fe39a" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0" transform="rotate(-90 22 22)"/></svg>
   <div id="radiofeed"></div>
   <div id="toasts"></div>
   <div id="cards"></div>
@@ -661,7 +674,7 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.4.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const V='4.5.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
 const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','net','touch','config','account','missionlab','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});

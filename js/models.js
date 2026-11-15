@@ -46,12 +46,14 @@ function mkAstronaut(){
   su(add(cy(0.2,0.24,0.16,14,M.suit,0,1.48,0)));                                                // neck seal
   ca(add(cy(0.085,0.1,0.2,10,M.skin,0,1.5,0)));                                                 // neck
   const SHO=[];for(const s of[1,-1])SHO.push(cs(up(add(sp(0.135,M.suit,s*0.43,1.38,0,14,10))),0.62));                           // shoulder joints
-  su(add(mesh(rbox(0.72,0.11,0.53,0.05),M.boots,0,0.95,0)));su(add(mesh(rbox(0.12,0.09,0.06,0.03),metal,0,0.95,0.27)));
-  su(add(mesh(rbox(0.38,0.22,0.1,0.05),'#d9d3cb',0,1.24,0.25)));
-  [['#5fe37f',-0.1],['#ffcf4a',0],['#6fb6ff',0.1]].forEach(([c,x])=>su(add(sp(0.028,glow(c,1.8),x,1.27,0.31,8,6))));
-  su(add(mesh(rbox(0.36,0.05,0.11,0.02),M.accent,0,1.15,0.25)));
+  {const belt=new THREE.Mesh(shared('belt',()=>new THREE.TorusGeometry(0.29,0.045,12,40)),M.boots);belt.rotation.x=Math.PI/2;belt.scale.set(1.25,0.92,1);belt.position.y=0.95;su(add(belt));
+    const bk=cy(0.05,0.05,0.03,16,metal,0,0.95,0.272);bk.rotation.x=Math.PI/2;su(add(bk))}
+  // chest panel, status lights and stripe are curved to the torso, so they look part of the suit
+  {const tp=(y,h,a,m,off)=>{const p=new THREE.Mesh(shared('tp'+y+h+a+off,()=>new THREE.CylinderGeometry(0.3+off,0.3+off,h,28,1,true,-a,2*a)),m);p.position.y=y;torso.add(p);SUIT.push(p);return p};
+    tp(0.11,0.22,0.6,mat('#d9d3cb',{roughness:0.5}),0.012);tp(0.02,0.05,0.72,M.accent,0.014);
+    [['#5fe37f',-0.1],['#ffcf4a',0],['#6fb6ff',0.1]].forEach(([c,x])=>{const l=sp(0.024,glow(c,1.8),x/1.2,0.14,0.316,8,6);l.scale.set(1/1.2,1,1/0.86);torso.add(l);SUIT.push(l)})}
   su(add(sp(0.16,M.accent,0.4,1.4,0,12,10))).scale.set(1,0.75,1);su(add(sp(0.16,M.accent,-0.4,1.4,0,12,10))).scale.set(1,0.75,1);
-  su(add(mesh(rbox(0.6,0.7,0.3,0.12),M.pack,0,1.18,-0.36)));su(add(mesh(rbox(0.62,0.08,0.32,0.04),M.accent,0,1.4,-0.36)));
+  su(add(mesh(rbox(0.6,0.7,0.3,0.145),M.pack,0,1.18,-0.36)));su(add(mesh(rbox(0.62,0.08,0.32,0.04),M.accent,0,1.4,-0.36)));
   const tank=shared('tank',()=>new THREE.CapsuleGeometry(0.1,0.42,6,12));
   su(add(mesh(tank,'#f2efe9',0.17,1.12,-0.56)));su(add(mesh(tank,'#f2efe9',-0.17,1.12,-0.56)));su(add(mesh(rbox(0.3,0.08,0.06,0.03),dark,0,0.88,-0.52)));
   su(add(mesh(shared('neckring',()=>new THREE.TorusGeometry(0.27,0.065,10,22)),metal,0,1.5,0))).rotation.x=Math.PI/2;
@@ -66,7 +68,7 @@ function mkAstronaut(){
   su(hadd(mesh(shared('vglint',()=>new THREE.SphereGeometry(0.05,8,6)),mat('#ffffff',{emissive:'#ffffff',emissiveIntensity:0.5,transparent:true,opacity:0.55}),-0.16,0.38,0.5))).scale.set(0.8,0.3,0.25);
   su(hadd(sp(0.07,glow('#fff6e0',1.2),0.3,0.49,0.18,8,6)));
   const lamp=new THREE.SpotLight(0xfff6e0,0,45,0.55,0.55,1.2);lamp.position.set(0.3,0.49,0.25);lamp.target.position.set(0,-0.75,9);head.add(lamp,lamp.target);
-  su(hadd(mesh(rbox(0.1,0.16,0.12,0.04),metal,0.42,0.29,0)));su(hadd(mesh(rbox(0.1,0.16,0.12,0.04),metal,-0.42,0.29,0)));
+  for(const s of[1,-1]){const ep=cy(0.075,0.075,0.08,18,metal,s*0.43,0.29,0);ep.rotation.z=Math.PI/2;su(hadd(ep))}
   const ant=new THREE.Group();ant.add(cy(0.015,0.015,0.5,5,GREY,0,0.25,0));ant.add(sp(0.05,M.accent,0,0.52,0,8,6));ant.position.set(0.26,0.5,-0.12);head.add(ant);ant.visible=false;
   // the face (always shown) and hair/hat (only without the helmet) are built by buildFace()
   const face=new THREE.Group();head.add(face);const hairG=new THREE.Group();head.add(hairG);hairG.visible=false;
@@ -78,7 +80,7 @@ function mkAstronaut(){
   const armCl=[];for(const a of[armL,armR]){a.add(su(sp(0.13,M.accent,0,-0.6,0,12,10)));
     const hand=new THREE.Group();hand.position.set(0,-0.58,0);a.add(ca(hand));hand.add(sp(0.072,M.skin,0,0,0,12,10));hand.children[0].scale.set(0.85,1.15,0.6);
     const th=mesh(shared('thumb',()=>new THREE.CapsuleGeometry(0.022,0.05,4,8)),M.skin,a===armL?-0.05:0.05,0.01,0.03);th.rotation.z=a===armL?0.6:-0.6;hand.add(th);
-    a.add(su(mesh(rbox(0.25,0.08,0.25,0.04),M.accent,0,-0.3,0)));a.add(cs(up(sp(0.115,M.suit,0,0,0,12,10)),0.7));
+    {const cf=new THREE.Mesh(shared('cuffS',()=>new THREE.TorusGeometry(0.11,0.035,10,28)),M.accent);cf.rotation.x=Math.PI/2;cf.position.y=-0.3;a.add(su(cf))}a.add(cs(up(sp(0.115,M.suit,0,0,0,12,10)),0.7));
     const cl=new THREE.Group();a.add(ca(cl));armCl.push(cl)}
   const leg=x=>{const hip=new THREE.Group();hip.position.set(x,0.78,0);g.add(hip);
     hip.add(cs(lo(sp(0.15,M.suit,0,0,0,14,10)),0.78));
@@ -118,20 +120,20 @@ function buildFace(a,l){
   // eyes: white, iris, pupil, a sparkle of light, lashes and brows
   const es={round:[1,1],almond:[1.3,0.72],wide:[1.15,1.2],sleepy:[1.1,0.62]}[l.eyes]||[1,1],ex=0.088,ey=Y+0.03;
   for(const s of[-1,1]){
-    fa(S(0.047,white,14,10),s*ex,ey,0.208).scale.set(es[0],es[1],0.5);
-    fa(S(0.028,M.eye,12,10),s*ex,ey-0.002,0.226).scale.set(1,Math.min(1,es[1]*1.05),0.42);
-    fa(S(0.014,pupil,8,6),s*ex,ey-0.002,0.234).scale.set(1,Math.min(1,es[1]*1.05),0.4);
-    fa(S(0.0075,spark,6,4),s*ex-0.01,ey+0.012,0.239);
-    const up=fa(arc(0.047,0.0065,Math.PI,lash),s*ex,ey,0.214);up.scale.set(es[0],es[1]*0.98,1);
+    fa(S(0.047,white,14,10),s*ex,ey,0.2).scale.set(es[0],es[1],0.42);
+    fa(S(0.028,M.eye,12,10),s*ex,ey-0.002,0.217).scale.set(1,Math.min(1,es[1]*1.05),0.42);
+    fa(S(0.014,pupil,8,6),s*ex,ey-0.002,0.224).scale.set(1,Math.min(1,es[1]*1.05),0.4);
+    fa(S(0.0075,spark,6,4),s*ex-0.01,ey+0.012,0.229);
+    const up=fa(arc(0.047,0.0065,Math.PI,lash),s*ex,ey,0.205);up.scale.set(es[0],es[1]*0.98,1);
     if(l.eyes==='sleepy'){const lid=fa(new THREE.Mesh(shared('lid2',()=>new THREE.SphereGeometry(0.05,12,6,0,Math.PI*2,0,Math.PI/2)),M.skin),s*ex,ey-0.002,0.21);lid.scale.set(es[0],0.9,0.55)}
     if(l.eyes==='almond'){const c=fa(B(0.016,0.005,0.01,lash),s*(ex+0.06),ey+0.006,0.21);c.rotation.z=s*0.4}
     if(l.brows!=='none'){const b=fa(new THREE.Mesh(shared('brow'+(l.brows==='thick'?1:0),()=>new THREE.CapsuleGeometry(l.brows==='thick'?0.016:0.01,0.07,4,8)),M.hair),s*ex,Y+0.105,0.222);
       b.rotation.z=Math.PI/2+(l.brows==='arched'?s*0.3:l.brows==='angry'?-s*0.32:s*0.06)}}
   // nose: bridge, tip and nostrils
   const nw=l.nose==='wide'?1.5:1;
-  fa(new THREE.Mesh(shared('nbridge',()=>new THREE.CapsuleGeometry(0.016,0.06,4,8)),M.skin),0,Y+0.005,0.235).rotation.x=-0.3;
+  fa(new THREE.Mesh(shared('nbridge',()=>new THREE.CapsuleGeometry(0.016,0.06,4,8)),M.skin),0,Y+0.005,0.228).rotation.x=-0.3;
   if(l.nose==='pointy'){const n=fa(new THREE.Mesh(shared('nosec2',()=>new THREE.ConeGeometry(0.026,0.07,10)),M.skin),0,Y-0.03,0.258);n.rotation.x=Math.PI/2}
-  else fa(S(0.027,M.skin,10,8),0,Y-0.032,0.25).scale.set(nw,0.85,0.9);
+  else fa(S(0.027,M.skin,10,8),0,Y-0.032,0.242).scale.set(nw,0.85,0.9);
   for(const s of[-1,1]){fa(S(0.017,M.skin,8,6),s*0.024*nw,Y-0.04,0.236);fa(S(0.007,mouthIn,6,4),s*0.014*nw,Y-0.05,0.248).scale.set(1,0.6,0.6)}
   // mouth and lips
   const my=Y-0.098;

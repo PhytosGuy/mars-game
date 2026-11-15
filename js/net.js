@@ -162,7 +162,7 @@ async function joinWorld(d){
   R.pos.set(P.pos.x+6,0,P.pos.z+4);R.pos.y=groundHeight(R.pos.x,R.pos.z);R.battery=100;R.speed=0;R.visY=R.pos.y;R.lastG=R.pos.y;
   S.samples=[];updateChunks(P.pos.x,P.pos.z,999);enterPlay();updateNetUI();fade(false);
   toast(`You joined ${cleanName(d.host)}’s colony!`,'good');SFX.radio();
-  {let seen=[];try{seen=JSON.parse(localStorage.getItem('mlc-joined'))||[]}catch(e){}const key=cleanName(d.host)+'@'+(S.site||'');if(!seen.includes(key)){seen.push(key);try{localStorage.setItem('mlc-joined',JSON.stringify(seen.slice(-30)))}catch(e){}setTimeout(()=>{if(game.state==='play'&&!game.tour)startTour()},2200)}}radio('System',`Connected to ${cleanName(d.host)}’s colony.`,'sys');
+  {let seen=[];try{seen=JSON.parse(localStorage.getItem('mlc-joined'))||[]}catch(e){}const key=cleanName(d.host)+'@'+(S.site||'');if(!seen.includes(key)&&!OPT.onboarded){seen.push(key);try{localStorage.setItem('mlc-joined',JSON.stringify(seen.slice(-30)))}catch(e){}setTimeout(()=>{if(game.state==='play'&&!game.tour)startTour()},2200)}}radio('System',`Connected to ${cleanName(d.host)}’s colony.`,'sys');
 }
 function leaveNet(silent){
   net.leaving=true;

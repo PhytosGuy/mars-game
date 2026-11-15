@@ -26,6 +26,7 @@ function enterPlay(){
   if(P.hp==null||P.hp<=0)P.hp=maxHP();P.stam=100;game.dead=false;syncLamps();onHotbarChange();refreshInvUI();updateDeposits();
   updateHUD();
   if(typeof autoHostIfWanted==='function')setTimeout(autoHostIfWanted,2500);
+  if(!OPT.onboarded&&typeof worldsList==='function'&&worldsList().length>1){OPT.onboarded=true;saveOpts()}
   if(!OPT.onboarded&&!net.role)setTimeout(()=>{if(game.state==='play'&&!game.tour&&typeof startTour==='function')startTour()},1800);   // first landing: show the tour
 }
 let selSite='jezero',selMode='survival';
@@ -168,7 +169,7 @@ function onKey(c){
   if(game.paused||game.dead)return;
   if(game.dialogue)return;
   switch(c){
-    case'KeyE':toggleRover();break;
+    case'KeyE':if(P.inside){if(typeof interiorPressE==='function')interiorPressE()}else toggleRover();break;
     case'CapsLock':setShiftLock(!game.shiftLock);break;
     case'KeyB':if(P.inside){toast('Go outside to build');break}toggleBuild();break;
     case'KeyI':openInventory();break;

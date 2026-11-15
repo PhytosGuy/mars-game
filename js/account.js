@@ -54,13 +54,15 @@ function renderAccount(msg){
   }else{
     h=`<div class="field"><span class="sub">Your name (shown to other players)</span><div class="inrow"><input id="acc-local" maxlength="20" value="${esc(net.name||'')}"><button class="btn sm" id="acc-localsave">Save</button></div></div>
       <div class="sec">Your character</div>${lookEditor()}`;
-    if(sbConfigured())h+=`<div class="sec" style="margin-top:14px">Online account</div><p class="sub">Sign in to keep your name and look on any device, add friends and join their games.</p>
+    if(sbConfigured())h+=`<div class="sec" style="margin-top:14px">Online account</div><p class="sub">Sign in to keep your name and look on any device, add friends and join their games.</p>${m}
       <div class="field"><span class="sub">Email</span><input id="acc-email" type="email" autocomplete="email"></div>
       <div class="field"><span class="sub">Password (8+ characters)</span><input id="acc-pass" type="password" autocomplete="current-password"></div>
-      <div class="btns"><button class="btn primary" id="acc-in">Sign in</button><button class="btn" id="acc-up">Create account</button></div>`;
+      <div class="btns"><button class="btn ${ACC.suggestCreate?'':'primary'}" id="acc-in">Sign in</button><button class="btn ${ACC.suggestCreate?'primary pulse':''}" id="acc-up">${ACC.suggestCreate?'Create an account with this email':'Create account'}</button></div>`;
     else h+=`<p class="sub" style="margin-top:12px">Online accounts aren’t switched on for this copy of the game yet. Your name and look are saved on this device.</p>`;
   }
-  box.innerHTML=m+h;
+  const inForm=!(ACC.user&&ACC.profile)&&sbConfigured();box.innerHTML=(inForm?'':m)+h;
+  if(inForm&&msg&&$('#acc-email'))$('#acc-email').scrollIntoView({block:'center',behavior:'smooth'});
+  if(ACC.form&&$('#acc-email')){$('#acc-email').value=ACC.form.email||'';$('#acc-pass').value=ACC.form.pass||''}   // keep what you typed
 }
 let ACCP=null;
 async function openAccount(){$('#account').classList.remove('hidden');ACCP=ACCP||makePreview('#acc-prev','#acc-cv','account');ACCP.start();renderAccount(sbConfigured()&&!ACC.sb?'Connecting…':'');await sbInit();renderAccount()}
@@ -75,12 +77,18 @@ $('#account').addEventListener('click',async e=>{
   if(ACC.busy)return;
   if(t.id==='acc-in'||t.id==='acc-up'){const email=$('#acc-email').value.trim(),pass=$('#acc-pass').value;
     if(!/^\S+@\S+\.\S+$/.test(email)||pass.length<8){renderAccount('Enter a valid email and a password of at least 8 characters');return}
-    ACC.busy=true;renderAccount(t.id==='acc-in'?'Signing in…':'Creating your account…');
+    ACC.form={email,pass};ACC.busy=true;renderAccount(t.id==='acc-in'?'Signing in…':'Creating your account…');
     const r=t.id==='acc-in'?await ACC.sb.auth.signInWithPassword({email,password:pass}):await ACC.sb.auth.signUp({email,password:pass,options:{emailRedirectTo:location.origin,data:{username:cleanUser(net.name)}}});
     ACC.busy=false;
-    if(r.error)renderAccount(r.error.message);
-    else if(t.id==='acc-up'&&!r.data.session)renderAccount('Check your inbox: click the confirmation link, then sign in here.');
-    else{await loadProfile();renderAccount('Welcome, '+(ACC.profile?ACC.profile.username:'astronaut')+'!')}
+    if(r.error){const m=r.error.message||'';
+      // Supabase gives the same answer for an unknown email and a wrong password (so nobody can probe which emails have accounts)
+      if(t.id==='acc-in'&&/invalid login credentials/i.test(m)){ACC.suggestCreate=true;renderAccount('We couldn’t find an account with that email and password. New here? Create an account with these details below. Already have one? Check your password.')}
+      else if(/email not confirmed/i.test(m))renderAccount('Your account isn’t confirmed yet: click the link in the email we sent you, then sign in.');
+      else if(/already registered|already exists/i.test(m)){ACC.suggestCreate=false;renderAccount('There’s already an account with this email: sign in instead.')}
+      else if(/rate limit|too many/i.test(m))renderAccount('Too many attempts or emails for now. Wait a few minutes and try again.');
+      else renderAccount(m)}
+    else if(t.id==='acc-up'&&!r.data.session){ACC.suggestCreate=false;renderAccount('Account created! Check your inbox: click the confirmation link, then sign in here.')}
+    else{ACC.suggestCreate=false;ACC.form=null;await loadProfile();renderAccount('Welcome, '+(ACC.profile?ACC.profile.username:'astronaut')+'!')}
     return}
   if(t.id==='acc-save'){const n=cleanUser($('#acc-name').value);if(n.length<3){renderAccount('Usernames need 3–20 letters, numbers, spaces, - or _');return}
     ACC.busy=true;const r=await ACC.sb.from('profiles').update({username:n,updated_at:new Date().toISOString()}).eq('id',ACC.user.id);ACC.busy=false;

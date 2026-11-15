@@ -177,7 +177,7 @@ function updateWalker(dt,inp){
   else P.o2-=dt*100/240*o2Mult()*o2Diff()*(typeof coldFactor==='function'?coldFactor():1);
   if(P.o2<25&&(game.o2Beep=(game.o2Beep||0)-dt)<=0){game.o2Beep=2.5;beep(740,0.12,'square',0.04)}
   if(P.o2<=0&&!game.dead)die('oxygen');
-  u.lamp.intensity=P.flash?(cave.active?50:32):(LOOK.lamp||cave.active)?smooth(0.4,0.9,ENV.night+ENV.storm*0.6+(cave.active?1:0))*(cave.active?50:30):0;
+  u.lamp.intensity=P.inside?0:P.flash?(cave.active?26:13):(LOOK.lamp||cave.active)?smooth(0.4,0.9,ENV.night+ENV.storm*0.6+(cave.active?1:0))*(cave.active?30:15):0;
 }
 function blackout(){die('oxygen')}
 /* ---------- rover: the original arcade driving model, plus full air control (A/D yaw, W/S flips) ---------- */

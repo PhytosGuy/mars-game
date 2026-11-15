@@ -106,5 +106,5 @@ setInterval(()=>{
 
 // show Interact only when there's something to interact with, and Rover only near the rover
 function touchContext(){if(!isTouchDevice()||game.state!=='play')return;const t=$('#touchui');
-  t.classList.toggle('canint',!!game.hasHint);t.classList.toggle('cancar',P.mode==='rover'||Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<9)}
+  t.classList.toggle('canint',!!game.hasHint);t.classList.toggle('cancar',P.mode==='rover'||(!P.inside&&Math.hypot(R.pos.x-P.pos.x,R.pos.z-P.pos.z)<9)||(P.inside&&INT.desk&&Math.hypot(P.pos.x-INT.x-INT.desk.x,P.pos.z-INT.z-INT.desk.z)<1.7))}
 setInterval(touchContext,250);

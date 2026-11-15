@@ -53,7 +53,7 @@ function updatePip(dt){
   const look=PIP.task==='mine'?vac.target:PIP.task==='fetch'&&!PIP.carry&&PIP.pk?_pc.set(PIP.pk.x,PIP.pk.y,PIP.pk.z):_pc.set(P.pos.x,P.pos.y+1.6,P.pos.z);
   g.rotation.y=lerpA(g.rotation.y,Math.atan2(look.x-PIP.pos.x,look.z-PIP.pos.z),damp(4,dt));g.rotation.z=Math.sin(now*1.3)*0.08;
   // light the way when it's dark
-  PIP.light.intensity=smooth(0.35,0.85,ENV.night+(cave.active?1:0)+ENV.storm*0.5)*(cave.active?18:10);
+  PIP.light.intensity=P.inside?0:smooth(0.35,0.85,ENV.night+(cave.active?1:0)+ENV.storm*0.5)*(cave.active?12:6);
   // keep watch
   let threat=null,td=35;if(typeof creatures!=='undefined')for(const c of creatures.values()){if(c.gone||SPECIES[c.sp].kind!=='hostile')continue;const d=Math.hypot(c.x-P.pos.x,c.z-P.pos.z);if(d<td){td=d;threat=c}}
   const alert=!!threat;PIP.eye.color.set(alert?'#ff5a4f':'#5fe8ff');PIP.eye.emissive.copy(PIP.eye.color);PIP.eye.emissiveIntensity=alert?1.5+Math.sin(now*10):2;
