@@ -127,7 +127,7 @@ function updateLanders(dt){
   for(let i=puffs.length-1;i>=0;i--){const p=puffs[i];p.t+=dt;const k=p.t/2.2;p.m.scale.set(p.s*(0.3+k),p.s*0.25*(0.3+k),p.s*(0.3+k));p.m.material.opacity=0.45*(1-k);if(k>=1){scene.remove(p.m);p.m.material.dispose();puffs.splice(i,1)}}
 }
 const puffs=[],puffGeo=new THREE.SphereGeometry(1,10,6);
-function puff(x,y,z,s){const m=new THREE.Mesh(puffGeo,new THREE.MeshBasicMaterial({color:'#c99068',transparent:true,opacity:0.45,depthWrite:false}));m.position.set(x,y,z);scene.add(m);puffs.push({m,s,t:0})}
+function puff(x,y,z,s,col){const m=new THREE.Mesh(puffGeo,new THREE.MeshBasicMaterial({color:col||'#c99068',transparent:true,opacity:0.45,depthWrite:false}));m.position.set(x,y,z);scene.add(m);puffs.push({m,s,t:0})}
 function deliver(l){
   const k=l.pad?1.6:1;
   if(net.role==='guest')return;

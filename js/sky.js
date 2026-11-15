@@ -96,28 +96,34 @@ const DEVIL_H=75,DEVIL_N=1500,DEVIL_BASE=260;
 // soft, round dust puffs instead of square points
 const puffTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.45,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t})();
 // the swirling dust shell: scrolling streaky noise on an open funnel
-const funnelMat=()=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,uniforms:{t:{value:0},op:{value:0}},
+const funnelMat=()=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,uniforms:{t:{value:0},op:{value:0},ice:{value:0}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader:`uniform float t,op;varying vec2 vUv;
+  fragmentShader:`uniform float t,op,ice;varying vec2 vUv;
     float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
     float fbm(vec2 p){float v=0.0,a=0.55;for(int i=0;i<4;i++){v+=a*vn(p);p=p*2.1+vec2(3.1,7.7);a*=0.5;}return v;}
     void main(){float u=vUv.x,v=vUv.y;vec2 q=vec2(u*10.0+v*4.0-t*1.8,v*7.0-t*0.9);float n=fbm(q),s=fbm(q*vec2(0.5,3.0)+t*0.3);
       float a=smoothstep(0.32,0.8,n*0.7+s*0.4)*op*smoothstep(0.0,0.06,v)*(1.0-smoothstep(0.7,1.0,v));
-      vec3 c=mix(vec3(0.62,0.31,0.13),vec3(0.98,0.6,0.3),n);gl_FragColor=vec4(c,a*0.72);}`});
+      vec3 c=mix(mix(vec3(0.62,0.31,0.13),vec3(0.98,0.6,0.3),n),mix(vec3(0.78,0.85,0.93),vec3(1.0,1.0,1.0),n),ice);gl_FragColor=vec4(c,a*0.72);}`});   // ice: white snow and frost in the ice biome
 const funnelGeo=(()=>{const pts=[];for(let i=0;i<=24;i++){const h=i/24*DEVIL_H;pts.push(new THREE.Vector2(1.2+h*0.16+Math.pow(h/DEVIL_H,3)*8,h))}return new THREE.LatheGeometry(pts,40)})();
 const devils=[];
 for(let d=0;d<3;d++){
-  const r=mulberry(400+d),n=DEVIL_N+DEVIL_BASE,p=new Float32Array(n*3),col=new Float32Array(n*3),prm=new Float32Array(n*4);
+  const r=mulberry(400+d),n=DEVIL_N+DEVIL_BASE,p=new Float32Array(n*3),col=new Float32Array(n*3),prm=new Float32Array(n*4),kk=new Float32Array(n);
   for(let i=0;i<n;i++){const base=i>=DEVIL_N,h=base?r()*3.5:Math.pow(r(),1.3)*DEVIL_H,rad=base?2+r()*9:0.6+h*0.12+r()*1.8+Math.pow(h/DEVIL_H,3)*7;
     prm[i*4]=h;prm[i*4+1]=rad;prm[i*4+2]=r()*TAU;prm[i*4+3]=0.7+r()*0.6;
-    const k=base?0.6:0.6+0.4*(h/DEVIL_H);col[i*3]=0.78*k+0.2;col[i*3+1]=0.42*k+0.1;col[i*3+2]=0.18*k+0.04}   // orange Martian dust
+    const k=base?0.6:0.6+0.4*(h/DEVIL_H);col[i*3]=0.78*k+0.2;col[i*3+1]=0.42*k+0.1;col[i*3+2]=0.18*k+0.04;kk[i]=k}   // orange Martian dust
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
   const m=new THREE.PointsMaterial({size:3.4,map:puffTex,vertexColors:true,transparent:true,opacity:0,depthWrite:false});
   const pts=new THREE.Points(g,m);pts.frustumCulled=false;
   const funnel=new THREE.Mesh(funnelGeo,funnelMat());funnel.frustumCulled=false;
   const grp=new THREE.Group();grp.add(pts,funnel);scene.add(grp);grp.visible=false;
-  devils.push({pts:grp,cloud:pts,funnel,prm,x:0,z:0,vx:0,vz:0,life:0,max:1,alive:false,wait:d*14+6,size:1,t:r()*10,op:0});
+  devils.push({pts:grp,cloud:pts,funnel,prm,kk,x:0,z:0,vx:0,vz:0,life:0,max:1,alive:false,wait:d*14+6,size:1,t:r()*10,op:0,ice:0,iceC:0});
+}
+// a devil inside the ice biome lifts snow and frost, so it turns white
+function tintDevil(d){const c=d.cloud.geometry.attributes.color,a=c.array,kk=d.kk,w=d.ice;
+  for(let i=0;i<kk.length;i++){const k=kk[i];a[i*3]=lerp(0.78*k+0.2,0.5*k+0.5,w);a[i*3+1]=lerp(0.42*k+0.1,0.5*k+0.5,w);a[i*3+2]=lerp(0.18*k+0.04,0.45*k+0.56,w)}
+  c.needsUpdate=true;d.iceC=w}
+{
 }
 const stormPts=(()=>{const n=1600,p=new Float32Array(n*3);for(let i=0;i<n;i++){p[i*3]=(Math.random()-0.5)*140;p[i*3+1]=Math.random()*45;p[i*3+2]=(Math.random()-0.5)*140}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
@@ -140,13 +146,14 @@ function updateWeatherFX(dt,focus){
     d.op=smooth(0,5,d.life)*(1-smooth(d.max-6,d.max,d.life));
     const gy=groundHeight(d.x,d.z),S_=d.size;d.pts.visible=true;d.pts.position.set(d.x,gy-1,d.z);d.pts.scale.set(S_,S_,S_);
     d.cloud.material.opacity=0.5*d.op*(0.6+0.4*ENV.day);d.funnel.material.uniforms.op.value=d.op;d.funnel.material.uniforms.t.value=d.t;
+    {const ik=typeof iceBiomeW==='function'?iceBiomeW(d.x,d.z):0;d.ice=d.life<0.2?ik:lerp(d.ice,ik,Math.min(1,dt*1.5));d.funnel.material.uniforms.ice.value=d.ice;if(Math.abs(d.ice-d.iceC)>0.04)tintDevil(d)}
     d.funnel.rotation.y=-d.t*2.2;d.funnel.rotation.z=Math.sin(d.t*0.7)*0.06;d.funnel.rotation.x=Math.cos(d.t*0.5)*0.05;
     // twist every particle: faster near the ground, the column sways as it goes up
     const arr=d.cloud.geometry.attributes.position.array,prm=d.prm,n=arr.length/3;
     for(let i=0;i<n;i++){const h=prm[i*4],rad=prm[i*4+1]*(1+0.15*Math.sin(d.t*3+h*0.2)),a=prm[i*4+2]+d.t*prm[i*4+3]*(i>=DEVIL_N?4.2:3.2-h/DEVIL_H*1.8),sway=Math.sin(d.t*0.7+h*0.04)*h*0.07;
       arr[i*3]=Math.cos(a)*rad+sway;arr[i*3+1]=i>=DEVIL_N?h+Math.abs(Math.sin(d.t*5+i))*1.5:h;arr[i*3+2]=Math.sin(a)*rad+sway*0.5}
     d.cloud.geometry.attributes.position.needsUpdate=true;
-    if(S&&Math.random()<dt*3*d.op)puff(d.x+(Math.random()-0.5)*6*S_,gy,d.z+(Math.random()-0.5)*6*S_,2.5*S_);
+    if(S&&Math.random()<dt*3*d.op)puff(d.x+(Math.random()-0.5)*6*S_,gy,d.z+(Math.random()-0.5)*6*S_,2.5*S_,d.ice>0.5?'#eef3f8':null);
     // rumble and shake when it's close
     const fd=Math.hypot(focus.x-d.x,focus.z-d.z);if(fd<70&&S){const k=(1-fd/70)*d.op;if(Math.random()<dt*4)sfx(0.6,160+Math.random()*120,0.6,0.07*k,'lowpass');game.shake=Math.max(game.shake||0,k*0.4)}
     if(S&&!guest)devilCleaning(d);

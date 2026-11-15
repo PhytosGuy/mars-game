@@ -102,7 +102,7 @@ $('#setbody').addEventListener('click',e=>{
 /* ---------- one window at a time ----------
    Opening any window closes whichever one was open. A window opened from the pause menu
    hides the pause menu, and closing it brings the pause menu back. */
-const WINS=['pause','settings','coop','account','friends','mapov','wardrobe','invov','journalov','creator','habcol'];
+const WINS=['pause','settings','controls','coop','account','friends','mapov','wardrobe','invov','journalov','creator','habcol'];
 const winOpen=id=>!$('#'+id).classList.contains('hidden');
 function closeWin(id){
   if(!winOpen(id))return;
@@ -124,5 +124,5 @@ const winWatch=(recs=>{
 {const mo=new MutationObserver(winWatch);for(const id of WINS)mo.observe($('#'+id),{attributes:true,attributeFilter:['class'],attributeOldValue:true})}
 // Escape closes the open window first (on the home screen too)
 addEventListener('keydown',e=>{if(e.key!=='Escape')return;
-  const w=['settings','coop','account','friends','journalov','creator','habcol'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
+  const w=['settings','controls','coop','account','friends','journalov','creator','habcol'].find(winOpen);if(w){e.stopImmediatePropagation();e.preventDefault();closeWin(w)}},true);
 $('#setbody').addEventListener('input',e=>{const gr=e.target.closest('[data-gcr]');if(gr){OPT.gc=Object.assign(gc(),{res:+gr.value});gr.nextElementSibling.textContent=Math.round(+gr.value*100)+'%';saveOpts();applyGfx();return}const fv=e.target.closest('[data-fov]');if(fv){OPT.fov=+fv.value;fv.nextElementSibling.textContent=OPT.fov+'°';camera.fov=OPT.fov;camera.updateProjectionMatrix();saveOpts();return}const r=e.target.closest('[data-r]');if(!r)return;OPT[r.dataset.r]=+r.value;r.nextElementSibling.textContent=Math.round(+r.value*100)+'%';if(r.dataset.r==='music'&&+r.value>0)AU.music=true;saveOpts()});

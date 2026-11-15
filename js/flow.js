@@ -96,10 +96,39 @@ function showTitle(){
   for(const id of['hud','buildbar','mapov','pause','over','sites','worlds','settings','invov','dlg','chatbox','quick'])$('#'+id).classList.add('hidden');invUI.open=false;game.dialogue=null;game.dead=false;
   build.active=false;selectBuild(null);
   $('#title').classList.remove('hidden');curWorld=null;
-  clearAll();astro.visible=false;rover.visible=false;initSite(selSite);tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,60);
+  clearAll();astro.visible=false;rover.visible=false;setTitleScene(tScene);
 }
-const tcam={d:0};
+const tcam={d:0,mode:'fly',a:0};
+/* ---------- home screen scenes: ◀ ▶ under the menu switch between landing sites, biomes, times of day, a habitat and wildlife ----------
+   fly: glide across the site · pan: stand in the middle and turn to look at what surrounds you · orbit: circle around a spot */
+const TITLE_SCENES=[
+  {n:'Flight over Jezero',site:'sel',t:16.9,mode:'fly'},
+  {n:'Ice-rich Plains · morning',site:'utopia',t:9.4,mode:'pan',h:9},
+  {n:'Ice biome · crystal mountains',site:'jezero',t:15.2,mode:'orbit',at:'ice',r:120,h:34,lift:0.12},
+  {n:'Crater Basin · sunset',site:'gale',t:18.25,mode:'pan',h:14},
+  {n:'Volcanic Highlands',site:'tharsis',t:13.5,mode:'pan',h:16},
+  {n:'Rocky Plains · night',site:'elysium',t:21.9,mode:'pan',h:12},
+  {n:'Habitat close-up',site:'jezero',t:17.7,mode:'orbit',r:26,h:9,ty:3,props:'hab'},
+  {n:'Loomstriders and Lumari',site:'gale',t:17.2,mode:'orbit',r:27,h:8,ty:5,props:'animals'},
+  {n:'Dawn over the crater',site:'gale',t:6.4,mode:'fly'},
+];
+let tScene=0,titleProps=null;
+function clearTitleProps(){if(!titleProps)return;for(const o of titleProps.list){scene.remove(o);if(o.userData.own&&typeof disposeObj==='function')disposeObj(o)}if(titleProps.astro){astro.visible=false;rover.visible=false}titleProps=null}
+function titleSceneProps(kind){const list=[],put=(o,x,z,ry=0,own=true)=>{o.position.set(x,groundHeight(x,z),z);o.rotation.y=ry;o.userData.own=own;scene.add(o);list.push(o);return o};
+  if(kind==='hab'){put(MAKERS.habitat(),0,0,0.4);put(MAKERS.solar(),13,5,0.5);put(MAKERS.solar(),15,-6,0.5);put(MAKERS.moxie(),-9,9,1.2);put(rover,9,13,2.4,false);rover.visible=true;put(astro,5,6,2.6,false);astro.visible=true;astro.position.y+=0;titleProps={list,astro:true};return}
+  if(kind==='animals'){[[0,-4,0.2],[7,2,2.6],[-6,4,4.3]].forEach(([x,z,ry])=>put(CR_MAKE.strider().g,x,z,ry));[[3,8,3.4],[-3,10,1]].forEach(([x,z,ry])=>{const g=put(CR_MAKE.lumari().g,x,z,ry);g.position.y+=1.4});
+    [[10,-6],[11,-3],[9,-9]].forEach(([x,z],i)=>put(CR_MAKE.hopper().g,x,z,i));titleProps={list};return}}
+function setTitleScene(i){
+  tScene=(i+TITLE_SCENES.length)%TITLE_SCENES.length;const sc=TITLE_SCENES[tScene],site=sc.site==='sel'?selSite:sc.site;
+  clearTitleProps();if(SITE!==SITES[site]||typeof N1!=='function')initSite(site);titleTime=sc.t;tcam.mode=sc.mode;tcam.d=0;tcam.a=i*1.7;tcam.sc=sc;
+  const ic=SITE.ice[0];tcam.cx=sc.at==='ice'?ic[0]:0;tcam.cz=sc.at==='ice'?ic[1]:0;
+  if(sc.props)titleSceneProps(sc.props);game.tY=undefined;titleCam(0);updateChunks(camera.position.x,camera.position.z,80);
+  const lbl=$('#sc-name');if(lbl)lbl.textContent=sc.n}
 function titleCam(dt){
+  const sc=tcam.sc;
+  if(tcam.mode==='orbit'){tcam.a+=dt*0.06;const r=sc.r,x=tcam.cx+Math.cos(tcam.a)*r,z=tcam.cz+Math.sin(tcam.a)*r,g=groundHeight(tcam.cx,tcam.cz);
+    camera.position.set(x,Math.max(groundHeight(x,z)+2,g+sc.h),z);camera.lookAt(tcam.cx,g+(sc.ty||sc.h*0.25)-r*(sc.lift??0.34),tcam.cz);return}   // look a little below the subject, so it sits above the menu
+  if(tcam.mode==='pan'){tcam.a+=dt*0.035;const g=groundHeight(0,0);camera.position.set(0,g+sc.h,0);camera.lookAt(Math.cos(tcam.a)*300,g+sc.h+22,Math.sin(tcam.a)*300);return}
   tcam.d+=dt*9;const z=-tcam.d,x=Math.sin(tcam.d*0.0016)*140;
   const ahead=40,x2=Math.sin((tcam.d+ahead)*0.0016)*140,z2=z-ahead;
   let gh=-1e9;for(let i=0;i<4;i++)gh=Math.max(gh,groundHeight(lerp(x,x2,i/3),lerp(z,z2,i/3)));
@@ -222,13 +251,17 @@ const CONTROLS=`<b>WASD</b> walk / drive · <b>Shift</b> sprint · <b>Space</b> 
 <b>Tab</b> menu: inventory, missions, colony, research, stats (Tab again for the next page) · <b>I</b> inventory · <b>M</b> map<br><b>B</b> build · <b>X</b> recycle · <b>R</b> rotate<br>
 <b>Caps Lock</b> shift lock (the mouse looks around, aim at the centre) · <b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>Esc</b> pause`;
 $('#ctrl-list').innerHTML=CONTROLS;$('#p-ctrl').innerHTML=CONTROLS;
-$('#b-ctrl').onclick=()=>$('#ctrl-list').classList.toggle('hidden');
+$('#b-ctrl').onclick=()=>$('#controls').classList.remove('hidden');
+$('#ctrl-x').onclick=$('#ctrl-done').onclick=()=>$('#controls').classList.add('hidden');
+// the links at the top left of the home screen fold away (they start open)
+$('#sc-prev').onclick=()=>setTitleScene(tScene-1);$('#sc-next').onclick=()=>setTitleScene(tScene+1);
+$('#hl-tog').onclick=()=>{const h=$('#homelinks'),c=h.classList.toggle('closed');$('#hl-tog').setAttribute('aria-expanded',String(!c));$('#hl-tog').title=c?'Show the links':'Hide these links'};
 // (home screen, expeditions list, world creation and settings live in menus.js)
 function renderSites(){
   // each landing site shows a picture of where you will set up your base
   $('#sgrid').innerHTML=Object.entries(SITES).map(([k,s])=>`<div class="site ${k===selSite?'sel':''}" data-site="${k}"><h3>${s.name}</h3><div class="ins">${s.inspired}</div>
     <img class="sitepic" src="img/sites/${k}.jpg?v=1" alt="Your base site at the ${s.name}" loading="lazy" onerror="this.remove()"></div>`).join('');
-  $$('#sgrid .site').forEach(el=>el.onclick=()=>{if(selSite===el.dataset.site)return;selSite=el.dataset.site;renderSites();initSite(selSite);tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,40)});
+  $$('#sgrid .site').forEach(el=>el.onclick=()=>{if(selSite===el.dataset.site)return;selSite=el.dataset.site;renderSites();clearTitleProps();initSite(selSite);tcam.mode='fly';tcam.d=0;titleCam(0);updateChunks(camera.position.x,camera.position.z,40)});
 }
 $('#p-resume').onclick=()=>togglePause(false);
 $('#p-save').onclick=()=>{saveGame()};

@@ -81,6 +81,7 @@ function removeBuilding(b){
 const faultGeo=new THREE.OctahedronGeometry(0.7,0),faultMat=new THREE.MeshBasicMaterial({color:'#ff4a3d',fog:false});
 function addFaultMarker(b){const m=new THREE.Mesh(faultGeo,faultMat);m.position.set(b.x,b.y+7,b.z);scene.add(m);b.fm=m}
 function clearAll(){
+  if(typeof clearTitleProps==='function')clearTitleProps();
   if(typeof resetExpansion==='function')resetExpansion();
   while(blds.length)removeBuilding(blds[0]);
   for(const l of landers){scene.remove(l.g);disposeObj(l.g)}landers=[];
