@@ -14,6 +14,11 @@ const keys={};
 function readInput(){const k=keys,inp={fwd:(k.KeyW?1:0)-(k.KeyS?1:0),steer:(k.KeyA?1:0)-(k.KeyD?1:0),
   camTurn:(k.ArrowLeft?1:0)-(k.ArrowRight?1:0),jump:!!k.Space,sprint:!!(k.ShiftLeft||k.ShiftRight),brake:!!k.Space};
   return typeof touchInput==='function'?touchInput(inp):inp}
+// push a body of radius rad out of a rotated rectangle (half sizes hx, hz) centred at cx,cz and turned by yaw
+function pushRect(pos,cx,cz,yaw,hx,hz,rad){const c=Math.cos(yaw),s=Math.sin(yaw),dx=pos.x-cx,dz=pos.z-cz;let lx=dx*c-dz*s,lz=dx*s+dz*c;
+  const qx=clamp(lx,-hx,hx),qz=clamp(lz,-hz,hz),ex=lx-qx,ez=lz-qz,d=Math.hypot(ex,ez);if(d>=rad)return false;
+  if(d>1e-4){lx=qx+ex/d*rad;lz=qz+ez/d*rad}else if(hx-Math.abs(lx)<hz-Math.abs(lz))lx=(lx<0?-1:1)*(hx+rad);else lz=(lz<0?-1:1)*(hz+rad);
+  pos.x=cx+lx*c+lz*s;pos.z=cz-lx*s+lz*c;return true}
 function pushOut(pos,cx,cz,rr){const dx=pos.x-cx,dz=pos.z-cz,d=Math.hypot(dx,dz);if(d<rr&&d>0.001){pos.x=cx+dx/d*rr;pos.z=cz+dz/d*rr;return true}return false}
 function collideWorld(pos,rad,self){
   let hit=false;
@@ -22,6 +27,7 @@ function collideWorld(pos,rad,self){
   if(staticLander&&pushOut(pos,staticLander.position.x,staticLander.position.z,2.4+rad))hit=true;
   for(const l of landers)if(l.done&&pushOut(pos,l.x,l.z,(l.crew?2.2:1.7)+rad))hit=true;
   if(self!=='rover'&&P.mode==='foot'&&pushOut(pos,R.pos.x,R.pos.z,2.3+rad))hit=true;
+  if(typeof collideCrystals==='function'&&collideCrystals(pos,rad))hit=true;
   return hit;
 }
 /* ---------- building hitboxes: a height map of each module's real shape ----------
@@ -96,8 +102,9 @@ function collideBodies(pos,rad,self){let hit=false;
   if(self!=='rover'&&typeof staticLander!=='undefined'&&staticLander&&staticLander.visible&&!P.inside){const lp=staticLander.position;if(pos.y<lp.y+4.8&&pos.y>lp.y-1&&pushOut(pos,lp.x,lp.z,2.15+rad))hit=true}
   if(self==='p'&&P.mode==='foot'&&!P.inside&&Math.abs(R.pos.y-pos.y)<2.4&&pushOut(pos,R.pos.x,R.pos.z,1.75+rad))hit=true;
   if(typeof net!=='undefined')for(const p of net.players.values()){const q=p.t&&p.t.p;if(!q)continue;
-    if(q[4]){if(self!=='rover'&&pushOut(pos,p.rv.position.x,p.rv.position.z,2.2+rad))hit=true}
-    else if(Math.abs(p.a.position.y-pos.y)<1.8&&pushOut(pos,p.a.position.x,p.a.position.z,0.42+rad))hit=true}
+    // their rover is solid whether it's parked or being driven, for you on foot and in your own rover
+    const rv=p.rv,hb=p.rvBox;if(hb&&pos.y<rv.position.y+hb[2]-0.35&&pos.y+1.8>rv.position.y-0.3&&pushRect(pos,rv.position.x,rv.position.z,rv.rotation.y,hb[0],hb[1],self==='rover'?rad*0.8:rad))hit=true;
+    if(!q[4]&&Math.abs(p.a.position.y-pos.y)<1.8&&pushOut(pos,p.a.position.x,p.a.position.z,0.42+rad))hit=true}
   // crash sites, stations, ruins and huts: the same exact height-map hitboxes as modules (pylons stay round)
   if(typeof lmMeshes!=='undefined')for(const M of lmMeshes.values()){if(!M.fb||Math.abs(M.L.x-pos.x)>70||Math.abs(M.L.z-pos.z)>70)continue;
     for(let it=0;it<3;it++)if(pushField(pos,M.fb,rad,pos.y,self==='rover'?0.6:0.45))hit=true;else break;

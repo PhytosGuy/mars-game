@@ -87,7 +87,7 @@ function gameOver(){
   $('#over').classList.remove('hidden');if(curWorld)deleteWorld(curWorld);
 }
 function togglePause(force){
-  game.paused=force===undefined?!game.paused:force;$('#pause').classList.toggle('hidden',!game.paused);
+  game.paused=force===undefined?!game.paused:force;$('#pause').classList.toggle('hidden',!game.paused);if(typeof pipLabel==='function')pipLabel();
   if(typeof updateNetUI==='function')updateNetUI();
 }
 function showTitle(){
@@ -222,6 +222,7 @@ function onKey(c){
     case'Enter':openChat();break;
     case'KeyJ':setCollapsed('journal',!isCollapsed('journal'));break;
     case'KeyK':setCollapsed('status',!isCollapsed('status'));break;
+    case'KeyP':togglePip();break;
     case'KeyN':AU.music=!AU.music;toast('Music '+(AU.music?'on':'off'));break;
     case'Equal':if(!build.active)cam.zoom=clamp(cam.zoom*0.9,0.45,3);else if(build.mode==='build')selectBuild(BUILD_ORDER[KEYMAP[c]]);break;
     case'Minus':if(!build.active)cam.zoom=clamp(cam.zoom*1.1,0.45,3);else if(build.mode==='build')selectBuild(BUILD_ORDER[KEYMAP[c]]);break;
@@ -256,7 +257,7 @@ const CONTROLS=`<b>WASD</b> walk / drive · <b>Shift</b> sprint · <b>Space</b> 
 <b>1–9</b>, <b>scroll</b> or <b>click</b> the hotbar · <b>Hold left mouse</b> use the item (drill, blaster, prod) · <b>Q</b> drop one<br>
 <b>I</b> inventory & crafting · <b>F</b> interact, talk, feed animals, scan, open · <b>E</b> rover (get out any time; at speed you tumble) · <b>C</b> cruise<br><b>In the air</b> (rover): <b>W/S</b> flip, <b>A/D</b> spin, <b>Shift+A/D</b> barrel roll<br><b>Tumbling</b> (thrown or bailed out): <b>WASD</b> steer and turn, <b>W/S</b> flip, hold <b>Space</b> to brace and land on your feet<br>
 <b>Tab</b> menu: inventory, missions, colony, research, stats (Tab again for the next page) · <b>I</b> inventory · <b>M</b> map<br><b>B</b> build · <b>X</b> recycle · <b>R</b> rotate<br>
-<b>Caps Lock</b> shift lock (the mouse looks around, aim at the centre) · <b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>Esc</b> pause`;
+<b>Caps Lock</b> shift lock (the mouse looks around, aim at the centre) · <b>Enter</b> radio chat · <b>G</b> ping a spot · <b>V</b> quick comms & wave<br><b>J</b> objectives · <b>H</b> hide HUD · <b>N</b> music · <b>P</b> dismiss or call back Pip · <b>Esc</b> pause`;
 $('#ctrl-list').innerHTML=CONTROLS;
 // Controls opens from Settings or the pause menu; closing it goes back to where you came from
 let ctrlFrom=null;
@@ -276,6 +277,10 @@ function renderSites(){
 $('#p-resume').onclick=()=>togglePause(false);
 $('#p-save').onclick=()=>{saveGame()};
 $('#p-friends').onclick=()=>{if(typeof openFriends==='function')openFriends()};
+// Pip: P (or the pause menu button) sends your robot companion away or calls it back
+function pipLabel(){const b=$('#p-pip');if(b)b.textContent=OPT.companion===false?'Call Pip back':'Dismiss Pip'}
+function togglePip(){OPT.companion=OPT.companion===false;saveOpts();pipLabel();toast(OPT.companion?'Pip is back at your side':'Pip dismissed. Press P to call it back');if(typeof renderSettings==='function'&&!$('#settings').classList.contains('hidden'))renderSettings()}
+$('#p-pip').onclick=togglePip;pipLabel();
 $('#p-coop').onclick=()=>{if(net.role==='guest'){leaveNet(false);showTitle();return}if(net.role==='host'){leaveNet(false);togglePause(true);return}hostGame();togglePause(false)};
 $('#b-coop').onclick=()=>{initAudio();$('#coop-name').value=net.name;$('#coop-code').value='';coopMsg('');$('#coop').classList.remove('hidden');$('#coop-code').focus()};
 $('#coop-x').onclick=()=>{closeCoop();if(net.peer&&!net.role)leaveNet(true)};

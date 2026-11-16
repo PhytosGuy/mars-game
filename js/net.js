@@ -185,7 +185,10 @@ function getRemote(id,name,look){
   let p=net.players.get(id);
   if(!p){const a=mkAstronaut(),rv=mkRover();a.userData.lamp.parent.remove(a.userData.lamp,a.userData.lamp.target);rv.userData.body.remove(rv.userData.lamp,rv.userData.lamp.target);rv.rotation.order='YXZ';
     const lab=nameSprite(name||'Crewmate');lab.position.y=2.7;a.add(lab);
-    scene.add(a,rv);p={id,name,a,rv,lookS:'',t:null,ph:0,wave:0};net.players.set(id,p);updateNetUI()}
+    // its footprint (half length, half width, height) for the hitbox, and the owner's name over it
+    const bb=new THREE.Box3().setFromObject(rv),rvBox=[(bb.max.x-bb.min.x)/2,(bb.max.z-bb.min.z)/2,bb.max.y-rv.position.y];
+    const cl=nameSprite(`${name||'Crewmate'}’s car`);cl.position.y=rvBox[2]+1.1;cl.scale.multiplyScalar(1.1);rv.add(cl);
+    scene.add(a,rv);p={id,name,a,rv,rvBox,lookS:'',t:null,ph:0,wave:0};net.players.set(id,p);updateNetUI()}
   if(look){const s=JSON.stringify(look);if(s!==p.lookS){p.lookS=s;applyLookTo(p.a,p.rv,look)}}
   return p;
 }

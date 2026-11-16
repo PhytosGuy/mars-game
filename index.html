@@ -357,6 +357,7 @@ h3{color:var(--text)}.mnum{color:var(--accent);font-weight:900}
 /* ============ Touch controls ============ */
 #touchui{position:fixed;inset:0;pointer-events:none;z-index:5;display:none;user-select:none;-webkit-user-select:none}
 body.touch #touchui.on{display:block}
+body:has(#creator:not(.hidden)) #touchui,body:has(#account:not(.hidden)) #touchui,body:has(#friends:not(.hidden)) #touchui,body:has(#settings:not(.hidden)) #touchui,body:has(#controls:not(.hidden)) #touchui{display:none!important}
 #touchui .tbtn{position:absolute;pointer-events:auto;width:56px;height:56px;border-radius:16px;border:2px solid rgba(255,255,255,.32);border-bottom-width:4px;background:rgba(72,72,72,.5);color:#f4f4f4;font:800 10px var(--fb);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;touch-action:none;-webkit-tap-highlight-color:transparent;box-shadow:inset 0 2px 0 rgba(255,255,255,.18),0 3px 8px rgba(0,0,0,.25)}
 #touchui .tbtn svg{width:46%;height:46%}#touchui .tbtn i{font-style:normal;opacity:.85;letter-spacing:.02em}
 #touchui .tbtn.sm{width:40px;height:40px;border-radius:12px;font-size:9px;background:rgba(40,40,40,.38)}#touchui .tbtn.sm i{display:none}#touchui .tbtn.sm svg{width:42%;height:42%}
@@ -465,6 +466,15 @@ body.touch #chatbtn{top:16px;left:148px;right:auto}
 .crright{display:flex;flex-direction:column;min-height:0}
 .crtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.crtabs button{padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-weight:700;cursor:pointer}
 .crtabs button.on{background:var(--accent,#ff8a3d);color:#1d0f06;border-color:transparent}
+.crsubs{display:flex;gap:4px;flex-wrap:wrap;margin:-2px 0 12px;padding:4px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.crsubs button{flex:1 1 auto;padding:7px 11px;border-radius:10px;border:0;background:none;color:var(--dim);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.crsubs button.on{background:rgba(255,255,255,.12);color:var(--text)}
+.swpick{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid var(--line);background:conic-gradient(#f44,#fd4,#4f6,#4df,#46f,#f4f,#f44);position:relative}
+.swpick::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--cur);box-shadow:0 0 0 2px rgba(0,0,0,.45)}
+.swpick.on,.swpick.open{border-color:var(--accent,#ff8a3d);box-shadow:0 0 0 2px rgba(255,138,61,.35)}
+.picker{margin-top:8px;padding:10px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid var(--line)}
+.picker canvas{display:block;width:100%;border-radius:8px;cursor:crosshair;touch-action:none}.picker canvas.grey{height:16px;margin-top:6px}
+.pkrow{display:flex;align-items:center;gap:8px;margin-top:8px}.pkrow i{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.6)}.pkrow b{font-size:13px;letter-spacing:.04em}.pkrow .sub{margin:0 0 0 auto!important}
 #cr-opts{overflow:auto;padding-right:6px;max-height:min(62vh,560px)}
 .crrow{margin-bottom:14px}.crrow .sub{margin-bottom:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:inherit;font-size:14px;cursor:pointer}
@@ -581,8 +591,8 @@ body.touch #j-cur b{font-size:12.5px}body.touch #j-cur{padding:6px 9px 7px}
 body.touch #guide.task{padding:6px 12px 7px;border-radius:13px}body.touch #guide.task #g-label{font-size:9.5px}
 #j-cur{display:none!important}
 /* stronger tint on the guide box, compass just under it */
-#guide,#guide.task{background:rgba(20,16,15,.62)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line)!important;box-shadow:none}   /* same transparent grey as the home screen buttons */
-#top #compass{margin-top:2px}
+#guide,#guide.task{background-image:none!important;background:rgba(20,16,15,.62)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line)!important;box-shadow:none}   /* same transparent grey as the home screen buttons */
+#top #guide{margin-top:2px}
 /* "Press Tab to see…" drops down under the compass */
 #tabhint{pointer-events:auto;cursor:pointer;max-height:0;opacity:0;overflow:hidden;transform:translateY(-10px);transition:max-height .45s var(--ease,ease),opacity .35s,transform .45s var(--ease,ease);
   padding:0 16px;border-radius:999px;background:rgba(20,16,15,.62);border:1px solid var(--line);font-size:13.5px;font-weight:700;color:#efe6da;white-space:nowrap;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -654,8 +664,8 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
   <div id="clock"></div>
   <div id="netinfo" class="hidden"></div>
   <div id="top">
-    <div id="guide" class="none"><span id="g-label"></span><div id="g-row"><svg id="g-arrow" viewBox="0 0 24 24"><path d="M12 2 L21 20 L12 15.5 L3 20 Z" fill="#ff9147" stroke="#2a1206" stroke-width="1.2" stroke-linejoin="round"/></svg><span id="g-text"></span><span id="g-dist"></span></div><i id="g-bar"><i></i></i></div>
     <div id="compass"><div id="cmp"></div><div class="cmp-center"></div></div>
+    <div id="guide" class="none"><span id="g-label"></span><div id="g-row"><svg id="g-arrow" viewBox="0 0 24 24"><path d="M12 2 L21 20 L12 15.5 L3 20 Z" fill="#ff9147" stroke="#2a1206" stroke-width="1.2" stroke-linejoin="round"/></svg><span id="g-text"></span><span id="g-dist"></span></div><i id="g-bar"><i></i></i></div>
     <div id="tabhint" role="button" tabindex="-1"><span id="th-text"></span></div>
   </div>
   <div id="journal" class="collapsed"><div id="j-head"></div><div id="j-cur" class="hidden"></div><ul id="j-list"></ul></div>
@@ -745,6 +755,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
     <button class="btn pbig" id="p-set">Settings</button>
     <button class="btn pbig" id="p-ctrls">Controls</button>
     <button class="btn pbig" id="p-friends">Friends</button>
+    <button class="btn pbig" id="p-pip">Dismiss Pip</button>
     <button class="btn pbig" id="p-save">Save</button>
     <button class="btn pbig" id="p-quit">Save &amp; quit</button>
     <button class="btn hidden" id="p-coop"></button>
@@ -782,7 +793,7 @@ h1{margin-bottom:16px}h1 span{letter-spacing:.04em!important}</style>
 <div class="crbody"><div class="crleft"><div id="cr-prev"><canvas id="cr-cv"></canvas><img id="cr-pfp" alt="Your profile picture" title="Your profile picture"><span>Drag to turn</span></div>
 <div class="opt crmode"><button data-cm="suit">Spacesuit</button><button data-cm="casual">Everyday clothes</button></div>
 <div class="crbtns"><button class="btn sm" id="cr-rand">Randomise</button><button class="btn sm" id="cr-reset">Reset</button></div></div>
-<div class="crright"><div class="crtabs" id="cr-tabs"></div><div id="cr-opts"></div></div></div>
+<div class="crright"><div class="crtabs" id="cr-tabs"></div><div class="crsubs" id="cr-subs"></div><div id="cr-opts"></div></div></div>
 <div class="btns"><button class="btn primary" id="cr-done">Done</button></div></div></div>
 <div id="habcol" class="overlay hidden"><div class="win pausewin"><div class="winhead"><h2>Room colours</h2><button class="x" id="hc-x">✕</button></div><div id="habcolbody"></div><div class="btns"><button class="btn" id="hc-reset">Reset</button><button class="btn primary" id="hc-done">Done</button></div></div></div>
 <div id="account" class="overlay hidden"><div class="win pausewin acwin"><div class="winhead"><h2>Account</h2><button class="x" id="acc-x">✕</button></div><div id="acc-prev"><canvas id="acc-cv"></canvas><span>Drag to turn</span></div><div id="acctbody"></div></div></div>
@@ -808,8 +819,8 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 window.THREE=THREE;
 Object.assign(window,{RoundedBoxGeometry,EffectComposer,RenderPass,UnrealBloomPass,ShaderPass,OutputPass,mergeGeometries});
-const V='4.8.1'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
-const FILES=['core','terrain','sky','models','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','menu3d','net','touch','config','account','onboard','main'];
+const V='4.9.0'+(/[?&]dev\b/.test(location.search)?'.'+Date.now():'');document.getElementById('verlbl').textContent='Version '+V.split('.').slice(0,3).join('.');
+const FILES=['core','terrain','sky','models','face','data','state','sim','science','player','interact','build','hud','panels','audio','music','save','flow','landing','menus','render','helpers','items','inventory-ui','character','mining','actions','comms','disasters','city','caves','world','companion','aliens','habitat','dialogue','menu3d','net','touch','config','account','onboard','main'];
 const fail=m=>{const e=document.getElementById('booterr');e.textContent='Mars: Last Colony failed to start. '+m;e.classList.remove('hidden')};
 addEventListener('error',e=>{if(!window.__booted)fail((e.message||'')+' ('+(e.filename||'').split('/').pop()+':'+e.lineno+')')});
 let __n=0;const __pct=document.getElementById('bootpct');

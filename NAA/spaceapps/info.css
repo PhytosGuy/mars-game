@@ -20,11 +20,11 @@
 .part:last-child{border-bottom:0}
 .pnum{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font:600 22px var(--fb);background:var(--accent);color:#1b0d05;box-shadow:0 0 0 9px rgba(255,138,61,.15);margin-bottom:22px}
 .part h2{font-size:clamp(32px,4vw,50px);margin-bottom:18px}
-.part h3{font:400 24px var(--fh);margin:34px 0 12px}
+.part h3{font:800 24px var(--fh);margin:34px 0 12px}
 .part p{color:#e6ddd5;margin:0 0 16px}
 .lede{font-size:19px}
 .small{font-size:14.5px;color:var(--dim)!important}
-blockquote{margin:6px 0 22px;padding:20px 24px;border-radius:20px;background:rgba(255,138,61,.08);border:1px solid rgba(255,138,61,.28);font:400 clamp(19px,2vw,23px)/1.45 var(--fh);color:var(--text)}
+blockquote{margin:6px 0 22px;padding:20px 24px;border-radius:20px;background:rgba(255,138,61,.08);border:1px solid rgba(255,138,61,.28);font:800 clamp(19px,2vw,23px)/1.45 var(--fh);color:var(--text)}
 
 .ticks{list-style:none;padding:0;margin:0 0 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
 .ticks li{position:relative;padding:8px 0 8px 34px;color:#e2d9d0}
@@ -43,7 +43,7 @@ blockquote{margin:6px 0 22px;padding:20px 24px;border-radius:20px;background:rgb
 .stages3,.missions6{list-style:none;padding:0;margin:24px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .stages3 li,.missions6 li{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:20px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
 .stages3 i,.missions6 i{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:600 18px var(--fb);font-style:normal;background:var(--accent);color:#1b0d05;margin-bottom:8px}
-.stages3 b,.missions6 b{font:400 21px var(--fh)}
+.stages3 b,.missions6 b{font:800 21px var(--fh)}
 .stages3 span,.missions6 span{color:var(--dim);font-size:14.5px}
 
 .tbl{border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:10px}
@@ -75,17 +75,17 @@ blockquote{margin:6px 0 22px;padding:20px 24px;border-radius:20px;background:rgb
 .nasa8{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .nasa8 div{display:flex;flex-direction:column;gap:3px;padding:18px 20px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
 .nasa8 small{color:var(--teal,#6fe0c8);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
-.nasa8 b{font:400 21px var(--fh)}
+.nasa8 b{font:800 21px var(--fh)}
 .nasa8 span{color:var(--dim);font-size:14.5px}
 
 .crit5{display:grid;gap:12px}
 .crit5 div{display:grid;grid-template-columns:52px 150px 1fr;gap:16px;align-items:center;padding:16px 20px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
 .crit5 i{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font:600 17px var(--fb);font-style:normal;border:2px solid var(--accent);color:var(--gold)}
-.crit5 b{font:400 22px var(--fh);color:var(--gold)}
+.crit5 b{font:800 22px var(--fh);color:var(--gold)}
 .crit5 p{margin:0!important;font-size:15px}
 
 .claude{padding:22px 24px;border-radius:22px;background:linear-gradient(135deg,rgba(255,138,61,.14),rgba(111,224,200,.08));border:1px solid rgba(255,179,122,.35);margin-bottom:20px}
-.claude b{display:block;font:400 26px var(--fh);margin-bottom:6px}
+.claude b{display:block;font:800 26px var(--fh);margin-bottom:6px}
 .claude p{margin:0}
 .info .pipe{margin:26px auto 26px}
 
@@ -130,7 +130,7 @@ blockquote{margin:6px 0 22px;padding:20px 24px;border-radius:20px;background:rgb
 .sites5 img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;transition:transform 1.2s var(--ease)}
 .sites5 figure:hover img{transform:scale(1.06)}
 .sites5 figcaption{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}
-.sites5 b{font:400 17px var(--fh)}
+.sites5 b{font:800 17px var(--fh)}
 .sites5 span{color:var(--dim);font-size:13px;line-height:1.4}
 .tabs10{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tabs10 div{display:grid;grid-template-columns:44px 1fr;column-gap:14px;align-items:start;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line)}

@@ -28,7 +28,9 @@ const GLASS=mat('#28305a',{roughness:0.12,metalness:0.6});
 const LOOK_DEFAULT={suit:'#efebe4',accent:'#ff7a2e',visor:'#2b2f5a',pack:'#c9c3bb',boots:'#8d8781',antenna:false,lamp:true,rover:'#efebe4',
   skin:'#c68642',eyes:'round',eyeCol:'#4a3020',brows:'straight',nose:'button',mouth:'smile',freckles:false,blush:false,
   hairStyle:'short',hair:'#3b2a20',facial:'none',hat:'none',hatCol:'#ff7a2e',glasses:'none',build:'regular',height:'avg',
-  top:'tee',shirt:'#4f86f7',shirt2:'#ffffff',bottoms:'pants',pants:'#3a3a40',shoes:'#efebe4'};
+  top:'tee',shirt:'#4f86f7',shirt2:'#ffffff',bottoms:'pants',pants:'#3a3a40',shoes:'#efebe4',
+  faceShape:'oval',ears:'round',lashes:'natural',lipCol:'#b4544e',mole:'none',shadow:'none',shadowCol:'#8a6cd8',paint:'none',paintCol:'#ff7a2e',
+  lens:'clear',glassCol:'#1d1a1a',earrings:'none',necklace:'none',jewelCol:'#e6c35a',shoeStyle:'sneakers'};
 // One rig, two outfits: the spacesuit and your everyday clothes share the same joints, so every animation works for both.
 // The visor is dark and mirrored: you can only just make out the face inside.
 function mkAstronaut(){
@@ -103,90 +105,7 @@ function mkAstronaut(){
 const BODY_PROF=[[0.001,0.872],[0.198,0.878],[0.208,0.95],[0.196,1.04],[0.205,1.12],[0.232,1.22],[0.248,1.3],[0.25,1.36],[0.226,1.43],[0.155,1.48],[0.09,1.51],[0.001,1.522]];
 function bodyLathe(){return new THREE.LatheGeometry(BODY_PROF.map(([r,y])=>new THREE.Vector2(r,y)),28)}
 const bodyR=y=>{for(let i=1;i<BODY_PROF.length;i++){const[a,ya]=BODY_PROF[i-1],[b,yb]=BODY_PROF[i];if(y<=yb)return lerp(a,b,(y-ya)/Math.max(1e-6,yb-ya))}return 0.09};
-// face, hair, hat, glasses and the style of your top: rebuilt only when those choices change
-function buildFace(a,l){
-  const U=a.userData,M=U.mats,F=U.face,H=U.hairG,T=U.topG;for(const grp of[F,H,T,...U.armCl,...U.legCl])while(grp.children.length)grp.remove(grp.children[0]);
-  const fa=(m,x,y,z)=>{m.position.set(x,y,z);F.add(m);return m},ha=(m,x,y,z)=>{m.position.set(x,y,z);H.add(m);return m};
-  const S=(r,m,ws=12,hs=10)=>new THREE.Mesh(shared('fs'+r+'_'+ws+'_'+hs,()=>new THREE.SphereGeometry(r,ws,hs)),m),B=(w,h,d,m)=>new THREE.Mesh(shared('fb'+w+'_'+h+'_'+d,()=>new THREE.BoxGeometry(w,h,d)),m);
-  const shell=(r,t0,t1,m)=>new THREE.Mesh(shared('sh'+r+'_'+t0+'_'+t1,()=>new THREE.SphereGeometry(r,18,12,0,Math.PI*2,t0,t1-t0)),m);
-  const arc=(r,t,ang,m)=>new THREE.Mesh(shared('arc'+r+'_'+t+'_'+ang,()=>new THREE.TorusGeometry(r,t,6,16,ang)),m);
-  const white=mat('#fbfaf7',{roughness:0.25}),lipM=mat('#b4544e',{roughness:0.45}),mouthIn=mat('#4a1717',{roughness:0.8}),frame=mat('#1d1a1a',{roughness:0.4}),lash=mat('#1a1210',{roughness:0.6}),
-    shade=mat('#000000',{transparent:true,opacity:0.16,depthWrite:false}),pupil=mat('#0b0908',{roughness:0.2}),spark=mat('#ffffff',{emissive:'#ffffff',emissiveIntensity:0.9}),Y=0.27;
-  // head, jaw and chin, cheeks, ears
-  fa(S(0.25,M.skin,24,18),0,Y,0).scale.set(1,1.08,1);
-  fa(S(0.2,M.skin,24,18),0,Y-0.075,0.02).scale.set(1.08,0.88,1);
-  for(const s of[-1,1]){
-    fa(S(0.055,M.skin,10,8),s*0.245,Y+0.005,-0.01).scale.set(0.42,1,0.82);fa(S(0.03,shade,8,6),s*0.262,Y+0.005,0.0).scale.set(0.3,0.75,0.6)}
-  // eyes: white, iris, pupil, a sparkle of light, lashes and brows
-  const es={round:[1,1],almond:[1.3,0.72],wide:[1.15,1.2],sleepy:[1.1,0.62]}[l.eyes]||[1,1],ex=0.088,ey=Y+0.03;
-  for(const s of[-1,1]){
-    fa(S(0.047,white,14,10),s*ex,ey,0.2).scale.set(es[0],es[1],0.42);
-    fa(S(0.028,M.eye,12,10),s*ex,ey-0.002,0.217).scale.set(1,Math.min(1,es[1]*1.05),0.42);
-    fa(S(0.014,pupil,8,6),s*ex,ey-0.002,0.224).scale.set(1,Math.min(1,es[1]*1.05),0.4);
-    fa(S(0.0075,spark,6,4),s*ex-0.01,ey+0.012,0.229);
-    const up=fa(arc(0.047,0.0065,Math.PI,lash),s*ex,ey,0.205);up.scale.set(es[0],es[1]*0.98,1);
-    if(l.eyes==='sleepy'){const lid=fa(new THREE.Mesh(shared('lid2',()=>new THREE.SphereGeometry(0.05,12,6,0,Math.PI*2,0,Math.PI/2)),M.skin),s*ex,ey-0.002,0.21);lid.scale.set(es[0],0.9,0.55)}
-    if(l.eyes==='almond'){const c=fa(B(0.016,0.005,0.01,lash),s*(ex+0.06),ey+0.006,0.21);c.rotation.z=s*0.4}
-    if(l.brows!=='none'){const b=fa(new THREE.Mesh(shared('brow'+(l.brows==='thick'?1:0),()=>new THREE.CapsuleGeometry(l.brows==='thick'?0.016:0.01,0.07,4,8)),M.hair),s*ex,Y+0.105,0.222);
-      b.rotation.z=Math.PI/2+(l.brows==='arched'?s*0.3:l.brows==='angry'?-s*0.32:s*0.06)}}
-  // nose: bridge, tip and nostrils
-  const nw=l.nose==='wide'?1.5:1;
-  fa(new THREE.Mesh(shared('nbridge',()=>new THREE.CapsuleGeometry(0.016,0.06,4,8)),M.skin),0,Y+0.005,0.228).rotation.x=-0.3;
-  if(l.nose==='pointy'){const n=fa(new THREE.Mesh(shared('nosec2',()=>new THREE.ConeGeometry(0.026,0.07,10)),M.skin),0,Y-0.03,0.258);n.rotation.x=Math.PI/2}
-  else fa(S(0.027,M.skin,10,8),0,Y-0.032,0.242).scale.set(nw,0.85,0.9);
-  for(const s of[-1,1]){fa(S(0.017,M.skin,8,6),s*0.024*nw,Y-0.04,0.236);fa(S(0.007,mouthIn,6,4),s*0.014*nw,Y-0.05,0.248).scale.set(1,0.6,0.6)}
-  // mouth and lips
-  const my=Y-0.098;
-  if(l.mouth==='neutral'){fa(new THREE.Mesh(shared('lipn',()=>new THREE.CapsuleGeometry(0.009,0.06,4,8)),lipM),0,my+0.006,0.228).rotation.z=Math.PI/2;fa(new THREE.Mesh(shared('lipn2',()=>new THREE.CapsuleGeometry(0.012,0.05,4,8)),lipM),0,my-0.012,0.225).rotation.z=Math.PI/2}
-  else if(l.mouth==='grin'){const o=fa(new THREE.Mesh(shared('grin2',()=>new THREE.CircleGeometry(0.05,16,Math.PI,Math.PI)),mouthIn),0,my+0.012,0.229);o.scale.set(1.1,0.75,1);
-    fa(B(0.085,0.016,0.006,white),0,my+0.004,0.231);const ll=fa(arc(0.052,0.009,Math.PI,lipM),0,my+0.012,0.228);ll.rotation.z=Math.PI;ll.scale.set(1.1,0.78,1);fa(B(0.11,0.008,0.008,lipM),0,my+0.013,0.229)}
-  else{const sm=l.mouth==='smirk';const up=fa(arc(0.046,0.007,Math.PI,lipM),sm?0.012:0,my+0.03,0.226);up.rotation.z=Math.PI+(sm?0.3:0);
-    const lo=fa(arc(0.036,0.011,Math.PI*0.8,lipM),sm?0.014:0,my+0.03,0.224);lo.rotation.z=Math.PI+Math.PI*0.1+(sm?0.3:0)}
-  if(l.freckles)for(const s of[-1,1])for(let i=0;i<5;i++)fa(S(0.006,mat('#8a5a3a'),5,4),s*(0.085+i*0.017),Y-0.03+(i%2)*0.013,0.218);
-  if(l.blush)for(const s of[-1,1])fa(S(0.035,mat('#ff7a8a',{transparent:true,opacity:0.4,depthWrite:false}),8,6),s*0.12,Y-0.05,0.2).scale.set(1,0.6,0.4);
-  // glasses
-  if(l.glasses==='round'||l.glasses==='square'){for(const s of[-1,1]){const r=l.glasses==='round'?fa(new THREE.Mesh(shared('gl',()=>new THREE.TorusGeometry(0.055,0.009,6,20)),frame),s*ex,ey,0.25):fa(new THREE.Mesh(shared('gls',()=>new THREE.TorusGeometry(0.06,0.009,4,4)),frame),s*ex,ey,0.25);if(l.glasses==='square')r.rotation.z=Math.PI/4;
-      fa(new THREE.Mesh(shared('glarm',()=>new THREE.BoxGeometry(0.008,0.008,0.22)),frame),s*0.15,ey+0.01,0.14)}fa(B(0.05,0.008,0.008,frame),0,ey+0.012,0.256)}
-  else if(l.glasses==='shades'){fa(B(0.3,0.065,0.025,mat('#111318',{roughness:0.08,metalness:0.7})),0,ey+0.004,0.245);for(const s of[-1,1])fa(new THREE.Mesh(shared('glarm',()=>new THREE.BoxGeometry(0.008,0.008,0.22)),frame),s*0.15,ey+0.01,0.14)}
-  // facial hair
-  if(l.facial==='beard'){const b=fa(shell(0.258,2.08,2.9,M.hair),0,Y,0.012);b.scale.set(1.04,1.12,1.04);for(const sd of[-1,1]){const sb=fa(S(0.05,M.hair,8,6),sd*0.215,Y-0.06,0.08);sb.scale.set(0.5,1.5,0.8)}fa(S(0.06,M.hair,10,8),0,Y-0.2,0.16).scale.set(1.3,0.8,0.8)}
-  else if(l.facial==='goatee'){fa(S(0.04,M.hair,10,8),0,Y-0.19,0.19).scale.set(1.1,1.3,0.7)}
-  else if(l.facial==='stubble'){const b=fa(shell(0.256,1.8,2.7,mat(l.hair,{transparent:true,opacity:0.3,depthWrite:false})),0,Y,0);b.scale.set(1,1.08,1)}
-  if(l.facial==='mustache'||l.facial==='beard'){for(const s of[-1,1]){const m=fa(new THREE.Mesh(shared('must',()=>new THREE.CapsuleGeometry(0.014,0.045,4,8)),M.hair),s*0.03,my+0.045,0.235);m.rotation.z=Math.PI/2+s*0.35}}
-  // hair (and hat), only seen without the helmet
-  if(l.hairStyle!=='bald')H.add(new THREE.Mesh(hairGeometry(l.hairStyle,Y,l.hat!=='none'),M.hair));
-  if(l.hat==='beanie'){const h=ha(shell(0.285,0,1.25,M.hat),0,Y,0);h.scale.set(1,1.12,1);ha(new THREE.Mesh(shared('rim',()=>new THREE.TorusGeometry(0.27,0.03,6,20)),M.hat),0,Y+0.09,0).rotation.x=Math.PI/2}
-  else if(l.hat==='cap'){ha(shell(0.282,0,1.2,M.hat),0,Y,0).scale.set(1,1.1,1);ha(B(0.3,0.025,0.2,M.hat),0,Y+0.12,0.3).rotation.x=0.15}
-  else if(l.hat==='headset'){ha(new THREE.Mesh(shared('hband',()=>new THREE.TorusGeometry(0.27,0.02,6,18,Math.PI)),frame),0,Y+0.02,0);for(const s of[-1,1])ha(S(0.06,frame,8,6),s*0.26,Y,0)}
-  // everyday clothes: details are curved panels that hug the body (children of the shaped torso), so they blend in
-  {if(!U.cdeco){U.cdeco=new THREE.Group();U.ctorso.add(U.cdeco)}const D_=U.cdeco;while(D_.children.length)D_.remove(D_.children[0]);
-    const T_=U.topG,ta=(m,x,y,z)=>{m.position.set(x,y,z);T_.add(m);return m};
-    // a smooth panel following the torso between heights y0..y1, centred on angle a (0 = front) and wa wide, raised by `off`
-    const panel=(y0,y1,a,wa,off,m)=>{const key=`bp${y0}_${y1}_${a}_${wa}_${off}`;const g=shared(key,()=>{const pts=[];for(let i=0;i<=10;i++){const y=lerp(y0,y1,i/10),edge=Math.sin(i/10*Math.PI);pts.push(new THREE.Vector2(bodyR(y)+off*(0.35+0.65*Math.pow(edge,0.3)),y))}
-        return new THREE.LatheGeometry(pts,Math.max(6,Math.round(wa*24)),a-wa,wa*2)});const p=new THREE.Mesh(g,m);D_.add(p);return p};
-    const ring=(rad,tube,m,y,sx=1.25,sz=0.72)=>{const t=new THREE.Mesh(shared('ring'+rad+'_'+tube,()=>new THREE.TorusGeometry(rad,tube,10,40)),m);t.rotation.x=Math.PI/2;t.scale.set(sx,sz,1);return ta(t,0,y,0)};
-    const dk=mat('#1d1a1a',{roughness:0.6}),metalB=mat('#c9c3bb',{roughness:0.3,metalness:0.8}),M2=M.shirt2,top=l.top;
-    panel(0.874,0.905,0,Math.PI,0.012,M.shirt);                                                // rolled hem all the way round
-    if(top==='tee'){ring(0.09,0.018,M2,1.495,1.1,0.85);panel(1.2,1.34,0,0.36,0.01,M2);panel(1.245,1.295,0,0.24,0.016,M.shirt)}
-    else if(top==='hoodie'){const hood=new THREE.Mesh(shared('hood3',()=>new THREE.TorusGeometry(0.16,0.07,14,28)),M.shirt);hood.rotation.x=Math.PI/2+0.55;hood.scale.set(1.05,1,0.9);ta(hood,0,1.47,-0.08);
-      panel(0.95,1.09,0,0.62,0.018,M.shirt);panel(1.08,1.095,0,0.6,0.02,M2);panel(0.874,0.92,0,Math.PI,0.016,M2);
-      for(const s of[-1,1]){const cd=new THREE.Mesh(shared('cord2',()=>new THREE.CapsuleGeometry(0.006,0.11,4,6)),M2);ta(cd,s*0.045,1.37,bodyR(1.37)*0.72+0.012)}}
-    else if(top==='jacket'){panel(0.9,1.43,0,0.19,0.01,M2);for(const s of[-1,1]){panel(1.27,1.46,s*0.3,0.12,0.016,M.shirt);panel(0.93,1.44,s*0.2,0.012,0.016,dk);panel(0.98,1.03,s*0.62,0.14,0.012,M.shirt)}ring(0.095,0.024,M.shirt,1.48,1.15,0.9)}
-    else if(top==='flight'){panel(0.9,1.46,0,0.022,0.012,M2);ring(0.095,0.022,M.shirt,1.48,1.15,0.9);panel(0.95,1.0,0,Math.PI,0.012,M.pants);panel(1.27,1.33,-0.42,0.14,0.012,M2);
-      const patch=new THREE.Mesh(shared('patch3',()=>new THREE.SphereGeometry(0.05,16,10,0,Math.PI*2,0,0.5)),mat('#2e5bd8'));patch.rotation.x=Math.PI/2;ta(patch,0.12,1.3,bodyR(1.3)*0.72-0.035)}
-    // trousers: a rolled waistband with a belt and buckle
-    ring(0.188,0.024,M.pants,0.9,1.0,0.82);ring(0.19,0.013,dk,0.9,1.02,0.84);const bk=new THREE.Mesh(shared('buckle',()=>rbox(0.05,0.035,0.014,0.006)),metalB);ta(bk,0,0.9,0.158);
-    // sleeves: short sleeves show the forearm; long sleeves get rolled cuffs
-    for(const cl of U.armCl){if(top==='tee'){const fore=new THREE.Mesh(shared('fore',()=>new THREE.CapsuleGeometry(0.083,0.2,8,16)),M.skin);fore.position.set(0,-0.38,0);cl.add(fore);
-        const hem=new THREE.Mesh(shared('slhem2',()=>new THREE.TorusGeometry(0.087,0.016,10,24)),M.shirt);hem.rotation.x=Math.PI/2;hem.position.set(0,-0.25,0);cl.add(hem)}
-      else{const cuff=new THREE.Mesh(shared('cuff2',()=>new THREE.TorusGeometry(0.08,0.02,10,24)),top==='hoodie'?M2:M.shirt);cuff.rotation.x=Math.PI/2;cuff.position.set(0,-0.47,0);cl.add(cuff)}}
-    // shoes: rounded soles and toe caps; trouser or shorts hems
-    for(const cl of U.legCl){const sole=new THREE.Mesh(shared('sole2',()=>rbox(0.25,0.04,0.41,0.018)),mat('#f4f1ea',{roughness:0.7}));sole.position.set(0,-0.37,0.05);cl.add(sole);
-      const toe=new THREE.Mesh(shared('toe2',()=>new THREE.SphereGeometry(0.1,16,10,0,Math.PI*2,0,Math.PI/2)),mat('#f4f1ea',{roughness:0.7}));toe.scale.set(1.15,0.5,0.9);toe.position.set(0,-0.35,0.17);cl.add(toe);
-      const lace=new THREE.Mesh(shared('lace2',()=>new THREE.CapsuleGeometry(0.008,0.07,4,6)),M2);lace.rotation.z=Math.PI/2;lace.position.set(0,-0.226,0.12);cl.add(lace);
-      const hm=new THREE.Mesh(shared('pantHem2',()=>new THREE.TorusGeometry(0.095,0.018,10,24)),M.pants);hm.rotation.x=Math.PI/2;
-      if(U.shorts||l.bottoms==='shorts'){hm.position.set(0,0.06,0);hm.scale.set(1.12,1.12,1)}else hm.position.set(0,-0.2,0);cl.add(hm)}}
-}
+// face, hair, hat, glasses and clothes are built by buildFace() in face.js
 /* ---------- hair: real-looking hair built from tapered locks and curls ----------
    Every style is a scalp cap with a natural hairline plus locks that follow a combing direction
    over the head, all merged into one mesh. A strand texture gives the fine lines of hair. */
@@ -214,7 +133,9 @@ function hairCap(Y,r0=0.258){const g=new THREE.SphereGeometry(1,44,30),pos=g.att
     pos.setXYZ(i,x*k,Y+y*k*1.08,z*k)}g.computeVertexNormals();return g}
 // Hair as one smooth, sculpted shape per style: a shell over the scalp that thickens, sweeps, curls or falls
 // (a smooth hairline that tapers into the skin, no layered pieces), plus a few rounded extras (ponytail, bun, braids).
-const HAIR_STYLE={buzz:{t:0.005},short:{t:0.026,top:0.03,hl:0.07},side:{t:0.028,top:0.02,hl:0.1,side:0.04},long:{t:0.03,top:0.015,hl:0.09,hang:0.46},
+const HAIR_STYLE={pixie:{t:0.018,top:0.022,hl:0.12,side:0.02},bob:{t:0.03,top:0.015,hl:0.08,hang:0.2},wavy:{t:0.03,top:0.015,hl:0.09,hang:0.44,curl:0.013},
+  shaggy:{t:0.034,top:0.02,hl:0.1,hang:0.24,curl:0.016},undercut:{t:0.003,crown:0.055,hl:0.08},slick:{t:0.02,top:0.034,hl:-0.04},spiky:{t:0.02,spike:0.07,hl:0.04},
+  pigtails:{t:0.013,top:0.006},spacebuns:{t:0.013,top:0.006},topknot:{t:0.012,top:0.006,hl:-0.02},fade:{t:0.006,crown:0.028,top:0.012},buzz:{t:0.005},short:{t:0.026,top:0.03,hl:0.07},side:{t:0.028,top:0.02,hl:0.1,side:0.04},long:{t:0.03,top:0.015,hl:0.09,hang:0.46},
   ponytail:{t:0.013,top:0.006},bun:{t:0.013,top:0.006},curly:{t:0.038,top:0.025,hl:0.05,curl:0.024},mohawk:{t:0.004,ridge:0.13},braids:{t:0.012,top:0.006},afro:{afro:1}};
 function hairGeometry(style,Y,hatOn){
   return shared('hair3_'+style+(hatOn?'_hat':''),()=>{
@@ -224,10 +145,13 @@ function hairGeometry(style,Y,hatOn){
       let hm=hairMax(ph)+(H.hl||0)*ss(0.3,1,front);if(hatOn)hm=Math.max(hm,0);
       let inside=ss(hm+0.07,hm-0.05,th);                                                   // 1 = hair, 0 = bare skin, smooth in between
       let t=(H.t||0)+(H.top||0)*Math.max(0,y)+(H.side||0)*Math.max(0,x)*ss(-0.4,0.6,y);
+      if(H.crown)t+=H.crown*ss(0.15,0.55,y);
+      if(H.spike)t+=H.spike*Math.pow(Math.max(0,nz(x*9+z*4,y*9-z*3)),1.6)*ss(-0.1,0.5,y);
       if(H.curl)t+=H.curl*(0.45+0.55*nz(x*8+z*3.1,y*8-z*2.7))*ss(-0.2,0.5,y+0.4);
       if(H.ridge)t+=H.ridge*Math.exp(-(x*x)/0.0085)*ss(1.75,0.55,th)*(0.85+0.15*nz(z*18,y*18));
       t*=0.3+0.7*ss(hm,hm-0.28,th);                                                    // thinner towards the hairline, so the edge is soft
       if(H.afro)t=0.11+0.05*nz(x*6+z*2,y*6-z*3)+0.025*nz(x*15,y*15+z*9);
+      if(hatOn)t=Math.min(t,0.012);                                                       // under a hat the hair lies flat (the hat covers it)
       let r=0.252+t,px=x*r,py=Y+y*r*1.08,pz=z*r;
       if(H.afro){const fy=z>0.45&&y<0.42?1-0.45*ss(0.45,0.75,z)*ss(0.42,0.12,y):1;px*=1.25;pz*=1.22*fy;py=Y+0.07+y*r*1.15*fy;inside=th<hm+0.25||z<0.2?1:inside}
       // long hair falls from the hairline down the back and sides as one smooth curtain
@@ -240,14 +164,18 @@ function hairGeometry(style,Y,hatOn){
     if(style==='ponytail'){const tie=new THREE.Vector3(0,Y+0.07,-0.265);
       const tail=new THREE.LatheGeometry([[0.001,0],[0.05,0.015],[0.078,0.07],[0.082,0.16],[0.068,0.28],[0.045,0.38],[0.018,0.44],[0.001,0.46]].map(([r,y])=>new THREE.Vector2(r,y)),24);
       tail.rotateX(-2.62);tail.translate(tie.x,tie.y,tie.z);parts.push(tail);const band=new THREE.TorusGeometry(0.045,0.016,10,24);band.rotateX(-2.62+Math.PI/2);band.translate(tie.x,tie.y-0.015,tie.z-0.01);parts.push(band)}
+    if(style==='pigtails')for(const s of[-1,1]){const tie=new THREE.Vector3(s*0.205,Y+0.02,-0.15);
+      const tail=new THREE.LatheGeometry([[0.001,0],[0.04,0.012],[0.06,0.06],[0.062,0.14],[0.05,0.24],[0.03,0.31],[0.001,0.33]].map(([r,y])=>new THREE.Vector2(r,y)),20);
+      tail.rotateX(-0.35);tail.rotateZ(-s*2.7);tail.translate(tie.x,tie.y,tie.z);parts.push(tail);const band=new THREE.TorusGeometry(0.036,0.013,10,20);band.rotateX(-0.35+Math.PI/2);band.rotateZ(-s*2.7);band.translate(tie.x+s*0.012,tie.y-0.005,tie.z);parts.push(band)}
+    if(style==='spacebuns')for(const s of[-1,1]){const b=new THREE.SphereGeometry(0.085,24,16);b.scale(1,0.9,1);b.translate(s*0.15,Y+0.235,-0.03);parts.push(b);const tw=new THREE.TorusGeometry(0.07,0.024,10,28);tw.rotateX(Math.PI/2);tw.rotateZ(s*0.5);tw.translate(s*0.14,Y+0.2,-0.03);parts.push(tw)}
+    if(style==='topknot'){const b=new THREE.SphereGeometry(0.085,24,16);b.scale(1,0.85,1);b.translate(0,Y+0.315,-0.03);parts.push(b);const tw=new THREE.TorusGeometry(0.07,0.022,10,28);tw.rotateX(Math.PI/2);tw.translate(0,Y+0.27,-0.03);parts.push(tw)}
     if(style==='bun'){const b=new THREE.SphereGeometry(0.105,28,20);b.scale(1,0.85,1);b.translate(0,Y+0.27,-0.1);parts.push(b);const tw=new THREE.TorusGeometry(0.09,0.03,12,32);tw.rotateX(Math.PI/2+0.3);tw.translate(0,Y+0.235,-0.11);parts.push(tw)}
     if(style==='braids')for(const s of[-1,1]){const root=new THREE.Vector3(s*0.19,Y-0.03,-0.12);
       for(let i=0;i<11;i++){const e=new THREE.SphereGeometry(0.044-i*0.0018,14,10);e.scale(1,1.4,0.85);e.rotateZ(i%2?0.45:-0.45);e.translate(root.x+s*0.008*i,root.y-0.045*i,root.z-0.018*i);parts.push(e)}
       const tip=new THREE.SphereGeometry(0.03,12,8);tip.scale(1,1.6,1);tip.translate(root.x+s*0.09,root.y-0.52,root.z-0.2);parts.push(tip)}
     const geo=typeof mergeGeometries==='function'&&parts.length>1?mergeGeometries(parts,false):null;return geo||parts[0]})}
-const FACE_KEYS=['eyes','brows','nose','mouth','freckles','blush','glasses','facial','hairStyle','hat','top','bottoms'];
 function setOutfit(a,cas){const U=a.userData,M=U.mats;U.casual=!!cas;for(const m of U.suitParts)m.visible=!cas;for(const m of U.casParts)m.visible=!!cas;
-  for(const m of U.upper)m.material=cas?M.shirt:M.suit;for(const m of U.lower)m.material=cas?M.pants:M.suit;
+  for(const m of U.upper)m.material=cas?(U.sleeveless?M.skin:M.shirt):M.suit;for(const m of U.lower)m.material=cas?M.pants:M.suit;
   if(cas&&U.shorts)for(const m of U.shins)m.material=M.skin;for(const m of U.bootM)m.material=cas?M.shoes:M.boots;
   U.hairG.visible=!!cas;U.topG.visible=!!cas;U.antenna.visible=!cas&&U.wantAnt;
   // out of the suit: a slimmer, body-shaped figure with arms and legs closer in

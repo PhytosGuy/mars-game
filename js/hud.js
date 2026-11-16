@@ -111,6 +111,7 @@ function updateCompass(){
   for(const w of S.pwp||[])items.push([w.x,w.z,w.col,w.name]);
   for(const c of S.lostCaches)if(cacheMeshes.has(c.id))items.push([c.x,c.z,'#ff6b5e','Your body']);
   for(const b of blds)if(b.type==='beacon')items.push([b.x,b.z,'#ffb06a','']);
+  if(typeof net!=='undefined')for(const rp of net.players.values()){const q=rp.t&&rp.t.p;if(q)items.push([q[4]?q[5]:q[0],q[4]?q[7]:q[2],'#7fd3ff',esc(rp.name||'Crewmate')])}
   for(const p of nearPOIs)if(S.discovered.has(p.id)&&!poiDone(p))items.push([p.x,p.z,POI[p.type].color,'']);
   for(const[x,z,c,l]of items){const d=Math.hypot(x-f.x,z-f.z);if(d<8)continue;const px=xOf(Math.atan2(x-f.x,z-f.z));if(px<0||px>W)continue;
     h+=`<div class="mk" style="left:${px}px;color:${c}"><i style="background:${c}"></i>${l}</div>`}

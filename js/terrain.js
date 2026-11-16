@@ -209,16 +209,27 @@ function updateChunks(px,pz,budget){
 // six-sided crystal with a pointed tip, and the clusters that crown each ice spike
 const crystalGeo=new THREE.LatheGeometry([new THREE.Vector2(0.001,0),new THREE.Vector2(1,0.02),new THREE.Vector2(1,0.74),new THREE.Vector2(0.001,1)],6);
 const crystalMat=new THREE.MeshStandardMaterial({color:'#7ec3f2',emissive:'#1f5fa8',emissiveIntensity:0.55,roughness:0.1,metalness:0.08,flatShading:true});
+const _v3c=new THREE.Vector3();
+// ice crystals are solid: push a body out of each crystal's (possibly tilted) hexagonal prism, measured at the body's own height
+function collideCrystals(pos,rad,h=1.8){if(!SITE||(!SITE.iceWorld&&!SITE.ice.length))return false;let hit=false;
+  const c0=Math.floor((pos.x-40)/CHUNK),c1=Math.floor((pos.x+40)/CHUNK),d0=Math.floor((pos.z-40)/CHUNK),d1=Math.floor((pos.z+40)/CHUNK);
+  for(let i=c0;i<=c1;i++)for(let j=d0;j<=d1;j++){const ch=chunks.get(i+','+j);if(!ch||!ch.cr)continue;
+    for(const k of ch.cr.userData.cols){if(Math.abs(k.x-pos.x)>k.r+Math.abs(k.dx)+rad+1||Math.abs(k.z-pos.z)>k.r+Math.abs(k.dz)+rad+1)continue;
+      if(pos.y>k.y+k.dy-0.25||pos.y+h<k.y)continue;                                   // above the tip or below the base
+      const s=clamp((Math.max(pos.y+0.25,k.y)-k.y)/k.dy,0,1),rr=k.r*0.92*(s<0.74?1:Math.max(0,(1-s)/0.26));if(rr<0.05)continue;
+      if(pushOut(pos,k.x+k.dx*s,k.z+k.dz*s,rr+rad))hit=true}}
+  return hit}
 function crystalsFor(ox,oz){
   if(!SITE.iceWorld&&!SITE.ice.length)return null;const list=[];
   for(let gx=Math.floor(ox/ICE_G)-1;gx<=Math.floor((ox+CHUNK)/ICE_G);gx++)for(let gz=Math.floor(oz/ICE_G)-1;gz<=Math.floor((oz+CHUNK)/ICE_G);gz++){
     const sp=iceSpike(gx,gz);if(sp&&sp.x>=ox&&sp.x<ox+CHUNK&&sp.z>=oz&&sp.z<oz+CHUNK)list.push(sp)}
-  if(!list.length)return null;const im=new THREE.InstancedMesh(crystalGeo,crystalMat,list.length*5);let n=0;
+  if(!list.length)return null;const im=new THREE.InstancedMesh(crystalGeo,crystalMat,list.length*5);let n=0;const cols=[];
   for(const sp of list){const rng=mulberry(hashI(Math.round(sp.x),Math.round(sp.z),SITE.seed+5)),g=groundHeight(sp.x,sp.z)-sp.h;
     for(let k=0;k<5;k++){const main=k===0,a=rng()*TAU,off=main?0:sp.r*(0.25+rng()*0.3),hh=main?sp.h*1.08:sp.h*(0.35+rng()*0.35),rr=main?sp.r*0.36:sp.r*(0.12+rng()*0.1);
       const px=sp.x+Math.cos(a)*off,pz=sp.z+Math.sin(a)*off,base=main?g+sp.h*0.02:groundHeight(px,pz)-hh*0.15;
-      _q.setFromEuler(_e.set(main?0:Math.cos(a)*0.45,sp.rot+k,main?0:Math.sin(a)*0.45));_v1.set(px,base,pz);_v2.set(rr,hh,rr);_m4.compose(_v1,_q,_v2);im.setMatrixAt(n++,_m4)}}
-  im.count=n;im.castShadow=true;im.receiveShadow=true;return im}
+      _q.setFromEuler(_e.set(main?0:Math.cos(a)*0.45,sp.rot+k,main?0:Math.sin(a)*0.45));_v1.set(px,base,pz);_v2.set(rr,hh,rr);_m4.compose(_v1,_q,_v2);im.setMatrixAt(n++,_m4);
+      const ax=_v3c.set(0,hh,0).applyQuaternion(_q);cols.push({x:px,y:base,z:pz,dx:ax.x,dy:ax.y,dz:ax.z,r:rr})}}   // its axis, for the hitbox
+  im.count=n;im.userData.cols=cols;im.castShadow=true;im.receiveShadow=true;return im}
 function initSite(key){
   SITE=SITES[key];
   if(SITE.peakRing&&!SITE._peaks){const P=SITE.peakRing,r=mulberry(SITE.seed+3);for(let i=0;i<P.n;i++){const a=i/P.n*TAU+(r()-0.5)*0.35,d=P.r0+r()*(P.r1-P.r0);SITE.features.push({x:Math.cos(a)*d,z:Math.sin(a)*d,r:55+r()*40,h:85+r()*80,peak:true})}SITE._peaks=true}
