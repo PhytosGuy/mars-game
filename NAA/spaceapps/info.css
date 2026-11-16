@@ -5,7 +5,7 @@
 .ihero-in{position:relative;width:min(900px,100% - 40px);margin:0 auto;padding:110px 0 70px}
 .ihero h1{font-size:clamp(46px,8vw,110px);line-height:1}
 .ihero h1 em{white-space:nowrap}
-.ihero .tag{max-width:40ch;margin:22px auto 30px}
+.ihero p.tag{max-width:40ch;margin:22px auto 30px}
 
 .doc{width:min(1180px,100% - 40px);margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:56px;padding:40px 0 100px}
 .toc{position:sticky;top:90px;align-self:start;display:flex;flex-direction:column;gap:4px}
