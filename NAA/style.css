@@ -67,7 +67,7 @@ em{font-style:normal;color:var(--gold)}
 
 /* summary */
 .about{padding:clamp(110px,16vw,200px) 0}
-.lead{font:800 clamp(28px,3.8vw,50px)/1.25 var(--fh);margin:0 auto;max-width:24ch;text-align:center}
+.lead{font:400 clamp(28px,3.8vw,50px)/1.25 "Marcellus",Georgia,serif;margin:0 auto;max-width:24ch;text-align:center}
 .lead2{font-size:clamp(18px,1.8vw,22px);color:var(--dim);margin:34px auto 0;max-width:42ch;text-align:center}
 
 /* stages */
