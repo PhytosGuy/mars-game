@@ -20,7 +20,7 @@ const LBL=(k,v)=>{const o=W_OPTS.find(o=>o[0]===k);const x=o&&o[2].find(x=>x[0]=
 function renderWorlds(){
   const l=worldsList().sort((a,b)=>b.played-a.played);
   $('#wlist').innerHTML=l.length?l.map(w=>{const c=SITE_COL[w.site]||['#c98a5a','#5a2e1c'],st=w.settings||{};
-    return`<div class="wcard" data-w="${esc(w.id)}"><div class="wthumb" style="--c1:${c[0]};--c2:${c[1]}"></div>
+    return`<div class="wcard" data-w="${esc(w.id)}"><div class="wthumb" style="--c1:${c[0]};--c2:${c[1]}">${SITES[w.site]?`<img src="img/sites/${w.site}.jpg?v=1" alt="${esc(SITES[w.site].name)}" loading="lazy" onerror="this.remove()">`:''}</div>
       <div class="wi"><b>${esc(w.name)}</b><span>${esc(SITES[w.site]?SITES[w.site].name:w.site)} · ${w.mode==='sandbox'?'Sandbox':'Survival'} · ${esc(LBL('difficulty',st.difficulty||'normal'))}${st.weather&&st.weather!=='normal'?' · weather '+esc(LBL('weather',st.weather)).toLowerCase():''}</span>
       <span>Sol ${w.sol} · ${w.missions}/${CHAPTERS.length} missions · played ${ago(w.played)}</span></div>
       <div class="wb"><button class="btn sm primary" data-play="${esc(w.id)}">Play</button><button class="btn sm" data-del="${esc(w.id)}">Delete</button></div></div>`}).join('')

@@ -21,7 +21,8 @@ function refreshInvUI(){
   if(!invUI.open||!S)return;
   $('#mtabs').innerHTML=MTABS.map(([k,l])=>`<button class="mtab${invUI.mtab===k?' on':''}" data-mtab="${k}">${l}</button>`).join('');
   const inv=invUI.mtab==='inv';$('#pane-inv').classList.toggle('hidden',!inv);$('#pane-col').classList.toggle('hidden',inv);
-  if(!inv){renderMenuPage();return}
+  if(!inv){closeHowto();renderMenuPage();return}
+  if(HOWTO.id)renderHowto();
   heroShow(null);
   renderPlayerCard();
   renderGrid($('#g-bag'),S.inv,'inv',HOTBAR,INV_SIZE);renderGrid($('#g-hot'),S.inv,'inv',0,HOTBAR);
@@ -40,8 +41,8 @@ function refreshInvUI(){
       h+=`<div class="rgroup"><div class="sub">${STATION_NAME[st]}${ok?'':' · <span class="neg">not here</span>'}</div>`;
       for(const r of groups[st]){const o=ITEMS[r.out[0]];let can=ok||S.mode==='sandbox'&&st!=='fab'&&base;
         const ing=Object.entries(r.in).map(([id,n])=>{const have=slotsCount(S.inv,id)+(base?slotsCount(S.storage,id):0);if(have<n&&S.mode!=='sandbox')can=false;
-          return`<span class="ing ${have>=n||S.mode==='sandbox'?'':'miss'}" title="${esc(ITEMS[id].name)}"><img src="${iconURL(id)}" alt="">${have}/${n}</span>`}).join('');
-        h+=`<div class="recipe ${can?'':'off'}"><img class="ro" src="${iconURL(r.out[0])}" alt=""><div class="rn"><b>${esc(o.name)}${r.out[1]>1?' ×'+r.out[1]:''}</b><div>${ing}${r.colony?`<span class="ing">+${r.colony.o2} kg colony O₂</span>`:''}</div></div>`+
+          return`<span class="ing ${have>=n||S.mode==='sandbox'?'':'miss'}" data-item="${id}" role="button" tabindex="0" aria-label="${esc(ITEMS[id].name)}: how to get it"><img src="${iconURL(id)}" alt="">${have}/${n}</span>`}).join('');
+        h+=`<div class="recipe ${can?'':'off'}"><img class="ro" data-item="${r.out[0]}" src="${iconURL(r.out[0])}" alt="${esc(o.name)}"><div class="rn"><b>${esc(o.name)}${r.out[1]>1?' ×'+r.out[1]:''}</b><div>${ing}${r.colony?`<span class="ing">+${r.colony.o2} kg colony O₂</span>`:''}</div></div>`+
           `<button class="btn sm" data-craft="${r.id}" ${can?'':'disabled'}>Craft</button></div>`}
       h+='</div>'}
     pnl.innerHTML=h;
@@ -58,7 +59,7 @@ function renderHotbar(){
 }
 function selectHot(i){P.hot=((i%HOTBAR)+HOTBAR)%HOTBAR;renderHotbar();const s=S.inv[P.hot];const l=$('#hblabel');l.textContent=s?ITEMS[s.id].name:'Empty hand';l.classList.remove('show');void l.offsetWidth;l.classList.add('show');if(typeof onHotbarChange==='function')onHotbarChange()}
 function openMenu(tab){
-  if(tab===false){if(!invUI.open)return;invUI.open=false;if(game.wantLock)setShiftLock(true);$('#invov').classList.add('hidden');invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');renderHotbar();return}
+  if(tab===false){if(!invUI.open)return;invUI.open=false;closeHowto();if(game.wantLock)setShiftLock(true);$('#invov').classList.add('hidden');invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');renderHotbar();return}
   if(!invUI.open){if(document.pointerLockElement)document.exitPointerLock();invUI.open=true;$('#invov').classList.remove('hidden');closePanels(true);if(nearBase(ME)&&invUI.tab!=='craft')invUI.tab='store';mouse.drag=false;sfx(0.08,1400,2,0.04)}
   else sfx(0.04,1900,2,0.03);
   invUI.mtab=tab||'inv';markTabSeen(invUI.mtab);invUI.held=null;$('#cursorstack').classList.add('hidden');$('#tip').classList.add('hidden');refreshInvUI();
@@ -177,3 +178,56 @@ $('#hotbar').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDef
 function useSlot(i){const s=S.inv[i];if(!s)return;const d=ITEMS[s.id];if(!d.use){toast(d.tool?'Select it on the hotbar and hold left mouse':'This item can’t be used directly');return}
   if(d.use==='lamp'||d.use==='flare'){if(invUI.open)openInventory(false)}
   act({a:'use',i});refreshInvUI()}
+
+/* ---------- what you need and how to get it ----------
+   Hover an ingredient (or a recipe's result) to see its name; click it for a small window you can drag around:
+   how to craft it, where to find it (which landscape or biome), and how many you have. It stays open while the
+   inventory is open and closes with it. */
+const drillName=t=>{const d=Object.values(ITEMS).find(x=>x.tool==='drill'&&x.tier===t);return d?d.name:'a better drill'};
+const ITEM_WHERE={
+  regolith:()=>['Dig the ground anywhere: hold left mouse with any drill aimed at the soil.'],
+  iron:()=>['Hematite deposits: dark, lumpy rocks with pale veins. Common on open plains and crater floors, and in the mountains.','A few sit just outside your base.','Caves have them too.'],
+  silica:()=>['Silica deposits: pale cream slabs. Most common on sand dunes, plains and crater floors.','A few sit just outside your base.'],
+  titanium:()=>['Titanium veins: grey rock with bright streaks. Look in the mountains (Rocky Plains and Volcanic Highlands have the most) and in crater basins.','Caves and cave supply caches have it too.','Hard rock: it takes longer to drill.'],
+  ice:()=>['Ice deposits in the ice biome, among the blue crystal mountains. Ice-rich Plains is ice biome all over; on other sites, follow an ice mission.','Melt ice into water in colony storage.'],
+  crystal:()=>['Selenite crystals grow inside caves: look for glowing white crystal clusters.','Cave supply caches often hold some.'],
+  resonite:()=>[`Resonant crystals glow purple inside Lumari caves. You need a ${drillName(2)} or better.`,'Alien shrines and the deep vault also hold them.'],
+  alloy:()=>[`Xeno alloy: teal shards around alien ruins. You need a ${drillName(3)}.`,'Ruin and shrine caches also hold some.'],
+  chitin:()=>['Dropped by Skitters, Night Stalkers and Rustmites when you defeat them.'],
+  scale:()=>['Dropped by Dune Wyrms (and Ravagers) when you defeat them.'],
+  basalt:()=>['Drill dark basalt boulders, found almost everywhere.'],
+  tablet:()=>['Found in alien ruins and shrines.'],datapad:()=>['Found in caves and crash sites.'],artifact:()=>['Found in alien shrines and the deep vault.'],
+  adrenal:()=>['Sometimes dropped by Rustmites.'],ironhide:()=>['Dropped by Ravagers.']};
+const STATION_HOW={suit:'Craft it anywhere, from your suit.',base:'Craft it at a habitat (stand near your base).',fab:'Craft it at a Fabricator: build one at your base with B.'};
+const HOWTO={id:null,pos:null};
+const haveOf=id=>slotsCount(S.inv,id)+(nearBase(ME)?slotsCount(S.storage,id):0);
+function renderHowto(){const el=$('#howto'),id=HOWTO.id,d=ITEMS[id];if(!el||!d)return;
+  const recs=RECIPES.filter(r=>r.out[0]===id),where=ITEM_WHERE[id]?ITEM_WHERE[id]():[],chip=(k,n)=>`<span class="ing" data-hitem="${k}" role="button" tabindex="0"><img src="${iconURL(k)}" alt="">${n?n+' × ':''}${esc(ITEMS[k].name)}</span>`;
+  let h=`<p class="ht-desc">${esc(d.desc||'')}</p>`;
+  if(recs.length)h+=recs.map(r=>`<div class="ht-sec"><div class="sub">How to craft${r.out[1]>1?` (makes ${r.out[1]})`:''}</div><div class="ht-ings">${Object.entries(r.in).map(([k,n])=>chip(k,n)).join('')}</div><p>${STATION_HOW[r.st]||''}</p></div>`).join('');
+  if(where.length)h+=`<div class="ht-sec"><div class="sub">Where to find it</div><ul>${where.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>`;
+  if(!recs.length&&!where.length)h+=`<div class="ht-sec"><p>Found while exploring: check caves, wrecks and supply caches.</p></div>`;
+  const used=RECIPES.filter(r=>r.in[id]).map(r=>r.out[0]);if(used.length)h+=`<div class="ht-sec"><div class="sub">Used to make</div><div class="ht-ings">${[...new Set(used)].map(k=>chip(k)).join('')}</div></div>`;
+  h+=`<div class="ht-have">You have <b>${haveOf(id)}</b>${nearBase(ME)?' (backpack and colony storage)':' in your backpack'}</div>`;
+  el.querySelector('.ht-head img').src=iconURL(id);el.querySelector('.ht-head b').textContent=d.name;el.querySelector('.ht-body').innerHTML=h}
+function openHowto(id,from){if(!ITEMS[id])return;let el=$('#howto');
+  if(!el){el=document.createElement('div');el.id='howto';el.className='hidden';el.setAttribute('role','dialog');el.innerHTML='<div class="ht-head"><img alt=""><b></b><button class="ht-x" aria-label="Close">✕</button></div><div class="ht-body"></div>';document.body.appendChild(el);
+    const head=el.querySelector('.ht-head');let drag=null;
+    head.addEventListener('pointerdown',e=>{if(e.target.closest('.ht-x'))return;const r=el.getBoundingClientRect();drag={dx:e.clientX-r.left,dy:e.clientY-r.top};try{head.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()});
+    head.addEventListener('pointermove',e=>{if(!drag)return;const x=clamp(e.clientX-drag.dx,4,innerWidth-el.offsetWidth-4),y=clamp(e.clientY-drag.dy,4,innerHeight-40);el.style.left=x+'px';el.style.top=y+'px';HOWTO.pos=[x,y]});
+    const up=()=>{drag=null};head.addEventListener('pointerup',up);head.addEventListener('pointercancel',up);
+    el.querySelector('.ht-x').onclick=closeHowto;
+    el.addEventListener('click',e=>{const c=e.target.closest('[data-hitem]');if(c)openHowto(c.dataset.hitem)});
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('[data-hitem]');if(c)openHowto(c.dataset.hitem)}})}
+  HOWTO.id=id;renderHowto();el.classList.remove('hidden');
+  if(!HOWTO.pos&&from){const r=from.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight;let x=r.right+10;if(x+w>innerWidth-8)x=Math.max(8,r.left-w-10);HOWTO.pos=[x,clamp(r.top-20,8,innerHeight-h-8)]}
+  if(HOWTO.pos){el.style.left=HOWTO.pos[0]+'px';el.style.top=HOWTO.pos[1]+'px'}sfx(0.04,1500,2,0.03)}
+function closeHowto(){const el=$('#howto');if(el)el.classList.add('hidden');HOWTO.id=null;HOWTO.pos=null;hideItemName()}
+// the name label that follows the mouse over an ingredient
+function hideItemName(){const t=$('#itemname');if(t)t.classList.add('hidden')}
+$('#invov').addEventListener('mouseover',e=>{const c=e.target.closest('[data-item]');if(!c){hideItemName();return}let t=$('#itemname');
+  if(!t){t=document.createElement('div');t.id='itemname';document.body.appendChild(t)}t.innerHTML=`<b>${esc(ITEMS[c.dataset.item].name)}</b><span>Click: how to get it</span>`;t.classList.remove('hidden');
+  const r=c.getBoundingClientRect();t.style.left=clamp(r.left+r.width/2-t.offsetWidth/2,6,innerWidth-t.offsetWidth-6)+'px';t.style.top=Math.max(6,r.top-t.offsetHeight-8)+'px'});
+$('#invov').addEventListener('mouseleave',hideItemName);
+$('#invov').addEventListener('click',e=>{const c=e.target.closest('[data-item]');if(c){e.stopPropagation();hideItemName();openHowto(c.dataset.item,c)}},true);
+$('#invov').addEventListener('keydown',e=>{if(e.key==='Enter'){const c=e.target.closest('[data-item]');if(c)openHowto(c.dataset.item,c)}});

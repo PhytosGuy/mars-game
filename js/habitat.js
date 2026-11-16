@@ -127,24 +127,44 @@ function airlockRun(dir,done){
     [1.5,'Outer hatch sealed','The airlock keeps the habitat’s air in. Air pressure on Mars is only about 0.6 kPa, less than 1% of Earth’s.','p0'],
     [2.6,'Repressurising','Pumping breathable air in until the chamber matches the habitat: 101 kPa, the same as sea level on Earth.','up'],
     [2.0,'Dust shower','Air jets blow the fine, clingy regolith off your suit. Martian dust contains perchlorate salts, which are harmful to breathe.','dust'],
-    [2.6,'Taking off your suit','Helmet off, gloves off, and the suit goes on its rack to recharge its oxygen and battery.','off'],
+    [1.7,'Helmet off','Unlatch the neck ring and lift the helmet off. Underneath, astronauts wear a fabric comm cap: the “Snoopy cap”, with the radio headset built in.','helm'],
+    [1.2,'Comm cap off','Off comes the skull cap with its earphones and microphones.','cap'],
+    [1.4,'Suit off','Out of the suit! It goes on its rack to recharge its oxygen and battery.','pop'],
     [1.0,'Inner hatch open','Welcome home. Your journal, bunk and wardrobe are inside.','open']]:[
-    [1.8,'Suiting up','Suit on, helmet sealed, oxygen and battery topped up. Astronauts check every seal before each spacewalk.','on'],
+    [1.4,'Suit on','Step into the suit and seal it up. Its oxygen and battery were topped up on the rack.','popon'],
+    [1.2,'Comm cap on','On goes the skull cap with the radio headset, so Mission Control and your crew can hear you.','capon'],
+    [1.6,'Helmet on','Lower the helmet and lock the neck ring. Astronauts check every seal before each spacewalk.','helmon'],
     [2.2,'Depressurising','The air is pumped back into the habitat’s tanks so none is wasted, until the chamber matches Mars: about 0.6 kPa.','down'],
     [1.0,'Outer hatch open','Good luck out there.','out']];
   const total=steps.reduce((a,b)=>a+b[0],0);let t=0,last=-1,fin=false;
   P.inside=true;INT.g.visible=true;astro.visible=true;setOutfit(astro,dir==='out');astro.position.copy(base);astro.rotation.set(0,Math.PI*0.25,0,'YXZ');P.pos.copy(base);
   const U=astro.userData;airlockUI(true);$('#hud').classList.add('cinehide');
-  const end=()=>{if(fin)return;fin=true;game.cine=null;airlockUI(false);$('#hud').classList.remove('cinehide');U.armL.rotation.set(0,0,0);U.armR.rotation.set(0,0,0);done()};
+  // the helmet (the suit pieces on the head), the comm cap worn under it, and the rest of the suit (which puffs up and pops)
+  const helm=U.suitParts.filter(m=>m.parent===U.head),body=U.suitParts.filter(m=>m.parent!==U.head),cap=U.commCap||(U.commCap=mkCommCap(U.head));
+  for(const m of helm)if(m.userData.hy===undefined)m.userData.hy=m.position.y;for(const m of body)m.userData.ps=m.scale.clone();
+  const helmAt=(dy,vis)=>{for(const m of helm){m.position.y=m.userData.hy+dy;m.visible=vis}};
+  const bodyScale=k=>{for(const m of body)m.scale.copy(m.userData.ps).multiplyScalar(k)};
+  const pop=()=>{puff(base.x,base.y+1.0,base.z,1.6,'#f4f1ea');puff(base.x+0.4,base.y+0.6,base.z-0.2,1.1,'#ffffff');SFX.hiss();beep(660,0.06,'triangle',0.06);beep(990,0.08,'triangle',0.05,0.05)};
+  const tidy=suited=>{bodyScale(1);setOutfit(astro,!suited);helmAt(0,suited);cap.visible=false;cap.position.y=FY;cap.scale.setScalar(1);astro.scale.setScalar(astro.userData.hs||astro.scale.x)};
+  astro.userData.hs=astro.scale.x;cap.visible=dir==='in';let popped=false;
+  const end=()=>{if(fin)return;fin=true;game.cine=null;airlockUI(false);$('#hud').classList.remove('cinehide');U.armL.rotation.set(0,0,0);U.armR.rotation.set(0,0,0);tidy(dir==='out');done()};
   const cine=dt=>{t+=dt;updateEnv(dt,P.pos);if(t>=total){end();return}
     let acc=0,k=0;while(k<steps.length-1&&t>acc+steps[k][0]){acc+=steps[k][0];k++}const st=steps[k],f=clamp((t-acc)/st[0],0,1);
     if(k!==last){last=k;$('#al-step').textContent=(dir==='in'?'Entering the habitat':'Leaving the habitat')+` · ${k+1}/${steps.length}`;$('#al-t').textContent=st[1];$('#al-b').textContent=st[2];if(st[3]==='up'||st[3]==='down'||st[3]==='dust')SFX.hiss()}
-    const kpa=dir==='in'?(k<1?0.6:k===1?0.6+f*100.4:101):(k<1?101:k===1?101-f*100.4:0.6);$('#al-g').style.width=(kpa/101*100)+'%';$('#al-p').textContent=`Pressure ${kpa<10?kpa.toFixed(1):Math.round(kpa)} kPa`;
-    const sealed=dir==='in'?k<4:k<2;A.red.emissiveIntensity=sealed?1.4+Math.sin(t*8)*0.6:0.15;A.green.emissiveIntensity=sealed?0.2:2;A.jet.emissiveIntensity=st[3]==='dust'?1.5+Math.sin(t*30):0.3;
-    if(st[3]==='off'||st[3]==='on'){const lift=Math.sin(f*Math.PI);U.armL.rotation.set(-2.5*lift,0,-0.3*lift);U.armR.rotation.set(-2.5*lift,0,0.3*lift);if(f>0.5)setOutfit(astro,st[3]==='off')}
+    const iP=steps.findIndex(s=>s[3]==='up'||s[3]==='down'),kpa=dir==='in'?(k<iP?0.6:k===iP?0.6+f*100.4:101):(k<iP?101:k===iP?101-f*100.4:0.6);$('#al-g').style.width=(kpa/101*100)+'%';$('#al-p').textContent=`Pressure ${kpa<10?kpa.toFixed(1):Math.round(kpa)} kPa`;
+    const sealed=k<steps.findIndex(s=>s[3]==='open'||s[3]==='out');A.red.emissiveIntensity=sealed?1.4+Math.sin(t*8)*0.6:0.15;A.green.emissiveIntensity=sealed?0.2:2;A.jet.emissiveIntensity=st[3]==='dust'?1.5+Math.sin(t*30):0.3;
+    const tag=st[3],sm=(a,b,x)=>{const q=clamp((x-a)/(b-a),0,1);return q*q*(3-2*q)},arms=l=>{U.armL.rotation.set(-2.6*l,0,-0.35*l);U.armR.rotation.set(-2.6*l,0,0.35*l)};
+    if(tag==='helm'){arms(Math.sin(Math.min(1,f*1.15)*Math.PI));helmAt(sm(0.2,0.85,f)*0.95,f<0.97)}                       // helmet lifts off, the comm cap shows underneath
+    else if(tag==='cap'){helmAt(0,false);arms(Math.sin(f*Math.PI));cap.visible=f<0.92;cap.position.y=FY+sm(0.35,0.9,f)*0.3;cap.scale.setScalar(1-sm(0.6,0.95,f)*0.4)}
+    else if(tag==='pop'){helmAt(0,false);cap.visible=false;arms(0.25*Math.sin(f*Math.PI));
+      if(!popped){bodyScale(1+0.32*sm(0,0.5,f));if(f>=0.5){popped=true;bodyScale(1);setOutfit(astro,true);pop()}}             // the suit puffs up, then pops off
+      else astro.scale.setScalar(astro.userData.hs*(1+0.06*Math.sin((f-0.5)*Math.PI*6)*(1-f)))}
+    else if(tag==='popon'){if(!popped&&f>=0.35){popped=true;setOutfit(astro,false);pop()}if(popped){helmAt(0,false);cap.visible=false;bodyScale(1+0.32*(1-sm(0.35,0.9,f)))}arms(0.25*Math.sin(f*Math.PI))}
+    else if(tag==='capon'){helmAt(0,false);bodyScale(1);arms(Math.sin(f*Math.PI));cap.visible=true;cap.position.y=FY+(1-sm(0.15,0.7,f))*0.3;cap.scale.setScalar(0.6+0.4*sm(0.15,0.7,f))}
+    else if(tag==='helmon'){cap.visible=true;cap.position.y=FY;cap.scale.setScalar(1);arms(Math.sin(Math.min(1,f*1.1)*Math.PI));helmAt((1-sm(0.1,0.8,f))*0.95,true)}
     if(st[3]==='dust')astro.rotation.y+=dt*1.2;
-    const ca=Math.PI*0.25+Math.sin(t*0.25)*0.25;camera.position.set(base.x+Math.sin(ca)*2.15,base.y+1.65,base.z+Math.cos(ca)*2.15);camera.lookAt(base.x,base.y+(st[3]==='off'||st[3]==='on'?1.55:1.15),base.z)};
-  cine.skip=()=>{setOutfit(astro,dir==='in');end()};
+    const ca=Math.PI*0.25+Math.sin(t*0.25)*0.25;camera.position.set(base.x+Math.sin(ca)*2.15,base.y+1.65,base.z+Math.cos(ca)*2.15);camera.lookAt(base.x,base.y+(['helm','cap','helmon','capon'].includes(st[3])?1.6:['pop','popon'].includes(st[3])?1.25:1.15),base.z)};
+  cine.skip=()=>end();
   game.cine=cine}
 // floor and walls of the room (used by the walker while you're inside)
 function interiorCollide(pos,rad){
@@ -270,3 +290,13 @@ function ensureBeds(){if(!INT.g)return;const need=clamp(1+(typeof net!=='undefin
     b.add(bx(2.5,0.42,1.3,white,0,0.3,0));b.add(bx(2.3,0.2,1.18,mat('#dfe6ee'),0,0.6,0));b.add(bx(1.4,0.1,1.2,mat(blankets[i],{roughness:0.9}),0.4,0.72,0));b.add(bx(0.5,0.15,0.8,mat('#ffffff'),-0.85,0.74,0));
     b.traverse(o=>{if(o.isMesh)o.castShadow=false});grp.add(b);const c=Math.abs(Math.cos(r)),sn=Math.abs(Math.sin(r));INT.props.push({x,z,w:(2.5*c+1.3*sn)/2,d:(2.5*sn+1.3*c)/2,bed:true});INT.beds.push({x,z})}
   grp.traverse(o=>o.layers.set(0))}
+
+// the fabric comm cap ("Snoopy cap") worn under the helmet: a snug skull cap with ear cups and a microphone
+function mkCommCap(head){const P=[],shell=new THREE.SphereGeometry(0.266,36,18,0,TAU,0,1.78);shell.scale(1,1.09,1.02);P.push(shell);
+  for(const s of[-1,1]){const cup=new THREE.CylinderGeometry(0.062,0.062,0.04,24);cup.rotateZ(Math.PI/2);cup.translate(s*0.272,-0.005,-0.005);P.push(cup);
+    const mic=new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(s*0.285,-0.03,0.02),new THREE.Vector3(s*0.25,-0.09,0.14),new THREE.Vector3(s*0.14,-0.105,0.21)]),14,0.007,6,false);P.push(mic)}
+  const strap=new THREE.TorusGeometry(0.2,0.012,6,32,Math.PI);strap.rotateY(Math.PI/2);strap.rotateX(Math.PI);strap.translate(0,-0.08,0.02);P.push(strap);
+  const g=new THREE.Group(),capM=new THREE.MeshStandardMaterial({color:'#ece6da',roughness:0.85}),darkM=new THREE.MeshStandardMaterial({color:'#4a3426',roughness:0.7});
+  const top=new THREE.Mesh(mergeAll([P[0]]),capM),rest=new THREE.Mesh(mergeAll(P.slice(1)),darkM);g.add(top,rest);
+  const band=new THREE.Mesh(new THREE.SphereGeometry(0.268,36,8,0,TAU,0.9,0.34),darkM);band.scale.set(1,1.09,1.02);g.add(band);
+  g.position.y=FY;g.visible=false;head.add(g);return g}
